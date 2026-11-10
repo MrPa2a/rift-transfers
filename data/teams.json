@@ -1,0 +1,500 @@
+{
+  "$comment": "Titulaires de chaque équipe suivie, par édition des Worlds. Voir CONTRIBUTING.md pour le format.",
+  "years": [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026],
+  "regions": ["LCK", "LPL", "LEC", "LCS"],
+  "teams": [
+    {
+      "code": "T1",
+      "name": "T1",
+      "region": "LCK",
+      "worlds": {
+        "2017": {
+          "name": "SKT T1",
+          "lineup": {"top": "Huni", "jungle": "Peanut", "mid": "Faker", "bot": "Bang", "support": "Wolf"},
+          "shared": {"jungle": "Blank"}
+        },
+        "2019": {
+          "name": "SKT T1",
+          "lineup": {"top": "Khan", "jungle": "Clid", "mid": "Faker", "bot": "Teddy", "support": "Effort"},
+          "shared": {"support": "Mata"}
+        },
+        "2021": {
+          "lineup": {"top": "Canna", "jungle": "Oner", "mid": "Faker", "bot": "Gumayusi", "support": "Keria"}
+        },
+        "2022": {
+          "lineup": {"top": "Zeus", "jungle": "Oner", "mid": "Faker", "bot": "Gumayusi", "support": "Keria"}
+        },
+        "2023": {
+          "lineup": {"top": "Zeus", "jungle": "Oner", "mid": "Faker", "bot": "Gumayusi", "support": "Keria"}
+        },
+        "2024": {
+          "lineup": {"top": "Zeus", "jungle": "Oner", "mid": "Faker", "bot": "Gumayusi", "support": "Keria"}
+        },
+        "2025": {
+          "lineup": {"top": "Doran", "jungle": "Oner", "mid": "Faker", "bot": "Gumayusi", "support": "Keria"}
+        },
+        "2026": {
+          "lineup": {"top": "Doran", "jungle": "Oner", "mid": "Faker", "bot": "Peyz", "support": "Keria"}
+        }
+      }
+    },
+    {
+      "code": "GEN",
+      "name": "Gen.G",
+      "region": "LCK",
+      "worlds": {
+        "2017": {
+          "name": "Samsung Galaxy",
+          "lineup": {"top": "CuVee", "jungle": "Ambition", "mid": "Crown", "bot": "Ruler", "support": "CoreJJ"}
+        },
+        "2018": {
+          "lineup": {"top": "CuVee", "jungle": "Haru", "mid": "Crown", "bot": "Ruler", "support": "CoreJJ"}
+        },
+        "2020": {
+          "lineup": {"top": "Rascal", "jungle": "Clid", "mid": "Bdd", "bot": "Ruler", "support": "Life"}
+        },
+        "2021": {
+          "lineup": {"top": "Rascal", "jungle": "Clid", "mid": "Bdd", "bot": "Ruler", "support": "Life"}
+        },
+        "2022": {
+          "lineup": {"top": "Doran", "jungle": "Peanut", "mid": "Chovy", "bot": "Ruler", "support": "Lehends"}
+        },
+        "2023": {
+          "lineup": {"top": "Doran", "jungle": "Peanut", "mid": "Chovy", "bot": "Peyz", "support": "Delight"}
+        },
+        "2024": {
+          "lineup": {"top": "Kiin", "jungle": "Canyon", "mid": "Chovy", "bot": "Peyz", "support": "Lehends"}
+        },
+        "2025": {
+          "lineup": {"top": "Kiin", "jungle": "Canyon", "mid": "Chovy", "bot": "Ruler", "support": "Duro"}
+        },
+        "2026": {
+          "lineup": {"top": "Kiin", "jungle": "Canyon", "mid": "Chovy", "bot": "Ruler", "support": "Duro"}
+        }
+      }
+    },
+    {
+      "code": "HLE",
+      "name": "Hanwha Life",
+      "region": "LCK",
+      "worlds": {
+        "2021": {
+          "lineup": {"top": "Morgan", "jungle": "Willer", "mid": "Chovy", "bot": "Deft", "support": "Vsta"}
+        },
+        "2024": {
+          "lineup": {"top": "Doran", "jungle": "Peanut", "mid": "Zeka", "bot": "Viper", "support": "Delight"}
+        },
+        "2025": {
+          "lineup": {"top": "Zeus", "jungle": "Peanut", "mid": "Zeka", "bot": "Viper", "support": "Delight"}
+        },
+        "2026": {
+          "lineup": {"top": "Zeus", "jungle": "Kanavi", "mid": "Zeka", "bot": "Gumayusi", "support": "Delight"}
+        }
+      }
+    },
+    {
+      "code": "DK",
+      "name": "Dplus KIA",
+      "region": "LCK",
+      "worlds": {
+        "2019": {
+          "name": "DAMWON",
+          "lineup": {"top": "Nuguri", "jungle": "Canyon", "mid": "ShowMaker", "bot": "Nuclear", "support": "BeryL"}
+        },
+        "2020": {
+          "name": "DAMWON",
+          "lineup": {"top": "Nuguri", "jungle": "Canyon", "mid": "ShowMaker", "bot": "Ghost", "support": "BeryL"}
+        },
+        "2021": {
+          "name": "DWG KIA",
+          "lineup": {"top": "Khan", "jungle": "Canyon", "mid": "ShowMaker", "bot": "Ghost", "support": "BeryL"}
+        },
+        "2022": {
+          "lineup": {"top": "Nuguri", "jungle": "Canyon", "mid": "ShowMaker", "bot": "deokdam", "support": "Kellin"}
+        },
+        "2023": {
+          "lineup": {"top": "Canna", "jungle": "Canyon", "mid": "ShowMaker", "bot": "Deft", "support": "Kellin"}
+        },
+        "2024": {
+          "lineup": {"top": "Kingen", "jungle": "Lucid", "mid": "ShowMaker", "bot": "Aiming", "support": "Moham"}
+        },
+        "2026": {
+          "lineup": {"top": "Siwoo", "jungle": "Lucid", "mid": "ShowMaker", "bot": "Smash", "support": "Career"}
+        }
+      }
+    },
+    {
+      "code": "KT",
+      "name": "KT Rolster",
+      "region": "LCK",
+      "worlds": {
+        "2018": {
+          "lineup": {"top": "Smeb", "jungle": "Score", "mid": "Ucal", "bot": "Deft", "support": "Mata"}
+        },
+        "2023": {
+          "lineup": {"top": "Kiin", "jungle": "Cuzz", "mid": "Bdd", "bot": "Aiming", "support": "Lehends"}
+        },
+        "2025": {
+          "lineup": {"top": "PerfecT", "jungle": "Cuzz", "mid": "Bdd", "bot": "deokdam", "support": "Peter"}
+        }
+      }
+    },
+    {
+      "code": "DRX",
+      "name": "DRX",
+      "region": "LCK",
+      "worlds": {
+        "2017": {
+          "name": "Longzhu",
+          "lineup": {"top": "Khan", "jungle": "Cuzz", "mid": "Bdd", "bot": "PraY", "support": "GorillA"}
+        },
+        "2020": {
+          "lineup": {"top": "Doran", "jungle": "Pyosik", "mid": "Chovy", "bot": "Deft", "support": "Keria"}
+        },
+        "2022": {
+          "lineup": {"top": "Kingen", "jungle": "Pyosik", "mid": "Zeka", "bot": "Deft", "support": "BeryL"},
+          "shared": {"jungle": "Juhan"}
+        }
+      }
+    },
+    {
+      "code": "EDG",
+      "name": "EDG",
+      "region": "LPL",
+      "worlds": {
+        "2017": {
+          "lineup": {"top": "Mouse", "jungle": "Clearlove", "mid": "Scout", "bot": "iBoy", "support": "Meiko"}
+        },
+        "2018": {
+          "lineup": {"top": "Ray", "jungle": "Haro", "mid": "Scout", "bot": "iBoy", "support": "Meiko"},
+          "shared": {"jungle": "Clearlove"}
+        },
+        "2021": {
+          "lineup": {"top": "Flandre", "jungle": "Jiejie", "mid": "Scout", "bot": "Viper", "support": "Meiko"}
+        },
+        "2022": {
+          "lineup": {"top": "Flandre", "jungle": "Jiejie", "mid": "Scout", "bot": "Viper", "support": "Meiko"}
+        }
+      }
+    },
+    {
+      "code": "RNG",
+      "name": "RNG",
+      "region": "LPL",
+      "worlds": {
+        "2017": {
+          "lineup": {"top": "Letme", "jungle": "Mlxg", "mid": "Xiaohu", "bot": "Uzi", "support": "Ming"}
+        },
+        "2018": {
+          "lineup": {"top": "Letme", "jungle": "Karsa", "mid": "Xiaohu", "bot": "Uzi", "support": "Ming"},
+          "shared": {"jungle": "Mlxg"}
+        },
+        "2019": {
+          "lineup": {"top": "Langx", "jungle": "Karsa", "mid": "Xiaohu", "bot": "Uzi", "support": "Ming"}
+        },
+        "2021": {
+          "lineup": {"top": "Xiaohu", "jungle": "Wei", "mid": "Cryin", "bot": "GALA", "support": "Ming"}
+        },
+        "2022": {
+          "lineup": {"top": "Breathe", "jungle": "Wei", "mid": "Xiaohu", "bot": "GALA", "support": "Ming"}
+        }
+      }
+    },
+    {
+      "code": "IG",
+      "name": "Invictus Gaming",
+      "region": "LPL",
+      "worlds": {
+        "2018": {
+          "lineup": {"top": "TheShy", "jungle": "Ning", "mid": "Rookie", "bot": "JackeyLove", "support": "Baolan"}
+        },
+        "2019": {
+          "lineup": {"top": "TheShy", "jungle": "Ning", "mid": "Rookie", "bot": "JackeyLove", "support": "Baolan"},
+          "shared": {"jungle": "Leyan"}
+        },
+        "2025": {
+          "lineup": {"top": "TheShy", "jungle": "Wei", "mid": "Rookie", "bot": "GALA", "support": "Meiko"}
+        },
+        "2026": {
+          "lineup": {"top": "TheShy", "jungle": "Wei", "mid": "Rookie", "bot": "JiaQi", "support": "Meiko"}
+        }
+      }
+    },
+    {
+      "code": "FPX",
+      "name": "FunPlus Phoenix",
+      "region": "LPL",
+      "worlds": {
+        "2019": {
+          "lineup": {"top": "GimGoon", "jungle": "Tian", "mid": "Doinb", "bot": "Lwx", "support": "Crisp"}
+        },
+        "2021": {
+          "lineup": {"top": "Nuguri", "jungle": "Tian", "mid": "Doinb", "bot": "Lwx", "support": "Crisp"}
+        }
+      }
+    },
+    {
+      "code": "TES",
+      "name": "Top Esports",
+      "region": "LPL",
+      "worlds": {
+        "2020": {
+          "lineup": {"top": "369", "jungle": "Karsa", "mid": "knight", "bot": "JackeyLove", "support": "yuyanjia"}
+        },
+        "2022": {
+          "lineup": {"top": "Wayward", "jungle": "Tian", "mid": "knight", "bot": "JackeyLove", "support": "Mark"}
+        },
+        "2024": {
+          "lineup": {"top": "369", "jungle": "Tian", "mid": "Creme", "bot": "JackeyLove", "support": "Meiko"}
+        },
+        "2025": {
+          "lineup": {"top": "369", "jungle": "Kanavi", "mid": "Creme", "bot": "JackeyLove", "support": "Hang"}
+        },
+        "2026": {
+          "lineup": {"top": "369", "jungle": "Tian", "mid": "Creme", "bot": "JackeyLove", "support": "Zhuo"}
+        }
+      }
+    },
+    {
+      "code": "JDG",
+      "name": "JD Gaming",
+      "region": "LPL",
+      "worlds": {
+        "2020": {
+          "lineup": {"top": "Zoom", "jungle": "Kanavi", "mid": "Yagao", "bot": "LokeN", "support": "LvMao"}
+        },
+        "2022": {
+          "lineup": {"top": "369", "jungle": "Kanavi", "mid": "Yagao", "bot": "Hope", "support": "Missing"}
+        },
+        "2023": {
+          "lineup": {"top": "369", "jungle": "Kanavi", "mid": "knight", "bot": "Ruler", "support": "Missing"}
+        }
+      }
+    },
+    {
+      "code": "BLG",
+      "name": "Bilibili Gaming",
+      "region": "LPL",
+      "worlds": {
+        "2023": {
+          "lineup": {"top": "Bin", "jungle": "Xun", "mid": "Yagao", "bot": "Elk", "support": "ON"}
+        },
+        "2024": {
+          "lineup": {"top": "Bin", "jungle": "Xun", "mid": "knight", "bot": "Elk", "support": "ON"},
+          "shared": {"jungle": "Wei"}
+        },
+        "2025": {
+          "lineup": {"top": "Bin", "jungle": "Shad0w", "mid": "knight", "bot": "Elk", "support": "ON"},
+          "shared": {"jungle": "Beichuan"}
+        },
+        "2026": {
+          "lineup": {"top": "Bin", "jungle": "Xun", "mid": "knight", "bot": "Viper", "support": "ON"}
+        }
+      }
+    },
+    {
+      "code": "AL",
+      "name": "Anyone's Legend",
+      "region": "LPL",
+      "worlds": {
+        "2025": {
+          "lineup": {"top": "Flandre", "jungle": "Tarzan", "mid": "Shanks", "bot": "Hope", "support": "Kael"}
+        },
+        "2026": {
+          "lineup": {"top": "Breathe", "jungle": "Tarzan", "mid": "Shanks", "bot": "Hope", "support": "Kael"}
+        }
+      }
+    },
+    {
+      "code": "G2",
+      "name": "G2 Esports",
+      "region": "LEC",
+      "worlds": {
+        "2017": {
+          "lineup": {"top": "Expect", "jungle": "Trick", "mid": "Perkz", "bot": "Zven", "support": "mithy"}
+        },
+        "2018": {
+          "lineup": {"top": "Wunder", "jungle": "Jankos", "mid": "Perkz", "bot": "Hjarnan", "support": "Wadid"}
+        },
+        "2019": {
+          "lineup": {"top": "Wunder", "jungle": "Jankos", "mid": "Caps", "bot": "Perkz", "support": "Mikyx"}
+        },
+        "2020": {
+          "lineup": {"top": "Wunder", "jungle": "Jankos", "mid": "Caps", "bot": "Perkz", "support": "Mikyx"}
+        },
+        "2022": {
+          "lineup": {"top": "BrokenBlade", "jungle": "Jankos", "mid": "Caps", "bot": "Flakked", "support": "Targamas"}
+        },
+        "2023": {
+          "lineup": {"top": "BrokenBlade", "jungle": "Yike", "mid": "Caps", "bot": "Hans Sama", "support": "Mikyx"}
+        },
+        "2024": {
+          "lineup": {"top": "BrokenBlade", "jungle": "Yike", "mid": "Caps", "bot": "Hans Sama", "support": "Mikyx"}
+        },
+        "2025": {
+          "lineup": {"top": "BrokenBlade", "jungle": "SkewMond", "mid": "Caps", "bot": "Hans Sama", "support": "Labrov"}
+        },
+        "2026": {
+          "lineup": {"top": "BrokenBlade", "jungle": "SkewMond", "mid": "Caps", "bot": "Hans Sama", "support": "Labrov"}
+        }
+      }
+    },
+    {
+      "code": "FNC",
+      "name": "Fnatic",
+      "region": "LEC",
+      "worlds": {
+        "2017": {
+          "lineup": {"top": "sOAZ", "jungle": "Broxah", "mid": "Caps", "bot": "Rekkles", "support": "Jesiz"}
+        },
+        "2018": {
+          "lineup": {"top": "Bwipo", "jungle": "Broxah", "mid": "Caps", "bot": "Rekkles", "support": "Hylissang"},
+          "shared": {"top": "sOAZ"}
+        },
+        "2019": {
+          "lineup": {"top": "Bwipo", "jungle": "Broxah", "mid": "Nemesis", "bot": "Rekkles", "support": "Hylissang"}
+        },
+        "2020": {
+          "lineup": {"top": "Bwipo", "jungle": "Selfmade", "mid": "Nemesis", "bot": "Rekkles", "support": "Hylissang"}
+        },
+        "2021": {
+          "lineup": {"top": "Adam", "jungle": "Bwipo", "mid": "Nisqy", "bot": "Bean", "support": "Hylissang"}
+        },
+        "2022": {
+          "lineup": {"top": "Wunder", "jungle": "Razork", "mid": "Humanoid", "bot": "Upset", "support": "Hylissang"},
+          "shared": {"support": "Rhuckz"}
+        },
+        "2023": {
+          "lineup": {"top": "Oscarinin", "jungle": "Razork", "mid": "Humanoid", "bot": "Noah", "support": "Trymbi"}
+        },
+        "2024": {
+          "lineup": {"top": "Oscarinin", "jungle": "Razork", "mid": "Humanoid", "bot": "Noah", "support": "Jun"}
+        },
+        "2025": {
+          "lineup": {"top": "Oscarinin", "jungle": "Razork", "mid": "Poby", "bot": "Upset", "support": "Mikyx"}
+        }
+      }
+    },
+    {
+      "code": "MKOI",
+      "name": "MAD / KOI",
+      "region": "LEC",
+      "label": "MAD/KOI",
+      "tag": "KOI",
+      "worlds": {
+        "2020": {
+          "name": "MAD Lions",
+          "lineup": {"top": "Orome", "jungle": "Shad0w", "mid": "Humanoid", "bot": "Carzzy", "support": "Kaiser"}
+        },
+        "2021": {
+          "name": "MAD Lions",
+          "lineup": {"top": "Armut", "jungle": "Elyoya", "mid": "Humanoid", "bot": "Carzzy", "support": "Kaiser"}
+        },
+        "2022": {
+          "name": "MAD Lions",
+          "lineup": {"top": "Armut", "jungle": "Elyoya", "mid": "Nisqy", "bot": "UNF0RGIVEN", "support": "Kaiser"}
+        },
+        "2023": {
+          "name": "MAD Lions",
+          "lineup": {"top": "Chasy", "jungle": "Elyoya", "mid": "Nisqy", "bot": "Carzzy", "support": "Hylissang"}
+        },
+        "2024": {
+          "name": "MAD Lions KOI",
+          "lineup": {"top": "Myrwn", "jungle": "Elyoya", "mid": "Fresskowy", "bot": "Supa", "support": "Alvaro"}
+        },
+        "2025": {
+          "name": "Movistar KOI",
+          "lineup": {"top": "Myrwn", "jungle": "Elyoya", "mid": "Jojopyun", "bot": "Supa", "support": "Alvaro"}
+        },
+        "2026": {
+          "name": "Movistar KOI",
+          "lineup": {"top": "Myrwn", "jungle": "Elyoya", "mid": "Jojopyun", "bot": "Supa", "support": "Alvaro"}
+        }
+      }
+    },
+    {
+      "code": "KC",
+      "name": "Karmine Corp",
+      "region": "LEC",
+      "worlds": {
+        "2026": {
+          "lineup": {"top": "Canna", "jungle": "Yike", "mid": "Kyeahoo", "bot": "Caliste", "support": "Busio"}
+        }
+      }
+    },
+    {
+      "code": "C9",
+      "name": "Cloud9",
+      "region": "LCS",
+      "worlds": {
+        "2017": {
+          "lineup": {"top": "Impact", "jungle": "Contractz", "mid": "Jensen", "bot": "Sneaky", "support": "Smoothie"}
+        },
+        "2018": {
+          "lineup": {"top": "Licorice", "jungle": "Svenskeren", "mid": "Jensen", "bot": "Sneaky", "support": "Zeyzal"},
+          "shared": {"jungle": "Blaber"}
+        },
+        "2019": {
+          "lineup": {"top": "Licorice", "jungle": "Svenskeren", "mid": "Nisqy", "bot": "Sneaky", "support": "Zeyzal"},
+          "shared": {"jungle": "Blaber"}
+        },
+        "2021": {
+          "lineup": {"top": "Fudge", "jungle": "Blaber", "mid": "Perkz", "bot": "Zven", "support": "Vulcan"}
+        },
+        "2022": {
+          "lineup": {"top": "Fudge", "jungle": "Blaber", "mid": "Jensen", "bot": "Berserker", "support": "Zven"}
+        },
+        "2023": {
+          "lineup": {"top": "Fudge", "jungle": "Blaber", "mid": "EMENES", "bot": "Berserker", "support": "Zven"}
+        },
+        "2026": {
+          "lineup": {"top": "Thanatos", "jungle": "Blaber", "mid": "Loki", "bot": "Tactical", "support": "Vulcan"}
+        }
+      }
+    },
+    {
+      "code": "TL",
+      "name": "Team Liquid",
+      "region": "LCS",
+      "worlds": {
+        "2018": {
+          "lineup": {"top": "Impact", "jungle": "Xmithie", "mid": "Pobelter", "bot": "Doublelift", "support": "Olleh"}
+        },
+        "2019": {
+          "lineup": {"top": "Impact", "jungle": "Xmithie", "mid": "Jensen", "bot": "Doublelift", "support": "CoreJJ"}
+        },
+        "2020": {
+          "lineup": {"top": "Impact", "jungle": "Broxah", "mid": "Jensen", "bot": "Tactical", "support": "CoreJJ"}
+        },
+        "2021": {
+          "lineup": {"top": "Alphari", "jungle": "Santorin", "mid": "Jensen", "bot": "Tactical", "support": "CoreJJ"}
+        },
+        "2023": {
+          "lineup": {"top": "Summit", "jungle": "Pyosik", "mid": "APA", "bot": "Yeon", "support": "CoreJJ"}
+        },
+        "2024": {
+          "lineup": {"top": "Impact", "jungle": "UmTi", "mid": "APA", "bot": "Yeon", "support": "CoreJJ"}
+        },
+        "2026": {
+          "lineup": {"top": "Morgan", "jungle": "Josedeodo", "mid": "Quid", "bot": "Yeon", "support": "CoreJJ"}
+        }
+      }
+    },
+    {
+      "code": "FLY",
+      "name": "FlyQuest",
+      "region": "LCS",
+      "worlds": {
+        "2020": {
+          "lineup": {"top": "V1per", "jungle": "Santorin", "mid": "PowerOfEvil", "bot": "WildTurtle", "support": "IgNar"}
+        },
+        "2024": {
+          "lineup": {"top": "Bwipo", "jungle": "Inspired", "mid": "Quad", "bot": "Massu", "support": "Busio"}
+        },
+        "2025": {
+          "lineup": {"top": "Bwipo", "jungle": "Inspired", "mid": "Quad", "bot": "Massu", "support": "Busio"}
+        }
+      }
+    }
+  ]
+}

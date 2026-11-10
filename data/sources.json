@@ -1,0 +1,97 @@
+{
+  "$comment": "Sources utilisées pour vérifier les titulaires (lineup) et les résultats. 'covers' précise ce que chaque source a permis de vérifier. Méthode détaillée : docs/SOURCES.md.",
+  "datasets": [
+    {
+      "id": "oe-2022",
+      "label": "Oracle's Elixir — données de matchs 2022 (copie publique sur GitHub)",
+      "url": "https://github.com/kev374k/league_prediction_models",
+      "covers": "Nombre de matchs joués par joueur et par équipe aux Worlds 2022 (league = WLDs, à partir du 29/09/2022)."
+    },
+    {
+      "id": "oe-2023",
+      "label": "Oracle's Elixir — données de matchs 2023 (copie publique sur GitHub)",
+      "url": "https://github.com/Ashalo/LOLAnalysis",
+      "covers": "Nombre de matchs joués par joueur et par équipe aux Worlds 2023 (à partir du 09/10/2023)."
+    },
+    {
+      "id": "oe-2024",
+      "label": "Oracle's Elixir — données de matchs 2024 (copie publique sur GitHub)",
+      "url": "https://github.com/cjhjw/EECS398-Final-Project",
+      "covers": "Nombre de matchs joués par joueur et par équipe aux Worlds 2024 (à partir du 25/09/2024)."
+    },
+    {
+      "id": "leaguepedia-2026",
+      "label": "rift-graphs — export Leaguepedia des Worlds 2026 et des carrières des joueurs (CC BY-SA 3.0)",
+      "url": "https://github.com/ATorres02/rift-graphs",
+      "covers": "Matchs joués aux Worlds 2026, résultats 2026, équipe de chaque joueur de 2026 à chacun de ses Worlds précédents, nationalités."
+    },
+    {
+      "id": "coplay-2012-2021",
+      "label": "LeagueOfLegendsCompetitiveNetwork — matchs joués ensemble aux Worlds 2012–2021 (scrapé sur Leaguepedia)",
+      "url": "https://github.com/simonvw95/LeagueOfLegendsCompetitiveNetwork",
+      "covers": "Pour chaque paire de joueurs, nombre de matchs joués ensemble aux Worlds. Sert à vérifier les lineups 2017–2020 et à départager les rotations. Ne contient pas les Worlds 2021."
+    },
+    {
+      "id": "oracles-elixir",
+      "label": "Oracle's Elixir — téléchargement officiel des données de matchs (2014 → aujourd'hui)",
+      "url": "https://oracleselixir.com/tools/downloads",
+      "covers": "Source d'origine des fichiers ci-dessus. Utile pour étendre la carte avant 2017."
+    },
+    {
+      "id": "leaguepedia",
+      "label": "Leaguepedia (lol.fandom.com) — pages Team Rosters de chaque tournoi",
+      "url": "https://lol.fandom.com/wiki/2019_Season_World_Championship/Main_Event/Team_Rosters",
+      "covers": "Référence la plus complète (matchs joués par joueur). Lisible dans un navigateur ; refuse les requêtes automatisées."
+    }
+  ],
+  "byYear": {
+    "2017": [
+      { "label": "Liquipedia — 2017 World Championship", "url": "https://liquipedia.net/leagueoflegends/World_Championship/2017", "covers": "Rosters et remplaçants (DNP), résultats" },
+      { "ref": "coplay-2012-2021", "covers": "Lineups, rotation Peanut/Blank, Ambition titulaire chez Samsung" }
+    ],
+    "2018": [
+      { "label": "Riot Games — Worlds 2018 : Meet the teams", "url": "https://na.leagueoflegends.com/en/featured/worlds-2018-meet-the-teams", "covers": "Titulaires et remplaçants inscrits" },
+      { "label": "Liquipedia — 2018 World Championship", "url": "https://liquipedia.net/leagueoflegends/World_Championship/2018", "covers": "Résultats" },
+      { "ref": "coplay-2012-2021", "covers": "Smeb chez KT ; rotations Karsa/Mlxg, Haro/Clearlove, Bwipo/sOAZ, Svenskeren/Blaber ; Haru titulaire chez Gen.G" }
+    ],
+    "2019": [
+      { "label": "Wikipedia — 2019 League of Legends World Championship", "url": "https://en.wikipedia.org/wiki/2019_League_of_Legends_World_Championship", "covers": "Résultats" },
+      { "ref": "coplay-2012-2021", "covers": "Lineups ; rotations Effort/Mata (SKT), Ning/Leyan (IG), Svenskeren/Blaber (C9)" }
+    ],
+    "2020": [
+      { "label": "Wikipedia — 2020 League of Legends World Championship", "url": "https://en.wikipedia.org/wiki/2020_League_of_Legends_World_Championship", "covers": "Résultats" },
+      { "ref": "coplay-2012-2021", "covers": "Lineups ; Rekkles ADC de Fnatic ; MAD Lions (Orome, Shad0w, Humanoid, Carzzy, Kaiser)" }
+    ],
+    "2021": [
+      { "label": "Liquipedia — 2021 World Championship", "url": "https://liquipedia.net/leagueoflegends/World_Championship/2021", "covers": "Rosters et remplaçants (DNP), résultats ; Xiaohu en top chez RNG" },
+      { "label": "Upcomer — Bean starting over Upset for Fnatic at Worlds 2021", "url": "https://upcomer.com/bean-starting-over-upset-for-fnatic-at-worlds-2021", "covers": "Bean titulaire chez Fnatic" },
+      { "label": "Esports News UK — Bean called up to Worlds", "url": "https://esports-news.co.uk/?p=37620", "covers": "Bean (Louis Schmitz), nationalité allemande" }
+    ],
+    "2022": [
+      { "ref": "oe-2022", "covers": "Lineups de toutes les équipes suivies ; rotations Pyosik/Juhan, Hylissang/Rhuckz ; MAD Lions présent" },
+      { "label": "Wikipedia — 2022 League of Legends World Championship final", "url": "https://en.wikipedia.org/wiki/2022_League_of_Legends_World_Championship_final", "covers": "Lineups de DRX et T1" }
+    ],
+    "2023": [
+      { "ref": "oe-2023", "covers": "Lineups de toutes les équipes suivies" },
+      { "label": "Wikipedia — 2023 League of Legends World Championship", "url": "https://en.wikipedia.org/wiki/2023_League_of_Legends_World_Championship", "covers": "Résultats" },
+      { "label": "Sportskeeda — Worlds 2023 Swiss Stage, équipes qualifiées", "url": "https://www.sportskeeda.com/esports/league-legends-worlds-2023-swiss-stage-all-qualified-teams-schedule-watch", "covers": "Participants de la phase suisse" }
+    ],
+    "2024": [
+      { "ref": "oe-2024", "covers": "Lineups ; Moham support de DK ; rotation Xun/Wei (BLG)" },
+      { "label": "Wikipedia — 2024 League of Legends World Championship", "url": "https://en.wikipedia.org/wiki/2024_League_of_Legends_World_Championship", "covers": "Résultats" },
+      { "label": "Wikipedia — 2024 League of Legends World Championship final", "url": "https://en.wikipedia.org/wiki/2024_League_of_Legends_World_Championship_final", "covers": "Lineups de T1 et BLG, Wei remplaçant" }
+    ],
+    "2025": [
+      { "label": "Wikipedia — 2025 League of Legends World Championship final", "url": "https://en.wikipedia.org/wiki/2025_League_of_Legends_World_Championship_final", "covers": "Lineups de T1 (Doran en top) et KT" },
+      { "label": "Sheep Esports — notes de la finale KT vs T1", "url": "https://www.sheepesports.com/articles/lol-worlds-2025-kt-vs-t1-ratings/en", "covers": "Joueurs de la finale" },
+      { "label": "Duniagames — Worlds 2025 team list and rosters", "url": "https://duniagames.co.id/amp/discover/article/daftar-tim-worlds-2025-dan-roster-dari-semua-region/en", "covers": "Rosters inscrits de toutes les équipes" },
+      { "label": "RotoWire — Shad0w", "url": "https://googlenews.rotowire.com/esports/player/shad0w-3799", "covers": "Rotation Shad0w/Beichuan chez BLG" },
+      { "label": "Liquipedia — Worlds 2025", "url": "https://liquipedia.net/leagueoflegends/Worlds_2025", "covers": "Résultats" },
+      { "ref": "leaguepedia-2026", "covers": "Équipe de chaque joueur encore présent en 2026" }
+    ],
+    "2026": [
+      { "ref": "leaguepedia-2026", "covers": "Lineups (matchs joués), résultats jusqu'aux demi-finales, finale BLG–Gen.G le 14/11/2026" },
+      { "label": "GosuGamers — All teams and players qualified for Worlds 2026", "url": "https://www.gosugamers.net/lol/news/79314-all-teams-and-players-qualified-for-the-league-of-legends-world-championship-2026", "covers": "Équipes qualifiées et rosters inscrits" }
+    ]
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "$comment": "Parcours de chaque équipe suivie. W vainqueur, F finale, SF demi-finale, QF quart de finale, G phase de groupes, S phase suisse, P play-in. F* = qualifiée pour une finale pas encore jouée.",
+  "ongoingYear": 2026,
+  "labels": {
+    "W": "★ Vainqueur",
+    "F": "Finale",
+    "SF": "Demi",
+    "QF": "Quarts",
+    "G": "Groupes",
+    "S": "Suisse",
+    "P": "Play-in",
+    "F*": "En finale"
+  },
+  "results": {
+    "2017": {"GEN": "W", "T1": "F", "RNG": "SF", "FNC": "QF", "DRX": "QF", "C9": "QF", "EDG": "G", "G2": "G"},
+    "2018": {"IG": "W", "FNC": "F", "G2": "SF", "C9": "SF", "KT": "QF", "RNG": "QF", "EDG": "QF", "GEN": "G", "TL": "G"},
+    "2019": {"FPX": "W", "G2": "F", "T1": "SF", "IG": "SF", "FNC": "QF", "DK": "QF", "RNG": "G", "C9": "G", "TL": "G"},
+    "2020": {
+      "DK": "W",
+      "G2": "SF",
+      "TES": "SF",
+      "GEN": "QF",
+      "DRX": "QF",
+      "JDG": "QF",
+      "FNC": "QF",
+      "TL": "G",
+      "FLY": "G",
+      "MKOI": "P"
+    },
+    "2021": {
+      "EDG": "W",
+      "DK": "F",
+      "GEN": "SF",
+      "T1": "SF",
+      "RNG": "QF",
+      "C9": "QF",
+      "HLE": "QF",
+      "MKOI": "QF",
+      "FPX": "G",
+      "FNC": "G",
+      "TL": "G"
+    },
+    "2022": {
+      "DRX": "W",
+      "T1": "F",
+      "JDG": "SF",
+      "GEN": "SF",
+      "RNG": "QF",
+      "DK": "QF",
+      "EDG": "QF",
+      "FNC": "G",
+      "C9": "G",
+      "G2": "G",
+      "TES": "G",
+      "MKOI": "P"
+    },
+    "2023": {
+      "T1": "W",
+      "JDG": "SF",
+      "BLG": "SF",
+      "GEN": "QF",
+      "KT": "QF",
+      "DK": "S",
+      "G2": "S",
+      "FNC": "S",
+      "MKOI": "S",
+      "TL": "S",
+      "C9": "S"
+    },
+    "2024": {
+      "T1": "W",
+      "BLG": "F",
+      "GEN": "SF",
+      "HLE": "QF",
+      "TES": "QF",
+      "FLY": "QF",
+      "DK": "S",
+      "G2": "S",
+      "TL": "S",
+      "FNC": "S",
+      "MKOI": "S"
+    },
+    "2025": {
+      "T1": "W",
+      "KT": "F",
+      "GEN": "SF",
+      "TES": "SF",
+      "AL": "QF",
+      "G2": "QF",
+      "HLE": "QF",
+      "BLG": "S",
+      "FNC": "S",
+      "MKOI": "S",
+      "FLY": "S",
+      "IG": "P"
+    },
+    "2026": {
+      "GEN": "F*",
+      "BLG": "F*",
+      "T1": "SF",
+      "IG": "SF",
+      "KC": "QF",
+      "DK": "QF",
+      "TES": "QF",
+      "HLE": "S",
+      "AL": "S",
+      "G2": "S",
+      "MKOI": "S",
+      "TL": "S",
+      "C9": "P"
+    }
+  }
+}

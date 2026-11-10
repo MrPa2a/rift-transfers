@@ -1,0 +1,19 @@
+# Dépendances et caches
+node_modules/
+.npm/
+.cache/
+
+# Hébergement
+.vercel/
+.netlify/
+
+# Environnement
+.env
+.env.*
+
+# Systèmes et éditeurs
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+*.swp

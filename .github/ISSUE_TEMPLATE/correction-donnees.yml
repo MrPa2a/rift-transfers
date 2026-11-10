@@ -1,0 +1,27 @@
+name: Correction de données
+description: Un joueur, une rotation ou un résultat est faux.
+title: "[Données] "
+labels: ["données"]
+body:
+  - type: input
+    id: equipe
+    attributes:
+      label: Équipe et année
+      placeholder: "Fnatic 2020"
+    validations:
+      required: true
+  - type: textarea
+    id: erreur
+    attributes:
+      label: Ce qui est affiché et ce qui est juste
+      placeholder: "Bot affiché : Upset. Bot réel : Rekkles (11 matchs sur 11)."
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: Page Leaguepedia ou Liquipedia du tournoi, VOD, article…
+      placeholder: "https://lol.fandom.com/wiki/…/Team_Rosters"
+    validations:
+      required: true

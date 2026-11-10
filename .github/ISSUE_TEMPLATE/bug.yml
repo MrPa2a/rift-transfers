@@ -1,0 +1,17 @@
+name: Bug d'affichage
+description: Quelque chose ne s'affiche pas ou ne réagit pas correctement.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Ce qui se passe
+      placeholder: "Le panneau Filtres ne s'ouvre pas sur mobile."
+    validations:
+      required: true
+  - type: input
+    id: environnement
+    attributes:
+      label: Navigateur et appareil
+      placeholder: "Chrome 142, Windows 11"

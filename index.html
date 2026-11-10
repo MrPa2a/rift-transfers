@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Rift Transfers</title>
+  <meta name="description" content="Carte interactive des rosters des grandes équipes de League of Legends aux Worlds 2017–2026 : suivez chaque joueur d'une équipe à l'autre.">
+  <meta name="theme-color" content="#171b26" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta property="og:title" content="Rift Transfers">
+  <meta property="og:description" content="Les rosters des Worlds de League of Legends depuis 2017, et les transferts de chaque joueur.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/barlow-condensed-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script type="module" src="assets/js/app.js"></script>
+</head>
+<body>
+<div id="corner" aria-hidden="true">ANNÉE</div>
+<div id="hdr"></div>
+<div id="rail"></div>
+<div id="vp" tabindex="0" aria-label="Carte des rosters, glisser pour se déplacer, molette pour zoomer"><div id="world"></div></div>
+
+<div id="bar" class="float">
+  <h1>Rift Transfers</h1>
+  <input id="q" list="plist" placeholder="Chercher un joueur" autocomplete="off" aria-label="Chercher un joueur">
+  <datalist id="plist"></datalist>
+  <button class="ibtn" id="openFilters" type="button" aria-expanded="false" aria-controls="filters" title="Filtres et options">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 4h12M4.5 8h7M7 12h2"/></svg><span>Filtres</span></button>
+  <button class="ibtn" id="openStats" type="button" aria-expanded="false" aria-controls="statsDrawer" title="Statistiques">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 13V8M8 13V3M13 13V6"/></svg><span>Stats</span></button>
+</div>
+
+<div id="zoom" class="float">
+  <button type="button" id="zin" title="Zoomer" aria-label="Zoomer">+</button>
+  <button type="button" id="zout" title="Dézoomer" aria-label="Dézoomer">−</button>
+  <button type="button" id="zfit" title="Tout afficher" aria-label="Tout afficher"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button>
+  <div class="pct" id="zpct">100%</div>
+</div>
+
+<details id="legend" class="float" open>
+  <summary>Légende</summary>
+  <div id="legendBody"></div>
+</details>
+
+<div id="sel" class="float" hidden>
+  <div id="selText"></div>
+  <button id="selClose" type="button" aria-label="Retirer la sélection">×</button>
+</div>
+
+<aside id="filters" class="drawer" aria-label="Filtres et options">
+  <div class="dhead"><h2>Filtres</h2><button class="dclose" type="button" data-close="filters" aria-label="Fermer">×</button></div>
+  <div class="dbody">
+    <div class="grp"><span class="lbl">Postes</span><div class="row" id="roles"></div></div>
+    <div class="grp"><span class="lbl">Régions</span><div class="row" id="regions"></div></div>
+    <div class="grp"><span class="lbl">Options d'affichage</span>
+      <label class="toggle"><input type="checkbox" id="optNat"> Nationalité</label>
+      <label class="toggle"><input type="checkbox" id="optSen"> Ancienneté dans l'équipe</label>
+    </div>
+    <div class="grp"><span class="lbl">Clic sur une équipe <button type="button" class="info" id="modeInfo" aria-expanded="false" aria-controls="modeTip" title="Que font ces deux modes ?">?</button></span>
+      <div class="row" id="teamMode"></div>
+    </div>
+    <details class="notes">
+      <summary>Sources et limites des données</summary>
+      <ul>
+        <li>Une rangée = les cinq joueurs qui ont joué ces Worlds pour l'équipe, pas le roster de la saison. Une case grisée = équipe absente des Worlds, sans roster inventé.</li>
+        <li>* = poste partagé pendant le tournoi. Le premier nom est celui qui a joué le plus de matchs ; l'autre apparaît au survol.</li>
+        <li>Quand une région est masquée, ses joueurs qui croisent une équipe affichée passent par la colonne « Autres régions », avec le code de leur équipe.</li>
+        <li>Nationalité : codes recoupés avec Leaguepedia ; sans code, elle n'a pas été vérifiée. « Importé » = nationalité différente de la région de l'équipe ; Taïwan compte comme domestique en LPL.</li>
+        <li>Pas encore inclus : MSI, les Worlds avant 2017 et les équipes plus ponctuelles (Afreeca, LNG, WBG, 100T, Vitality…).</li>
+        <li>Méthode et sources année par année : <a href="https://github.com/MrPa2a/rift-transfers/blob/main/docs/SOURCES.md" target="_blank" rel="noopener">docs/SOURCES.md</a>. Une erreur ? <a href="https://github.com/MrPa2a/rift-transfers/issues/new/choose" target="_blank" rel="noopener">Signale-la</a>.</li>
+      </ul>
+    </details>
+  </div>
+</aside>
+<div class="tip" id="modeTip" hidden><p><b>Carrières complètes</b> · surligne tous les joueurs passés par l'équipe, avec toute leur carrière aux Worlds. Pour suivre des joueurs.</p><p><b>Arrivées et départs</b> · ne garde que le club juste avant l'arrivée et le club juste après le départ. Pour voir avec quelles équipes l'équipe échange ses joueurs.</p></div>
+
+<aside id="statsDrawer" class="drawer" aria-label="Statistiques">
+  <div class="dhead"><h2>Statistiques</h2><button class="dclose" type="button" data-close="statsDrawer" aria-label="Fermer">×</button></div>
+  <div class="dbody">
+    <p class="notes" style="margin:0">Calculées sur les 21 équipes suivies et leurs titulaires aux Worlds 2017–2026. Touche un nom pour le retrouver sur la carte.</p>
+    <div class="stats" id="stats"></div>
+  </div>
+</aside>
+
+<div id="loadError" class="float load-error" role="alert" hidden>
+  <p><b>Impossible de charger les données.</b></p>
+  <p>Le site doit être servi par un serveur web (par exemple <code class="cmd">npm run dev</code>), pas ouvert directement depuis le disque.</p>
+  <p class="hint">Détail : <code></code></p>
+</div>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "rift-transfers",
+  "version": "1.0.0",
+  "description": "Carte interactive des rosters des grandes équipes de League of Legends aux Worlds 2017–2026.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "validate": "node scripts/validate-data.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MrPa2a/rift-transfers.git"
+  },
+  "keywords": ["league-of-legends", "esports", "worlds", "data-visualization", "rosters"],
+  "author": "MrPa2a",
+  "license": "MIT"
+}
