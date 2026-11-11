@@ -2,7 +2,7 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions selon [SemVer](https://semver.org/lang/fr/).
 
-## [Non publié]
+## [1.1.0] — 2026-11-11
 
 ### Ajouté
 - `scripts/fetch-worlds.mjs` : collecte des titulaires des 14 éditions depuis Leaguepedia, application des règles de sélection, et rapport des cas à arbitrer.

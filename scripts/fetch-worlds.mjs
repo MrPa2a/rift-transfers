@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Collecte les titulaires des Worlds sur Leaguepedia (Special:CargoExport) et applique
-// les règles de sélection de docs/PLAN-2013-2016.md : seuil de 20 %, poste majoritaire,
+// les règles de sélection de docs/SOURCES.md : seuil de 20 %, poste majoritaire,
 // deux joueurs par poste au maximum.
 //
 // Usage : node scripts/fetch-worlds.mjs [année…] [--refresh] [--out <dossier>]
@@ -902,7 +902,7 @@ function renderReport({ years, computed, pageCheck, census, collisions, nearColl
   L.push("");
   L.push(`Produit par \`scripts/fetch-worlds.mjs\` le ${new Date().toISOString().slice(0, 10)}, depuis la table \`ScoreboardPlayers\` de Leaguepedia (\`Special:CargoExport\`).`);
   L.push("");
-  L.push(`Règles appliquées : seuil de ${pct(THRESHOLD)} des parties de l'équipe, poste majoritaire, deux joueurs au maximum par poste — voir \`docs/PLAN-2013-2016.md\`.`);
+  L.push(`Règles appliquées : seuil de ${pct(THRESHOLD)} des parties de l'équipe, poste majoritaire, deux joueurs au maximum par poste — voir \`docs/SOURCES.md\`.`);
 
   h(2, "Résumé");
   const sections = [

@@ -2,7 +2,7 @@
 
 Carte interactive des rosters des grandes équipes de League of Legends aux **Worlds 2013 → 2026**. Chaque équipe est une colonne, chaque édition des Worlds une rangée, et chaque joueur un fil coloré par poste : on suit sa carrière d'une équipe à l'autre, ou la vie d'une équipe en descendant sa colonne.
 
-![Aperçu de Rift Transfers](docs/screenshot.png)
+![Aperçu de Rift Transfers, la carte filtrée sur une partie des éditions](docs/screenshot.png)
 
 ## Fonctionnalités
 
