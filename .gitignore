@@ -17,3 +17,6 @@ Thumbs.db
 desktop.ini
 .idea/
 *.swp
+
+# Sorties de scripts/fetch-worlds.mjs (fragments, détail, rapport)
+.fetch-worlds*/

@@ -1,17 +1,35 @@
 {
   "$comment": "Titulaires de chaque équipe suivie, par édition des Worlds. Voir CONTRIBUTING.md pour le format.",
-  "years": [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026],
-  "regions": ["LCK", "LPL", "LEC", "LCS"],
+  "years": [2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026],
+  "regions": ["LCK", "LPL", "LEC", "LCS", "LMS"],
   "teams": [
     {
       "code": "T1",
       "name": "T1",
       "region": "LCK",
+      "active": [2013],
       "worlds": {
+        "2013": {
+          "name": "SKT T1 K",
+          "lineup": {"top": "Impact", "jungle": "Bengi", "mid": "Faker", "bot": "Piglet", "support": "PoohManDu"}
+        },
+        "2015": {
+          "name": "SKT T1",
+          "lineup": {"top": "MaRin", "jungle": "Bengi", "mid": "Faker", "bot": "Bang", "support": "Wolf"},
+          "shared": {"mid": "Easyhoon"},
+          "split": ["mid"]
+        },
+        "2016": {
+          "name": "SKT T1",
+          "lineup": {"top": "Duke", "jungle": "Bengi", "mid": "Faker", "bot": "Bang", "support": "Wolf"},
+          "shared": {"jungle": "Blank"},
+          "split": ["jungle"]
+        },
         "2017": {
           "name": "SKT T1",
           "lineup": {"top": "Huni", "jungle": "Peanut", "mid": "Faker", "bot": "Bang", "support": "Wolf"},
-          "shared": {"jungle": "Blank"}
+          "shared": {"jungle": "Blank"},
+          "split": ["jungle"]
         },
         "2019": {
           "name": "SKT T1",
@@ -42,19 +60,36 @@
       "code": "GEN",
       "name": "Gen.G",
       "region": "LCK",
+      "active": [2013],
       "worlds": {
+        "2013": {
+          "name": "Samsung Ozone",
+          "lineup": {"top": "Looper", "jungle": "DanDy", "mid": "Dade", "bot": "imp", "support": "Mata"}
+        },
+        "2014": {
+          "name": "Samsung Galaxy White",
+          "lineup": {"top": "Looper", "jungle": "DanDy", "mid": "PawN", "bot": "imp", "support": "Mata"}
+        },
+        "2016": {
+          "name": "Samsung Galaxy",
+          "lineup": {"top": "CuVee", "jungle": "Ambition", "mid": "Crown", "bot": "Ruler", "support": "CoreJJ"},
+          "shared": {"support": "Wraith"}
+        },
         "2017": {
           "name": "Samsung Galaxy",
-          "lineup": {"top": "CuVee", "jungle": "Ambition", "mid": "Crown", "bot": "Ruler", "support": "CoreJJ"}
+          "lineup": {"top": "CuVee", "jungle": "Ambition", "mid": "Crown", "bot": "Ruler", "support": "CoreJJ"},
+          "shared": {"jungle": "Haru"}
         },
         "2018": {
-          "lineup": {"top": "CuVee", "jungle": "Haru", "mid": "Crown", "bot": "Ruler", "support": "CoreJJ"}
+          "lineup": {"top": "CuVee", "jungle": "Haru", "mid": "Crown", "bot": "Ruler", "support": "CoreJJ"},
+          "shared": {"jungle": "Ambition"}
         },
         "2020": {
           "lineup": {"top": "Rascal", "jungle": "Clid", "mid": "Bdd", "bot": "Ruler", "support": "Life"}
         },
         "2021": {
-          "lineup": {"top": "Rascal", "jungle": "Clid", "mid": "Bdd", "bot": "Ruler", "support": "Life"}
+          "lineup": {"top": "Rascal", "jungle": "Clid", "mid": "Bdd", "bot": "Ruler", "support": "Life"},
+          "shared": {"top": "Burdol"}
         },
         "2022": {
           "lineup": {"top": "Doran", "jungle": "Peanut", "mid": "Chovy", "bot": "Ruler", "support": "Lehends"}
@@ -77,7 +112,16 @@
       "code": "HLE",
       "name": "Hanwha Life",
       "region": "LCK",
+      "active": [2014],
       "worlds": {
+        "2015": {
+          "name": "KOO Tigers",
+          "lineup": {"top": "Smeb", "jungle": "Hojin", "mid": "Kuro", "bot": "PraY", "support": "GorillA"}
+        },
+        "2016": {
+          "name": "ROX Tigers",
+          "lineup": {"top": "Smeb", "jungle": "Peanut", "mid": "Kuro", "bot": "PraY", "support": "GorillA"}
+        },
         "2021": {
           "lineup": {"top": "Morgan", "jungle": "Willer", "mid": "Chovy", "bot": "Deft", "support": "Vsta"}
         },
@@ -96,6 +140,7 @@
       "code": "DK",
       "name": "Dplus KIA",
       "region": "LCK",
+      "active": [2017],
       "worlds": {
         "2019": {
           "name": "DAMWON",
@@ -127,7 +172,11 @@
       "code": "KT",
       "name": "KT Rolster",
       "region": "LCK",
+      "active": [2013],
       "worlds": {
+        "2015": {
+          "lineup": {"top": "Ssumday", "jungle": "Score", "mid": "Nagne", "bot": "Arrow", "support": "Piccaboo"}
+        },
         "2018": {
           "lineup": {"top": "Smeb", "jungle": "Score", "mid": "Ucal", "bot": "Deft", "support": "Mata"}
         },
@@ -143,10 +192,12 @@
       "code": "DRX",
       "name": "DRX",
       "region": "LCK",
+      "active": [2012],
       "worlds": {
         "2017": {
           "name": "Longzhu",
-          "lineup": {"top": "Khan", "jungle": "Cuzz", "mid": "Bdd", "bot": "PraY", "support": "GorillA"}
+          "lineup": {"top": "Khan", "jungle": "Cuzz", "mid": "Bdd", "bot": "PraY", "support": "GorillA"},
+          "shared": {"top": "Rascal"}
         },
         "2020": {
           "lineup": {"top": "Doran", "jungle": "Pyosik", "mid": "Chovy", "bot": "Deft", "support": "Keria"}
@@ -158,16 +209,63 @@
       }
     },
     {
+      "code": "NJN",
+      "name": "NaJin e-mFire",
+      "region": "LCK",
+      "active": [2012, 2015],
+      "worlds": {
+        "2013": {
+          "name": "NaJin Black Sword",
+          "lineup": {"top": "Expession", "jungle": "Watch", "mid": "Nagne", "bot": "PraY", "support": "Cain"}
+        },
+        "2014": {
+          "name": "NaJin White Shield",
+          "lineup": {"top": "Save", "jungle": "Watch", "mid": "Ggoong", "bot": "Zefa", "support": "GorillA"}
+        }
+      }
+    },
+    {
+      "code": "SSB",
+      "name": "Samsung Blue",
+      "region": "LCK",
+      "active": [2013, 2014],
+      "worlds": {
+        "2014": {
+          "name": "Samsung Galaxy Blue",
+          "lineup": {"top": "Acorn", "jungle": "Spirit", "mid": "Dade", "bot": "Deft", "support": "Heart"}
+        }
+      }
+    },
+    {
       "code": "EDG",
       "name": "EDG",
       "region": "LPL",
+      "active": [2014],
       "worlds": {
+        "2014": {
+          "name": "EDward Gaming",
+          "lineup": {"top": "Koro1", "jungle": "Clearlove", "mid": "U", "bot": "NaMei", "support": "Fzzf"}
+        },
+        "2015": {
+          "name": "EDward Gaming",
+          "lineup": {"top": "AmazingJ", "jungle": "Clearlove", "mid": "PawN", "bot": "Deft", "support": "Meiko"},
+          "shared": {"top": "Koro1"},
+          "split": ["top"]
+        },
+        "2016": {
+          "name": "EDward Gaming",
+          "lineup": {"top": "Mouse", "jungle": "Clearlove", "mid": "Scout", "bot": "Deft", "support": "Meiko"},
+          "shared": {"top": "Koro1", "mid": "PawN"},
+          "split": ["top", "mid"]
+        },
         "2017": {
-          "lineup": {"top": "Mouse", "jungle": "Clearlove", "mid": "Scout", "bot": "iBoy", "support": "Meiko"}
+          "lineup": {"top": "Mouse", "jungle": "Clearlove", "mid": "Scout", "bot": "iBoy", "support": "Meiko"},
+          "aliases": {"Clearlove": "Clearlove7"}
         },
         "2018": {
           "lineup": {"top": "Ray", "jungle": "Haro", "mid": "Scout", "bot": "iBoy", "support": "Meiko"},
-          "shared": {"jungle": "Clearlove"}
+          "shared": {"jungle": "Clearlove"},
+          "split": ["jungle"]
         },
         "2021": {
           "lineup": {"top": "Flandre", "jungle": "Jiejie", "mid": "Scout", "bot": "Viper", "support": "Meiko"}
@@ -181,13 +279,26 @@
       "code": "RNG",
       "name": "RNG",
       "region": "LPL",
+      "active": [2013, 2025],
       "worlds": {
+        "2013": {
+          "name": "Royal Club",
+          "lineup": {"top": "GoDlike", "jungle": "Lucky", "mid": "Wh1t3zZ", "bot": "Uzi", "support": "Tabe"}
+        },
+        "2014": {
+          "name": "Star Horn Royal Club",
+          "lineup": {"top": "Cola", "jungle": "inSec", "mid": "corn", "bot": "Uzi", "support": "Zero"}
+        },
+        "2016": {
+          "lineup": {"top": "Looper", "jungle": "Mlxg", "mid": "Xiaohu", "bot": "Uzi", "support": "Mata"}
+        },
         "2017": {
           "lineup": {"top": "Letme", "jungle": "Mlxg", "mid": "Xiaohu", "bot": "Uzi", "support": "Ming"}
         },
         "2018": {
           "lineup": {"top": "Letme", "jungle": "Karsa", "mid": "Xiaohu", "bot": "Uzi", "support": "Ming"},
-          "shared": {"jungle": "Mlxg"}
+          "shared": {"jungle": "Mlxg"},
+          "split": ["jungle"]
         },
         "2019": {
           "lineup": {"top": "Langx", "jungle": "Karsa", "mid": "Xiaohu", "bot": "Uzi", "support": "Ming"}
@@ -204,13 +315,21 @@
       "code": "IG",
       "name": "Invictus Gaming",
       "region": "LPL",
+      "active": [2012],
       "worlds": {
+        "2015": {
+          "lineup": {"top": "Zz1tai", "jungle": "KaKAO", "mid": "Rookie", "bot": "Kid", "support": "Kitties"},
+          "shared": {"bot": "Time"}
+        },
         "2018": {
-          "lineup": {"top": "TheShy", "jungle": "Ning", "mid": "Rookie", "bot": "JackeyLove", "support": "Baolan"}
+          "lineup": {"top": "TheShy", "jungle": "Ning", "mid": "Rookie", "bot": "JackeyLove", "support": "Baolan"},
+          "shared": {"top": "Duke"},
+          "split": ["top"]
         },
         "2019": {
           "lineup": {"top": "TheShy", "jungle": "Ning", "mid": "Rookie", "bot": "JackeyLove", "support": "Baolan"},
-          "shared": {"jungle": "Leyan"}
+          "shared": {"jungle": "Leyan"},
+          "split": ["jungle"]
         },
         "2025": {
           "lineup": {"top": "TheShy", "jungle": "Wei", "mid": "Rookie", "bot": "GALA", "support": "Meiko"}
@@ -224,6 +343,7 @@
       "code": "FPX",
       "name": "FunPlus Phoenix",
       "region": "LPL",
+      "active": [2017, 2025],
       "worlds": {
         "2019": {
           "lineup": {"top": "GimGoon", "jungle": "Tian", "mid": "Doinb", "bot": "Lwx", "support": "Crisp"}
@@ -237,6 +357,7 @@
       "code": "TES",
       "name": "Top Esports",
       "region": "LPL",
+      "active": [2019],
       "worlds": {
         "2020": {
           "lineup": {"top": "369", "jungle": "Karsa", "mid": "knight", "bot": "JackeyLove", "support": "yuyanjia"}
@@ -259,6 +380,7 @@
       "code": "JDG",
       "name": "JD Gaming",
       "region": "LPL",
+      "active": [2017],
       "worlds": {
         "2020": {
           "lineup": {"top": "Zoom", "jungle": "Kanavi", "mid": "Yagao", "bot": "LokeN", "support": "LvMao"}
@@ -275,6 +397,7 @@
       "code": "BLG",
       "name": "Bilibili Gaming",
       "region": "LPL",
+      "active": [2017],
       "worlds": {
         "2023": {
           "lineup": {"top": "Bin", "jungle": "Xun", "mid": "Yagao", "bot": "Elk", "support": "ON"}
@@ -285,7 +408,8 @@
         },
         "2025": {
           "lineup": {"top": "Bin", "jungle": "Shad0w", "mid": "knight", "bot": "Elk", "support": "ON"},
-          "shared": {"jungle": "Beichuan"}
+          "shared": {"jungle": "Beichuan"},
+          "split": ["jungle"]
         },
         "2026": {
           "lineup": {"top": "Bin", "jungle": "Xun", "mid": "knight", "bot": "Viper", "support": "ON"}
@@ -296,6 +420,7 @@
       "code": "AL",
       "name": "Anyone's Legend",
       "region": "LPL",
+      "active": [2021],
       "worlds": {
         "2025": {
           "lineup": {"top": "Flandre", "jungle": "Tarzan", "mid": "Shanks", "bot": "Hope", "support": "Kael"}
@@ -306,10 +431,48 @@
       }
     },
     {
+      "code": "OMG",
+      "name": "Oh My God",
+      "region": "LPL",
+      "active": [2013],
+      "worlds": {
+        "2013": {
+          "lineup": {"top": "Gogoing", "jungle": "Loveling", "mid": "Cool", "bot": "San", "support": "Bigpomelo"},
+          "shared": {"support": "DaDa777"},
+          "aliases": {"Loveling": "LoveLin", "DaDa777": "comA"}
+        },
+        "2014": {
+          "lineup": {"top": "Gogoing", "jungle": "Loveling", "mid": "Cool", "bot": "San", "support": "Cloud"},
+          "shared": {"support": "DaDa777"},
+          "split": ["support"]
+        }
+      }
+    },
+    {
+      "code": "LGD",
+      "name": "LGD Gaming",
+      "region": "LPL",
+      "active": [2014],
+      "worlds": {
+        "2015": {
+          "lineup": {"top": "Flame", "jungle": "TBQ", "mid": "GODV", "bot": "imp", "support": "Pyl"},
+          "shared": {"top": "Acorn"},
+          "split": ["top"]
+        },
+        "2020": {
+          "lineup": {"top": "Langx", "jungle": "Peanut", "mid": "xiye", "bot": "Kramer", "support": "Mark"}
+        }
+      }
+    },
+    {
       "code": "G2",
       "name": "G2 Esports",
       "region": "LEC",
+      "active": [2014],
       "worlds": {
+        "2016": {
+          "lineup": {"top": "Expect", "jungle": "Trick", "mid": "Perkz", "bot": "Zven", "support": "mithy"}
+        },
         "2017": {
           "lineup": {"top": "Expect", "jungle": "Trick", "mid": "Perkz", "bot": "Zven", "support": "mithy"}
         },
@@ -343,13 +506,24 @@
       "code": "FNC",
       "name": "Fnatic",
       "region": "LEC",
+      "active": [2011],
       "worlds": {
+        "2013": {
+          "lineup": {"top": "sOAZ", "jungle": "Cyanide", "mid": "xPeke", "bot": "Puszu", "support": "YellOwStaR"}
+        },
+        "2014": {
+          "lineup": {"top": "sOAZ", "jungle": "Cyanide", "mid": "xPeke", "bot": "Rekkles", "support": "YellOwStaR"}
+        },
+        "2015": {
+          "lineup": {"top": "Huni", "jungle": "Reignover", "mid": "Febiven", "bot": "Rekkles", "support": "YellOwStaR"}
+        },
         "2017": {
           "lineup": {"top": "sOAZ", "jungle": "Broxah", "mid": "Caps", "bot": "Rekkles", "support": "Jesiz"}
         },
         "2018": {
           "lineup": {"top": "Bwipo", "jungle": "Broxah", "mid": "Caps", "bot": "Rekkles", "support": "Hylissang"},
-          "shared": {"top": "sOAZ"}
+          "shared": {"top": "sOAZ"},
+          "split": ["top"]
         },
         "2019": {
           "lineup": {"top": "Bwipo", "jungle": "Broxah", "mid": "Nemesis", "bot": "Rekkles", "support": "Hylissang"}
@@ -378,10 +552,19 @@
     {
       "code": "MKOI",
       "name": "MAD / KOI",
-      "region": "LEC",
       "label": "MAD/KOI",
       "tag": "KOI",
+      "region": "LEC",
+      "active": [2016],
       "worlds": {
+        "2016": {
+          "name": "Splyce",
+          "lineup": {"top": "Wunder", "jungle": "Trashy", "mid": "Sencux", "bot": "Kobbe", "support": "Mikyx"}
+        },
+        "2019": {
+          "name": "Splyce",
+          "lineup": {"top": "Vizicsacsi", "jungle": "Xerxe", "mid": "Humanoid", "bot": "Kobbe", "support": "Norskeren"}
+        },
         "2020": {
           "name": "MAD Lions",
           "lineup": {"top": "Orome", "jungle": "Shad0w", "mid": "Humanoid", "bot": "Carzzy", "support": "Kaiser"}
@@ -416,6 +599,7 @@
       "code": "KC",
       "name": "Karmine Corp",
       "region": "LEC",
+      "active": [2021],
       "worlds": {
         "2026": {
           "lineup": {"top": "Canna", "jungle": "Yike", "mid": "Kyeahoo", "bot": "Caliste", "support": "Busio"}
@@ -423,20 +607,62 @@
       }
     },
     {
+      "code": "H2K",
+      "name": "H2k-Gaming",
+      "region": "LEC",
+      "active": [2013, 2018],
+      "worlds": {
+        "2015": {
+          "lineup": {"top": "Odoamne", "jungle": "loulex", "mid": "Ryu", "bot": "Hjarnan", "support": "kaSing"}
+        },
+        "2016": {
+          "lineup": {"top": "Odoamne", "jungle": "Jankos", "mid": "Ryu", "bot": "FORG1VEN", "support": "Vander"}
+        }
+      }
+    },
+    {
+      "code": "ORI",
+      "name": "Origen",
+      "region": "LEC",
+      "active": [2015, 2020],
+      "worlds": {
+        "2015": {
+          "lineup": {"top": "sOAZ", "jungle": "Amazing", "mid": "xPeke", "bot": "Zven", "support": "mithy"},
+          "aliases": {"Zven": "Niels"}
+        }
+      }
+    },
+    {
       "code": "C9",
       "name": "Cloud9",
       "region": "LCS",
+      "active": [2013],
       "worlds": {
+        "2013": {
+          "lineup": {"top": "Balls", "jungle": "Meteos", "mid": "Hai", "bot": "Sneaky", "support": "LemonNation"}
+        },
+        "2014": {
+          "lineup": {"top": "Balls", "jungle": "Meteos", "mid": "Hai", "bot": "Sneaky", "support": "LemonNation"}
+        },
+        "2015": {
+          "lineup": {"top": "Balls", "jungle": "Hai", "mid": "Jensen", "bot": "Sneaky", "support": "LemonNation"},
+          "aliases": {"Jensen": "Incarnati0n"}
+        },
+        "2016": {
+          "lineup": {"top": "Impact", "jungle": "Meteos", "mid": "Jensen", "bot": "Sneaky", "support": "Smoothie"}
+        },
         "2017": {
           "lineup": {"top": "Impact", "jungle": "Contractz", "mid": "Jensen", "bot": "Sneaky", "support": "Smoothie"}
         },
         "2018": {
           "lineup": {"top": "Licorice", "jungle": "Svenskeren", "mid": "Jensen", "bot": "Sneaky", "support": "Zeyzal"},
-          "shared": {"jungle": "Blaber"}
+          "shared": {"jungle": "Blaber"},
+          "split": ["jungle"]
         },
         "2019": {
           "lineup": {"top": "Licorice", "jungle": "Svenskeren", "mid": "Nisqy", "bot": "Sneaky", "support": "Zeyzal"},
-          "shared": {"jungle": "Blaber"}
+          "shared": {"jungle": "Blaber", "bot": "Deftly"},
+          "split": ["jungle"]
         },
         "2021": {
           "lineup": {"top": "Fudge", "jungle": "Blaber", "mid": "Perkz", "bot": "Zven", "support": "Vulcan"}
@@ -456,6 +682,7 @@
       "code": "TL",
       "name": "Team Liquid",
       "region": "LCS",
+      "active": [2015],
       "worlds": {
         "2018": {
           "lineup": {"top": "Impact", "jungle": "Xmithie", "mid": "Pobelter", "bot": "Doublelift", "support": "Olleh"}
@@ -484,15 +711,125 @@
       "code": "FLY",
       "name": "FlyQuest",
       "region": "LCS",
+      "active": [2017],
       "worlds": {
         "2020": {
-          "lineup": {"top": "V1per", "jungle": "Santorin", "mid": "PowerOfEvil", "bot": "WildTurtle", "support": "IgNar"}
+          "lineup": {"top": "Solo", "jungle": "Santorin", "mid": "PowerOfEvil", "bot": "WildTurtle", "support": "IgNar"}
         },
         "2024": {
           "lineup": {"top": "Bwipo", "jungle": "Inspired", "mid": "Quad", "bot": "Massu", "support": "Busio"}
         },
         "2025": {
           "lineup": {"top": "Bwipo", "jungle": "Inspired", "mid": "Quad", "bot": "Massu", "support": "Busio"}
+        }
+      }
+    },
+    {
+      "code": "TSM",
+      "name": "TSM",
+      "region": "LCS",
+      "active": [2011, 2023],
+      "worlds": {
+        "2013": {
+          "name": "Team SoloMid",
+          "lineup": {"top": "Dyrus", "jungle": "TheOddOne", "mid": "Reginald", "bot": "WildTurtle", "support": "Xpecial"}
+        },
+        "2014": {
+          "name": "Team SoloMid",
+          "lineup": {"top": "Dyrus", "jungle": "Amazing", "mid": "Bjergsen", "bot": "WildTurtle", "support": "Lustboy"}
+        },
+        "2015": {
+          "name": "Team SoloMid",
+          "lineup": {"top": "Dyrus", "jungle": "Santorin", "mid": "Bjergsen", "bot": "WildTurtle", "support": "Lustboy"}
+        },
+        "2016": {
+          "name": "Team SoloMid",
+          "lineup": {"top": "Hauntzer", "jungle": "Svenskeren", "mid": "Bjergsen", "bot": "Doublelift", "support": "Biofrost"}
+        },
+        "2017": {
+          "name": "Team SoloMid",
+          "lineup": {"top": "Hauntzer", "jungle": "Svenskeren", "mid": "Bjergsen", "bot": "Doublelift", "support": "Biofrost"}
+        },
+        "2020": {
+          "lineup": {"top": "BrokenBlade", "jungle": "Spica", "mid": "Bjergsen", "bot": "Doublelift", "support": "Biofrost"}
+        }
+      }
+    },
+    {
+      "code": "CLG",
+      "name": "Counter Logic Gaming",
+      "region": "LCS",
+      "active": [2011, 2023],
+      "worlds": {
+        "2015": {
+          "lineup": {"top": "Darshan", "jungle": "Xmithie", "mid": "Pobelter", "bot": "Doublelift", "support": "aphromoo"},
+          "aliases": {"Darshan": "ZionSpartan"}
+        },
+        "2016": {
+          "lineup": {"top": "Darshan", "jungle": "Xmithie", "mid": "Huhi", "bot": "Stixxay", "support": "aphromoo"}
+        }
+      }
+    },
+    {
+      "code": "AHQ",
+      "name": "ahq e-Sports Club",
+      "region": "LMS",
+      "active": [2013, 2020],
+      "worlds": {
+        "2014": {
+          "lineup": {"top": "Prydz", "jungle": "NAZ", "mid": "Westdoor", "bot": "GarnetDevil", "support": "GreenTea"}
+        },
+        "2015": {
+          "lineup": {"top": "Ziv", "jungle": "Mountain", "mid": "Westdoor", "bot": "AN", "support": "Albis"}
+        },
+        "2016": {
+          "lineup": {"top": "Ziv", "jungle": "Mountain", "mid": "Westdoor", "bot": "AN", "support": "Albis"},
+          "shared": {"mid": "Chawy"}
+        },
+        "2017": {
+          "lineup": {"top": "Ziv", "jungle": "Mountain", "mid": "Westdoor", "bot": "AN", "support": "Albis"},
+          "shared": {"mid": "Chawy"},
+          "split": ["mid"]
+        },
+        "2019": {
+          "lineup": {"top": "Ziv", "jungle": "Alex", "mid": "Rainbow", "bot": "Wako", "support": "Ysera"},
+          "shared": {"mid": "Apex"}
+        }
+      }
+    },
+    {
+      "code": "FW",
+      "name": "Flash Wolves",
+      "region": "LMS",
+      "active": [2014, 2019],
+      "worlds": {
+        "2015": {
+          "lineup": {"top": "Steak", "jungle": "Karsa", "mid": "Maple", "bot": "NL", "support": "SwordArt"},
+          "shared": {"bot": "Kramer"}
+        },
+        "2016": {
+          "lineup": {"top": "MMD", "jungle": "Karsa", "mid": "Maple", "bot": "NL", "support": "SwordArt"}
+        },
+        "2017": {
+          "lineup": {"top": "MMD", "jungle": "Karsa", "mid": "Maple", "bot": "Betty", "support": "SwordArt"}
+        },
+        "2018": {
+          "lineup": {"top": "Hanabi", "jungle": "Moojin", "mid": "Maple", "bot": "Betty", "support": "SwordArt"}
+        }
+      }
+    },
+    {
+      "code": "TPA",
+      "name": "Taipei Assassins",
+      "region": "LMS",
+      "active": [2012, 2024],
+      "worlds": {
+        "2014": {
+          "lineup": {"top": "Achie", "jungle": "Winds", "mid": "Morning", "bot": "BeBe", "support": "Jay"}
+        },
+        "2019": {
+          "name": "J Team",
+          "lineup": {"top": "Rest", "jungle": "Hana", "mid": "FoFo", "bot": "Lilv", "support": "Koala"}
         }
       }
     }

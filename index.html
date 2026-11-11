@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Rift Transfers</title>
-  <meta name="description" content="Carte interactive des rosters des grandes équipes de League of Legends aux Worlds 2017–2026 : suivez chaque joueur d'une équipe à l'autre.">
+  <meta name="description" content="Carte interactive des rosters des grandes équipes de League of Legends aux Worlds 2013–2026 : suivez chaque joueur d'une équipe à l'autre.">
   <meta name="theme-color" content="#171b26" media="(prefers-color-scheme: dark)">
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <meta property="og:title" content="Rift Transfers">
-  <meta property="og:description" content="Les rosters des Worlds de League of Legends depuis 2017, et les transferts de chaque joueur.">
+  <meta property="og:description" content="Les rosters des Worlds de League of Legends depuis 2013, et les transferts de chaque joueur.">
   <meta property="og:type" content="website">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
@@ -52,6 +52,13 @@
 <aside id="filters" class="drawer" aria-label="Filtres et options">
   <div class="dhead"><h2>Filtres</h2><button class="dclose" type="button" data-close="filters" aria-label="Fermer">×</button></div>
   <div class="dbody">
+    <div class="grp"><span class="lbl">Période</span>
+      <div class="row" id="eras"></div>
+      <div class="row years">
+        <label><span>De</span> <select id="yFrom" aria-label="Première édition affichée"></select></label>
+        <label><span>à</span> <select id="yTo" aria-label="Dernière édition affichée"></select></label>
+      </div>
+    </div>
     <div class="grp"><span class="lbl">Postes</span><div class="row" id="roles"></div></div>
     <div class="grp"><span class="lbl">Régions</span><div class="row" id="regions"></div></div>
     <div class="grp"><span class="lbl">Options d'affichage</span>
@@ -64,11 +71,13 @@
     <details class="notes">
       <summary>Sources et limites des données</summary>
       <ul>
-        <li>Une rangée = les cinq joueurs qui ont joué ces Worlds pour l'équipe, pas le roster de la saison. Une case grisée = équipe absente des Worlds, sans roster inventé.</li>
-        <li>* = poste partagé pendant le tournoi. Le premier nom est celui qui a joué le plus de matchs ; l'autre apparaît au survol.</li>
+        <li>Une rangée = les joueurs qui ont joué ces Worlds pour l'équipe, pas le roster de la saison. Une case grisée = équipe absente des Worlds, sans roster inventé.</li>
+        <li>Un poste tenu par deux joueurs est affiché en deux demi-cases, le plus titularisé à gauche. Chacune est ciblable et relie sa propre carrière. Un joueur retenu sur moins de 20 % des parties n'occupe pas de demi-case : il reste signalé par * sur la case du titulaire.</li>
+        <li>Une colonne est repliée avant la création de l'organisation et après sa disparition : ni roster, ni « Pas aux Worlds ».</li>
+        <li>Un joueur qui a changé de pseudo est affiché sous celui qu'il portait cette année-là, mais son fil de carrière reste continu. La recherche accepte les deux.</li>
         <li>Quand une région est masquée, ses joueurs qui croisent une équipe affichée passent par la colonne « Autres régions », avec le code de leur équipe.</li>
-        <li>Nationalité : codes recoupés avec Leaguepedia ; sans code, elle n'a pas été vérifiée. « Importé » = nationalité différente de la région de l'équipe ; Taïwan compte comme domestique en LPL.</li>
-        <li>Pas encore inclus : MSI, les Worlds avant 2017 et les équipes plus ponctuelles (Afreeca, LNG, WBG, 100T, Vitality…).</li>
+        <li>Nationalité : codes recoupés avec Leaguepedia ; sans code, elle n'a pas été vérifiée. « Importé » = nationalité différente de la région de l'équipe ; Taïwan et Hong Kong comptent comme domestiques en LPL comme en LMS.</li>
+        <li>Pas encore inclus : le MSI et les équipes plus ponctuelles (Afreeca, LNG, WBG, 100T, Vitality…).</li>
         <li>Méthode et sources année par année : <a href="https://github.com/MrPa2a/rift-transfers/blob/main/docs/SOURCES.md" target="_blank" rel="noopener">docs/SOURCES.md</a>. Une erreur ? <a href="https://github.com/MrPa2a/rift-transfers/issues/new/choose" target="_blank" rel="noopener">Signale-la</a>.</li>
       </ul>
     </details>
@@ -79,7 +88,7 @@
 <aside id="statsDrawer" class="drawer" aria-label="Statistiques">
   <div class="dhead"><h2>Statistiques</h2><button class="dclose" type="button" data-close="statsDrawer" aria-label="Fermer">×</button></div>
   <div class="dbody">
-    <p class="notes" style="margin:0">Calculées sur les 21 équipes suivies et leurs titulaires aux Worlds 2017–2026. Touche un nom pour le retrouver sur la carte.</p>
+    <p class="notes" style="margin:0">Calculées sur les 32 équipes suivies et leurs titulaires aux Worlds 2013–2026. Touche un nom pour le retrouver sur la carte.</p>
     <div class="stats" id="stats"></div>
   </div>
 </aside>

@@ -25,6 +25,7 @@ Aucune dépendance n'est nécessaire : Node.js 18 ou plus suffit.
   "code": "FNC",
   "name": "Fnatic",
   "region": "LEC",
+  "active": [2011],
   "worlds": {
     "2018": {
       "lineup": { "top": "Bwipo", "jungle": "Broxah", "mid": "Caps", "bot": "Rekkles", "support": "Hylissang" },
@@ -39,17 +40,25 @@ Aucune dépendance n'est nécessaire : Node.js 18 ou plus suffit.
 | `code` | Identifiant unique de la colonne (2 à 5 caractères, majuscules) |
 | `name` | Nom actuel de l'organisation |
 | `label` / `tag` | Optionnels : texte de l'en-tête et étiquette courte dans « Autres régions » |
-| `region` | `LCK`, `LPL`, `LEC` ou `LCS` |
+| `region` | `LCK`, `LPL`, `LEC`, `LCS` ou `LMS` |
+| `active` | `[début]` ou `[début, fin]` : la fenêtre d'existence de l'organisation. Hors de cette fenêtre, la colonne est repliée |
 | `worlds.<année>.name` | Optionnel : nom de l'équipe cette année-là (`SKT T1`, `DAMWON`…) |
-| `worlds.<année>.lineup` | Les 5 joueurs ayant joué le plus de matchs à chaque poste pendant le tournoi |
+| `worlds.<année>.lineup` | Les 5 titulaires, un par poste : voir les règles de sélection dans [docs/SOURCES.md](docs/SOURCES.md) |
 | `worlds.<année>.shared` | Optionnel : joueur qui a partagé le poste |
+| `worlds.<année>.split` | Optionnel : postes dont le joueur de `shared` a joué au moins 20 % des parties, et s'affiche donc en demi-case plutôt qu'en `*` |
+| `worlds.<année>.aliases` | Optionnel : pseudo réellement porté cette année-là, par joueur (`{ "Zven": "Niels" }`) |
 | `worlds.<année>.unverified` | Optionnel : postes encore à vérifier (affichés avec `?`) |
 
 Règles :
 
-- **Un joueur s'écrit toujours de la même façon** (même casse) : c'est ce qui relie ses apparitions entre les équipes.
-- On ne renseigne une année que si l'équipe a joué les Worlds cette année-là.
-- Le titulaire est celui qui a joué le plus de matchs, pas celui qui était inscrit comme titulaire.
+- **Un joueur s'écrit toujours de la même façon** (même casse) : c'est ce qui relie ses apparitions entre les équipes. Cela vaut pour les titulaires **et** pour les rotations de `shared`, que le validateur contrôle de la même façon.
+- Un joueur qui a changé de pseudo garde **une seule** graphie dans `lineup` et `shared` — son identité, donc son fil de carrière. Le pseudo de l'époque se déclare à part, dans `aliases` : la carte l'affiche sans rompre le fil. Une simple différence de casse ne justifie jamais un `aliases`.
+- `shared` recense le second joueur d'un poste, qu'il ait beaucoup joué ou non ; `split` dit lesquels ont assez joué pour mériter une demi-case. Un rôle listé dans `split` doit avoir une entrée dans `shared`.
+- Un même joueur ne peut pas occuper deux postes d'une même rangée, ni jouer pour deux équipes la même année.
+- On ne renseigne une année que si l'équipe a joué les Worlds cette année-là, et dans la fenêtre `active` si elle est déclarée.
+- Le titulaire est retenu sur les parties réellement jouées, pas sur le roster inscrit : au moins 20 % des parties de l'équipe, et le poste où le joueur a le plus joué. [`scripts/fetch-worlds.mjs`](scripts/fetch-worlds.mjs) applique ces règles et signale les écarts avec `data/`.
+
+`npm run validate` signale aussi, en avertissement, tout pseudo dont les apparitions sont séparées par plus de quatre éditions : c'est le garde-fou contre deux personnes fondues en une seule carrière. Après vérification nominative, le pseudo s'inscrit dans `HOMONYMES_VERIFIES`, en tête de [`scripts/validate-data.mjs`](scripts/validate-data.mjs).
 
 ### `data/results.json`
 

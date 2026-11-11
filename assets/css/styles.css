@@ -132,7 +132,7 @@
   --bg:#f3f4f7; --panel:#ffffff; --fg:#161a24; --muted:#5d6475; --line:#d9dce4; --chip:#ffffff; --absent:#e8eaf0;
   --accent:#1f5bd6; --sen:#0f8f86;
   --top:#c4472f; --jgl:#2f8a4c; --mid:#2c63c9; --bot:#c98a12; --sup:#8a45b8;
-  --lck:#1f5bd6; --lpl:#c8322a; --lec:#0f8f86; --lcs:#5a4bd1;
+  --lck:#1f5bd6; --lpl:#c8322a; --lec:#0f8f86; --lcs:#5a4bd1; --lms:#b06a12;
   --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --f-body:"Barlow",system-ui,-apple-system,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
@@ -141,12 +141,12 @@
   --bg:#0f121a; --panel:#171b26; --fg:#e8ebf2; --muted:#949bad; --line:#2a3040; --chip:#1c2130; --absent:#151924;
   --accent:#6f9bff; --sen:#3fc7bb;
   --top:#ec7a5f; --jgl:#5cc07a; --mid:#6e9cf3; --bot:#e7b444; --sup:#bb83e3;
-  --lck:#6f9bff; --lpl:#ef6a60; --lec:#3fc7bb; --lcs:#9a8cf5; color-scheme:dark}}
+  --lck:#6f9bff; --lpl:#ef6a60; --lec:#3fc7bb; --lcs:#9a8cf5; --lms:#e0a53a; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0f121a; --panel:#171b26; --fg:#e8ebf2; --muted:#949bad; --line:#2a3040; --chip:#1c2130; --absent:#151924;
   --accent:#6f9bff; --sen:#3fc7bb;
   --top:#ec7a5f; --jgl:#5cc07a; --mid:#6e9cf3; --bot:#e7b444; --sup:#bb83e3;
-  --lck:#6f9bff; --lpl:#ef6a60; --lec:#3fc7bb; --lcs:#9a8cf5; color-scheme:dark}
+  --lck:#6f9bff; --lpl:#ef6a60; --lec:#3fc7bb; --lcs:#9a8cf5; --lms:#e0a53a; color-scheme:dark}
 
 
 :root{--shadow:0 4px 18px rgba(20,26,40,.14),0 1px 3px rgba(20,26,40,.08);--grid-dot:rgba(30,40,70,.07);--HH:46px;--YW:58px}
@@ -198,6 +198,15 @@ path.roff{display:none!important}
 .chip .q,.chip .t{font:600 10px var(--f-body);color:var(--muted);margin-left:auto;flex:0 0 auto}
 .chip .t{letter-spacing:.04em}
 .chip:hover{border-color:var(--fg)}
+/* Poste tenu par deux joueurs : deux demi-cases accolees, largeur totale inchangee. */
+.chip.half{padding-right:3px;gap:3px}
+.chip.half .n{font-size:12px;letter-spacing:-.1px}
+.chip.half .sen{display:none!important}
+.chip.half .nat{padding:0 2px;font-size:9px}
+.chip.half:not(.right){border-top-right-radius:0;border-bottom-right-radius:0;border-right-width:0}
+.chip.half.right{border-top-left-radius:0;border-bottom-left-radius:0}
+.chip.half.right .r{width:3px;flex:0 0 3px;border-radius:0}
+.chip.half.right:hover,.focus .chip.half.right.hl{border-left-color:var(--fg)}
 .focus .chip{opacity:.28}
 .focus .chip.hl{opacity:1;border-color:var(--fg);border-width:1.5px;font-weight:600}
 .chip.off{opacity:.15!important}
@@ -238,6 +247,10 @@ path.roff{display:none!important}
 #legendBody{padding:0 12px 10px;display:flex;flex-direction:column;gap:6px;line-height:1.4}
 #legendBody b{color:var(--fg)}
 .lg-nat{display:inline-block;font:600 9.5px var(--f-mono);border:1px solid var(--line);border-radius:3px;padding:0 3px}
+.lg-half{display:inline-flex;vertical-align:middle;margin-right:2px}
+.lg-half i{display:block;width:17px;height:10px;border:1px solid var(--line);background:var(--chip)}
+.lg-half i:first-child{border-radius:3px 0 0 3px;border-right-width:0}
+.lg-half i:last-child{border-radius:0 3px 3px 0}
 .senbar{display:inline-block;width:40px;height:10px;border-radius:3px;vertical-align:middle;border:1px solid var(--line);background:linear-gradient(90deg,var(--chip),color-mix(in srgb,var(--sen) 55%,var(--chip)))}
 .lg-res{opacity:.7}
 
@@ -263,6 +276,10 @@ path.roff{display:none!important}
 .pill{font:600 12px var(--f-body);letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 11px 6px 9px;cursor:pointer;display:flex;align-items:center;gap:6px}
 .pill i{width:10px;height:10px;border-radius:50%;display:block}
 .pill[aria-pressed="false"]{opacity:.4}
+.row.years{gap:10px;align-items:center}
+.row.years label{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted)}
+.row.years select{font:500 13px var(--f-body);color:var(--fg);background:var(--chip);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
+.row.years select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .pill.mode{text-transform:none;letter-spacing:0;font-size:13px;padding:6px 12px}
 .pill.mode[aria-pressed="true"]{background:var(--fg);color:var(--panel);border-color:var(--fg)}
 .pill.mode[aria-pressed="false"]{opacity:1}

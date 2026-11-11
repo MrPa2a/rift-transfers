@@ -24,7 +24,10 @@ try {
   throw err;
 }
 
-const YEARS = TEAMS_DATA.years;
+// ALL_YEARS : toutes les éditions, qui servent aux statistiques.
+// YEARS : la plage affichée, recalculée à chaque rendu par le filtre de période.
+const ALL_YEARS = TEAMS_DATA.years;
+let YEARS = ALL_YEARS;
 const REGIONS = TEAMS_DATA.regions;
 const RES = RESULTS_DATA.results;
 const RES_LABEL = RESULTS_DATA.labels;
@@ -34,28 +37,40 @@ const NAT = {};
 for (const [name, code] of Object.entries(PLAYERS_DATA.nationality)) NAT[name.toLowerCase()] = code;
 
 // Une « apparition » = un joueur, une équipe, une édition des Worlds.
+// Un poste partagé par deux joueurs qui franchissent tous deux le seuil de 20 % (`split`)
+// produit **deux** apparitions, affichées en deux demi-cases ciblables ; une rotation restée
+// sous le seuil n'en produit qu'une, et reste signalée par la marque `*`.
 const teams = [], players = new Map(), apps = [];
 TEAMS_DATA.teams.forEach((td, ti) => {
-  const t = { code: td.code, name: td.name, region: td.region, label: td.label, tag: td.tag, i: ti, years: {} };
+  const t = { code: td.code, name: td.name, region: td.region, label: td.label, tag: td.tag, i: ti, active: td.active || [], years: {} };
   for (const [yearKey, entry] of Object.entries(td.worlds)) {
     const year = +yearKey, alias = entry.name || null;
+    const split = entry.split || [], all = [];
     const slots = ROLE_KEYS.map((roleKey, ri) => {
-      const name = entry.lineup[roleKey];
-      const id = name.toLowerCase();
-      if (!players.has(id)) players.set(id, { id, name, apps: [] });
-      const a = {
-        id, name, ri, year, alias, team: t, role: ROLES[ri],
-        alt: entry.shared?.[roleKey] || null,
-        doubt: (entry.unverified || []).includes(roleKey),
-      };
-      players.get(id).apps.push(a); apps.push(a);
-      return a;
+      const second = entry.shared?.[roleKey] || null;
+      const partage = split.includes(roleKey) && second;
+      const noms = partage ? [entry.lineup[roleKey], second] : [entry.lineup[roleKey]];
+      const faits = noms.map((name, half) => {
+        // L'identité reste la graphie canonique : le pseudo d'époque ne change que l'affichage,
+        // pour que le fil de carrière ne soit pas scindé.
+        const id = name.toLowerCase();
+        if (!players.has(id)) players.set(id, { id, name, apps: [] });
+        const a = {
+          id, name, shown: entry.aliases?.[name] || name, ri, year, alias, team: t, role: ROLES[ri],
+          half, halves: noms.length,
+          alt: partage ? null : second,
+          doubt: (entry.unverified || []).includes(roleKey),
+        };
+        players.get(id).apps.push(a); apps.push(a); all.push(a);
+        return a;
+      });
+      return faits[0];
     });
-    t.years[year] = { alias, slots };
+    t.years[year] = { alias, slots, all };
   }
   teams.push(t);
 });
-players.forEach(p => p.apps.sort((a, b) => a.year - b.year));
+players.forEach(p => p.apps.sort((a, b) => a.year - b.year || a.half - b.half));
 
 const isImport = a => NAT[a.id] && !HOME[a.team.region].includes(NAT[a.id]);
 // ancienneté : n-ième Worlds du joueur avec cette équipe
@@ -70,16 +85,36 @@ const vp=$("vp"), world=$("world"), hdr=$("hdr"), rail=$("rail");
 const yTop=y=>YEARS.indexOf(y)*ROWH+TOPPAD;
 const regionVar=r=>`var(--${r.toLowerCase()})`;
 const shortName=t=>t.label||t.code;
-const H=YEARS.length*ROWH+20;
+let H=YEARS.length*ROWH+20;
+// Dix voies de courbe au lieu de cinq : deux par poste, sinon les deux fils d'une case
+// partagée se superposeraient.
+const laneAt=(cx,ri,half)=>cx+14+(2*ri+half)*((chipW-28)/9);
+// Fenêtre d'existence de l'organisation, bornée par la plage affichée.
+const activeSpan=t=>[Math.max(YEARS[0],t.active[0]??YEARS[0]),Math.min(YEARS.at(-1),t.active[1]??Infinity)];
 
-const state={roles:new Set(ROLES),regions:new Set(REGIONS),showNat:false,showSen:false,teamMode:"players",pinned:null,pinnedTeam:null,hover:null};
+const state={roles:new Set(ROLES),regions:new Set(REGIONS),showNat:false,showSen:false,teamMode:"players",pinned:null,pinnedTeam:null,hover:null,
+  yearFrom:ALL_YEARS[0],yearTo:ALL_YEARS.at(-1)};
 const view={x:0,y:0,k:1};
 let nodesByPlayer=new Map(), hasOther=false, W=0, cols=[];
 
 // ---------- rendu de la carte ----------
 function render(){
-  const vis=teams.filter(t=>state.regions.has(t.region));
-  hasOther=vis.length<teams.length;
+  YEARS=ALL_YEARS.filter(y=>y>=state.yearFrom&&y<=state.yearTo);
+  H=YEARS.length*ROWH+20;
+  const inRange=a=>a.year>=state.yearFrom&&a.year<=state.yearTo;
+
+  // « Autres régions » n'accueille que les régions masquées. Une équipe écartée par la
+  // période ne doit pas y tomber : les deux tests restent séparés.
+  const parRegion=teams.filter(t=>state.regions.has(t.region));
+  const vis=parRegion.filter(t=>YEARS.some(y=>t.years[y]));
+  const visSet=new Set(vis);
+  // La colonne n'apparaît que si elle a quelque chose à montrer : un joueur présent dans une
+  // colonne visible **et** dans une région masquée, sur la plage affichée. Sans ce test, masquer
+  // la LMS sur 2020–2026 ouvrirait une colonne vide, la région n'y ayant aucune rangée.
+  hasOther=[...players.values()].some(p=>{
+    const dans=p.apps.filter(inRange);
+    return dans.some(a=>visSet.has(a.team))&&dans.some(a=>!state.regions.has(a.team.region));
+  });
   const colX=new Map(); let x=0;
   vis.forEach(t=>{colX.set(t,x); x+=CW;});
   const otherX=x; W=x+(hasOther?CW*2:0);
@@ -89,27 +124,37 @@ function render(){
   nodesByPlayer=new Map();
   const otherByYear={};
   players.forEach(p=>{
-    if(!p.apps.some(a=>colX.has(a.team))) return;
-    nodesByPlayer.set(p.id,p.apps.map(a=>{
+    const dans=p.apps.filter(inRange);
+    if(!dans.some(a=>colX.has(a.team))) return;
+    nodesByPlayer.set(p.id,dans.map(a=>{
       if(colX.has(a.team)){
-        const cx=colX.get(a.team)+PADX;
-        return {a,x:cx,y:yTop(a.year)+a.ri*STEP,lane:cx+14+a.ri*((chipW-28)/4),bottom:yTop(a.year)+5*STEP};
+        const cx=colX.get(a.team)+PADX, w=chipW/a.halves;
+        return {a,x:cx+a.half*w,w,y:yTop(a.year)+a.ri*STEP,lane:laneAt(cx,a.ri,a.half),bottom:yTop(a.year)+5*STEP};
       }
-      const n={a,other:true}; (otherByYear[a.year]??=[]).push(n); return n;
+      const n={a,other:true,w:chipW}; (otherByYear[a.year]??=[]).push(n); return n;
     }));
   });
   Object.entries(otherByYear).forEach(([y,list])=>{
-    list.sort((m,n)=>m.a.ri-n.a.ri||m.a.name.localeCompare(n.a.name));
+    list.sort((m,n)=>m.a.ri-n.a.ri||m.a.half-n.a.half||m.a.name.localeCompare(n.a.name));
     const rows=Math.min(OTHER_MAX_ROWS,Math.max(5,Math.ceil(list.length/2)));
     list.forEach((n,k)=>{
       const cx=otherX+PADX+Math.floor(k/rows)*CW;
-      n.x=cx; n.y=yTop(+y)+(k%rows)*STEP; n.lane=cx+14+n.a.ri*((chipW-28)/4);
+      n.x=cx; n.y=yTop(+y)+(k%rows)*STEP; n.lane=laneAt(cx,n.a.ri,n.a.half);
       n.bottom=yTop(+y)+Math.min(rows,list.length)*STEP;
     });
   });
 
   let html="";
-  cols.forEach(c=>html+=`<div class="colbg${c.other?" other":""}" style="left:${c.x}px;width:${c.w}px;height:${H}px"></div>`);
+  // Le fond de colonne est borné par la fenêtre d'activité de l'organisation : avant sa
+  // création et après sa disparition, la colonne est repliée.
+  cols.forEach(c=>{
+    if(c.other){ html+=`<div class="colbg other" style="left:${c.x}px;width:${c.w}px;height:${H}px"></div>`; return; }
+    const [from,to]=activeSpan(c.t);
+    const ys=YEARS.filter(y=>y>=from&&y<=to);
+    if(!ys.length) return;
+    const top=yTop(ys[0])-70, bottom=yTop(ys.at(-1))+ROWH-70;
+    html+=`<div class="colbg" style="left:${c.x}px;top:${Math.max(0,top)}px;width:${c.w}px;height:${Math.min(H,bottom)-Math.max(0,top)}px"></div>`;
+  });
   YEARS.forEach((y,j)=>{ if(j) html+=`<div class="yrule" style="top:${yTop(y)-70}px;width:${W}px"></div>`; });
   let paths="";
   nodesByPlayer.forEach((ns,id)=>{
@@ -120,18 +165,26 @@ function render(){
     }
   });
   html+=`<svg width="${W}" height="${H}" aria-hidden="true">${paths}</svg>`;
-  vis.forEach(t=>YEARS.forEach(y=>{
-    const e=t.years[y], cx=colX.get(t)+PADX, top=yTop(y);
-    if(!e){ html+=`<div class="absent" style="left:${cx}px;top:${top}px;width:${chipW}px;height:${5*STEP-4}px">Pas aux Worlds</div>`; return; }
-    const r=RES[y]?.[t.code];
-    if(e.alias) html+=`<div class="alias" style="left:${cx}px;top:${top-16}px;width:${r?chipW-56:chipW}px">${e.alias}</div>`;
-    if(r) html+=`<div class="res${r==="W"?" win":""}" style="left:${cx}px;top:${top-16}px;width:${chipW}px">${RES_LABEL[r]}</div>`;
-  }));
+  vis.forEach(t=>{
+    const [from,to]=activeSpan(t);
+    YEARS.forEach(y=>{
+      const e=t.years[y], cx=colX.get(t)+PADX, top=yTop(y);
+      // Hors de la fenêtre d'activité, rien n'est dessiné : l'org n'existait pas encore,
+      // ou plus. « Pas aux Worlds » ne vaut que pendant son existence.
+      if(!e){ if(y>=from&&y<=to) html+=`<div class="absent" style="left:${cx}px;top:${top}px;width:${chipW}px;height:${5*STEP-4}px">Pas aux Worlds</div>`; return; }
+      const r=RES[y]?.[t.code];
+      if(e.alias) html+=`<div class="alias" style="left:${cx}px;top:${top-16}px;width:${r?chipW-56:chipW}px">${e.alias}</div>`;
+      if(r) html+=`<div class="res${r==="W"?" win":""}" style="left:${cx}px;top:${top-16}px;width:${chipW}px">${RES_LABEL[r]}</div>`;
+    });
+  });
   nodesByPlayer.forEach(ns=>ns.forEach(n=>{
-    const a=n.a, label=a.alias||a.team.name, nat=NAT[a.id];
-    const tip=`${a.name}${nat?" ("+nat+")":""} · ${ROLE_NAME[a.role]} · ${label} ${a.year}`+(a.sen>1?` · ${a.sen}e Worlds avec l'équipe`:"")+(a.alt?` · rotation avec ${a.alt}`:"")+(a.doubt?" · à vérifier":"");
+    const a=n.a, label=a.alias||a.team.name, nat=NAT[a.id], demi=a.halves>1;
+    const duo=demi?a.team.years[a.year].all.find(b=>b.ri===a.ri&&b!==a):null;
+    const tip=`${a.name}${a.shown!==a.name?` (${a.shown} à l'époque)`:""}${nat?" ("+nat+")":""} · ${ROLE_NAME[a.role]} · ${label} ${a.year}`
+      +(a.sen>1?` · ${a.sen}e Worlds avec l'équipe`:"")
+      +(duo?` · poste partagé avec ${duo.name}`:"")+(a.alt?` · rotation avec ${a.alt}`:"")+(a.doubt?" · à vérifier":"");
     const mark=n.other?`<span class="t">${a.team.tag||a.team.code}</span>`:(a.alt||a.doubt?`<span class="q">${a.doubt?"?":"*"}</span>`:"");
-    html+=`<div class="chip" data-p="${a.id}" data-c="${a.id}:${a.year}" data-r="${a.role}" style="left:${n.x}px;top:${n.y}px;width:${chipW}px;--s:${Math.min(a.sen-1,5)*11}%" title="${tip}"><span class="r ${a.role}"></span>${nat?`<span class="nat${isImport(a)?" imp":""}">${nat}</span>`:""}<span class="n">${a.name}</span>${a.sen>1?`<span class="sen">${a.sen}e</span>`:""}${mark}</div>`;
+    html+=`<div class="chip${demi?" half":""}${demi&&a.half?" right":""}" data-p="${a.id}" data-c="${a.id}:${a.year}" data-r="${a.role}" style="left:${n.x}px;top:${n.y}px;width:${n.w}px;--s:${Math.min(a.sen-1,5)*11}%" title="${tip}"><span class="r ${a.role}"></span>${nat?`<span class="nat${isImport(a)?" imp":""}">${nat}</span>`:""}<span class="n">${a.shown}</span>${a.sen>1?`<span class="sen">${a.sen}e</span>`:""}${mark}</div>`;
   }));
   world.style.width=W+"px"; world.style.height=H+"px";
   world.innerHTML=html;
@@ -300,7 +353,7 @@ function apply(){
     out.innerHTML=`<b class="nm">${t.name}</b><span class="hint">Arrivées et départs</span><br>Arrivées depuis : ${fmtFlow(lin.from)}<br>Départs vers : ${fmtFlow(lin.to)} <span class="hint">· ${lin.debut} premiers Worlds ici</span>`;
   } else if(pinnedTeam){
     const t=teams.find(t=>t.code===pinnedTeam), n=new Set(apps.filter(a=>a.team===t).map(a=>a.id)).size;
-    out.innerHTML=`<b class="nm">${t.name}</b><span class="hint">${n} joueurs titulaires aux Worlds depuis 2017, carrières complètes surlignées.</span>`;
+    out.innerHTML=`<b class="nm">${t.name}</b><span class="hint">${n} joueurs titulaires aux Worlds depuis 2013, carrières complètes surlignées.</span>`;
   }
   sel.hidden=!(show||pinnedTeam);
   $("selClose").hidden=!!hover&&!pinned;
@@ -310,7 +363,7 @@ function apply(){
 function renderLegend(lin){
   const L=[];
   L.push(`<span><svg width="30" height="10"><line x1="2" y1="5" x2="28" y2="5" stroke="currentColor" stroke-width="1.8"/></svg> changement d'équipe, coloré par poste</span>`);
-  L.push(`<span><b>*</b> poste partagé pendant ces Worlds (survol pour le nom)${apps.some(a=>a.doubt)?" · <b>?</b> à vérifier":""}</span>`);
+  L.push(`<span><span class="lg-half"><i></i><i></i></span> poste tenu par deux joueurs, chacun ciblable · <b>*</b> rotation ponctuelle (survol pour le nom)${apps.some(a=>a.doubt)?" · <b>?</b> à vérifier":""}</span>`);
   L.push(`<span><span class="lg-res">Quarts · Demi · Finale</span> parcours de l'équipe · <b style="color:var(--bot)">★ Vainqueur</b></span>`);
   if(state.showNat) L.push(`<span><span class="lg-nat">KR</span> nationalité · <span class="lg-nat" style="color:var(--accent);border-color:var(--accent)">KR</span> joueur importé</span>`);
   if(state.showSen) L.push(`<span><span class="senbar"></span> 1er → 6e Worlds avec l'équipe</span>`);
@@ -327,8 +380,18 @@ function selectPlayer(id){
   if(n) centerOn(n.x+chipW/2,n.y+(nodesByPlayer.get(id).at(-1).y-n.y)/2,Math.min(1,Math.max(.45,vp.clientHeight/((nodesByPlayer.get(id).at(-1).y-n.y)+300))));
 }
 const q=$("q");
-$("plist").innerHTML=[...players.values()].sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${p.name}">`).join("");
-q.addEventListener("input",()=>{const p=[...players.values()].find(p=>p.name.toLowerCase()===q.value.trim().toLowerCase()); if(p){ selectPlayer(p.id); q.blur(); }});
+// Un joueur renommé se cherche aussi sous le pseudo qu'il portait à l'époque.
+const searchIndex=new Map();
+players.forEach(p=>{
+  searchIndex.set(p.name.toLowerCase(),p.id);
+  p.apps.forEach(a=>{ if(a.shown!==a.name) searchIndex.set(a.shown.toLowerCase(),p.id); });
+});
+$("plist").innerHTML=[...searchIndex.keys()].map(k=>{
+  const p=players.get(searchIndex.get(k));
+  const nom=p.name.toLowerCase()===k?p.name:p.apps.find(a=>a.shown.toLowerCase()===k).shown;
+  return [nom,p];
+}).sort((a,b)=>a[0].localeCompare(b[0])).map(([nom,p])=>`<option value="${nom}">${nom===p.name?"":p.name}</option>`).join("");
+q.addEventListener("input",()=>{const id=searchIndex.get(q.value.trim().toLowerCase()); if(id){ selectPlayer(id); q.blur(); }});
 
 // ---------- tiroirs ----------
 function setDrawer(id,open){
@@ -347,6 +410,36 @@ function pill(container,label,color,on,onToggle,cls="pill"){
   b.onclick=()=>b.setAttribute("aria-pressed",onToggle());
   container.appendChild(b); return b;
 }
+// ---------- filtre de période ----------
+const yFrom=$("yFrom"), yTo=$("yTo");
+// La coupure tombe en 2020, année où la LMS cesse d'être une région majeure : c'est la
+// rupture la plus nette du jeu de données après 2015 — 38 % de joueurs communs entre 2019 et
+// 2020, et 7 organisations entrantes pour 7 sortantes.
+const ERAS=[
+  ["Tout",ALL_YEARS[0],ALL_YEARS.at(-1),"Les 14 éditions, de 2013 à 2026"],
+  ["Ère moderne",2020,ALL_YEARS.at(-1),"Depuis 2020 : quatre régions majeures, la LMS ayant fusionné dans la PCS"],
+  ["Ère historique",ALL_YEARS[0],2019,"2013 à 2019 : la LMS est encore une cinquième région majeure"],
+];
+function remplirAnnees(){
+  // La borne haute ne propose que des années ≥ borne basse, et réciproquement.
+  const opt=(y,sel)=>`<option value="${y}"${y===sel?" selected":""}>${y}</option>`;
+  yFrom.innerHTML=ALL_YEARS.filter(y=>y<=state.yearTo).map(y=>opt(y,state.yearFrom)).join("");
+  yTo.innerHTML=ALL_YEARS.filter(y=>y>=state.yearFrom).map(y=>opt(y,state.yearTo)).join("");
+  eraBtns.forEach((b,i)=>b.setAttribute("aria-pressed",state.yearFrom===ERAS[i][1]&&state.yearTo===ERAS[i][2]));
+}
+function setPeriode(from,to){
+  state.yearFrom=Math.min(from,to); state.yearTo=Math.max(from,to);
+  state.pinnedTeam=null; state.hover=null;
+  remplirAnnees(); render();
+}
+const eraBtns=ERAS.map(([label,from,to,aide])=>{
+  const texte=from===ALL_YEARS[0]&&to===ALL_YEARS.at(-1)?label:`${label} <span class="hint">${from===ALL_YEARS[0]?"→ "+to:from+" →"}</span>`;
+  const b=pill($("eras"),texte,null,false,()=>{setPeriode(from,to); return true;},"pill mode");
+  b.title=aide; return b;
+});
+yFrom.addEventListener("change",()=>setPeriode(+yFrom.value,state.yearTo));
+yTo.addEventListener("change",()=>setPeriode(state.yearFrom,+yTo.value));
+
 ROLES.forEach(r=>pill($("roles"),ROLE_NAME[r],`var(--${r})`,true,()=>{state.roles.has(r)?state.roles.delete(r):state.roles.add(r); apply(); return state.roles.has(r);}));
 REGIONS.forEach(r=>pill($("regions"),r,regionVar(r),true,()=>{
   if(state.regions.has(r)){ if(state.regions.size===1) return true; state.regions.delete(r); } else state.regions.add(r);
@@ -379,7 +472,7 @@ $("filters").querySelector(".dbody").addEventListener("scroll",closeTip,{passive
   const trav=plist.map(p=>({p,n:new Set(p.apps.map(a=>a.team.code)).size})).filter(x=>x.n>=3).sort((a,b)=>b.n-a.n||b.p.apps.length-a.p.apps.length).slice(0,10);
   const stable=[];
   teams.forEach(t=>{
-    const ys=YEARS.filter(y=>t.years[y]); let run=[ys[0]];
+    const ys=ALL_YEARS.filter(y=>t.years[y]); let run=[ys[0]];
     const sig=y=>t.years[y].slots.map(a=>a.id).join(",");
     for(let i=1;i<=ys.length;i++){
       const y=ys[i];
@@ -391,7 +484,7 @@ $("filters").querySelector(".dbody").addEventListener("scroll",closeTip,{passive
   const flow={}; REGIONS.forEach(a=>{flow[a]={}; REGIONS.forEach(b=>flow[a][b]=0);});
   plist.forEach(p=>p.apps.forEach((a,k)=>{const b=p.apps[k+1]; if(b&&b.team!==a.team) flow[a.team.region][b.team.region]++;}));
   const fmax=Math.max(...REGIONS.flatMap(a=>REGIONS.map(b=>flow[a][b])));
-  const imp={}; REGIONS.forEach(r=>{imp[r]={}; YEARS.forEach(y=>{
+  const imp={}; REGIONS.forEach(r=>{imp[r]={}; ALL_YEARS.forEach(y=>{
     const s=apps.filter(a=>a.year===y&&a.team.region===r);
     imp[r][y]=s.length?{i:s.filter(isImport).length,n:s.length}:null;
   });});
@@ -399,12 +492,13 @@ $("filters").querySelector(".dbody").addEventListener("scroll",closeTip,{passive
   h+=`<div class="st"><h3>Plus grands voyageurs</h3><p class="note">Nombre d'équipes différentes parmi celles suivies</p><ol>${trav.map(x=>`<li>${btn(x.p)}<span class="v">${x.n} équipes</span></li>`).join("")}</ol></div>`;
   h+=`<div class="st"><h3>Rosters inchangés</h3><p class="note">Même cinq titulaires sur des Worlds consécutifs</p><ol>${stable.map(s=>`<li><span><b>${shortName(s.t)}</b> ${s.from}–${s.to}<br><span class="note">${s.names}</span></span><span class="v">${s.n} ans</span></li>`).join("")}</ol></div>`;
   h+=`<div class="st"><h3>Flux entre régions</h3><p class="note">Changements d'équipe d'un Worlds à l'autre. Ligne : région quittée, colonne : région rejointe.</p><div class="tw"><table class="fl"><tr><th></th>${REGIONS.map(r=>`<th>→ ${r}</th>`).join("")}</tr>${REGIONS.map(a=>`<tr><th>${a}</th>${REGIONS.map(b=>`<td style="--a:${Math.round(flow[a][b]/fmax*70)}%">${flow[a][b]||"·"}</td>`).join("")}</tr>`).join("")}</table></div></div>`;
-  h+=`<div class="st"><h3>Joueurs importés</h3><p class="note">Titulaires dont la nationalité n'est pas celle de la région de l'équipe</p><div class="tw"><table class="fl"><tr><th></th>${YEARS.map(y=>`<th>${String(y).slice(2)}</th>`).join("")}</tr>${REGIONS.map(r=>`<tr><th>${r}</th>${YEARS.map(y=>{const c=imp[r][y]; return c?`<td style="--a:${Math.round(c.i/c.n*90)}%">${c.i}<small>/${c.n}</small></td>`:`<td class="na">–</td>`;}).join("")}</tr>`).join("")}</table></div></div>`;
+  h+=`<div class="st"><h3>Joueurs importés</h3><p class="note">Titulaires dont la nationalité n'est pas celle de la région de l'équipe</p><div class="tw"><table class="fl"><tr><th></th>${ALL_YEARS.map(y=>`<th>${String(y).slice(2)}</th>`).join("")}</tr>${REGIONS.map(r=>`<tr><th>${r}</th>${ALL_YEARS.map(y=>{const c=imp[r][y]; return c?`<td style="--a:${Math.round(c.i/c.n*90)}%">${c.i}<small>/${c.n}</small></td>`:`<td class="na">–</td>`;}).join("")}</tr>`).join("")}</table></div></div>`;
   const box=$("stats"); box.innerHTML=h;
   box.addEventListener("click",e=>{const b=e.target.closest(".pl"); if(!b) return; if(innerWidth<900) setDrawer("statsDrawer",false); selectPlayer(b.dataset.id);});
 })();
 
 // ---------- démarrage ----------
 if(innerWidth<700) $("legend").open=false;
+remplirAnnees();
 render();
 view.k=innerWidth<700?.7:.9; view.x=16; view.y=70; applyView();

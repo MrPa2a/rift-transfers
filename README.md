@@ -1,21 +1,21 @@
 # Rift Transfers
 
-Carte interactive des rosters des grandes équipes de League of Legends aux **Worlds 2017 → 2026**. Chaque équipe est une colonne, chaque édition des Worlds une rangée, et chaque joueur un fil coloré par poste : on suit sa carrière d'une équipe à l'autre, ou la vie d'une équipe en descendant sa colonne.
+Carte interactive des rosters des grandes équipes de League of Legends aux **Worlds 2013 → 2026**. Chaque équipe est une colonne, chaque édition des Worlds une rangée, et chaque joueur un fil coloré par poste : on suit sa carrière d'une équipe à l'autre, ou la vie d'une équipe en descendant sa colonne.
 
 ![Aperçu de Rift Transfers](docs/screenshot.png)
 
 ## Fonctionnalités
 
 - Carte plein écran : déplacement à la souris ou au doigt, zoom à la molette ou au pincement.
-- 21 équipes des quatre grandes régions (LCK, LPL, LEC, LCS), 2017 à 2026.
+- 32 équipes de cinq régions (LCK, LPL, LEC, LCS, LMS), 2013 à 2026.
 - Survol ou clic sur un joueur pour isoler toute sa carrière ; clic sur une équipe pour voir ses joueurs, ou seulement ses arrivées et départs.
-- Filtres par poste et par région. Une région masquée laisse une colonne « Autres régions » pour garder la trace des transferts.
+- Filtres par poste, par région et par période. Une région masquée laisse une colonne « Autres régions » pour garder la trace des transferts.
 - Options : nationalité (avec repérage des joueurs importés) et ancienneté dans l'équipe.
 - Parcours de chaque équipe à chaque édition, et statistiques (joueurs les plus présents, rosters stables, flux entre régions, imports).
 
 ## Les données
 
-Une rangée montre **les cinq joueurs qui ont joué les Worlds pour l'équipe**, et non le roster de la saison. Quand un poste a été partagé, le titulaire affiché est celui qui a joué le plus de matchs (`*` sur la carte).
+Une rangée montre **les joueurs qui ont joué les Worlds pour l'équipe**, et non le roster de la saison. Un joueur est retenu à un poste s'il y a joué au moins 20 % des parties de l'équipe ; quand deux joueurs franchissent ce seuil, la case se partage en deux demi-cases, chacune reliée à sa propre carrière.
 
 Toutes les données sont dans [`data/`](data/) au format JSON, avec leurs sources :
 
@@ -26,7 +26,7 @@ Toutes les données sont dans [`data/`](data/) au format JSON, avec leurs source
 | [`players.json`](data/players.json) | Nationalités vérifiées |
 | [`sources.json`](data/sources.json) | Sources année par année |
 
-La méthode de vérification (nombre de matchs joués par joueur, matchs joués ensemble…) et les pistes pour remonter avant 2017 sont décrites dans [docs/SOURCES.md](docs/SOURCES.md).
+La méthode de vérification (nombre de matchs joués par joueur, matchs joués ensemble…) est décrite dans [docs/SOURCES.md](docs/SOURCES.md). La collecte depuis Leaguepedia est automatisée par [`scripts/fetch-worlds.mjs`](scripts/fetch-worlds.mjs).
 
 ## Lancer le projet en local
 
@@ -46,9 +46,10 @@ index.html              # page unique
 assets/css/styles.css   # styles (thème clair et sombre)
 assets/js/app.js        # chargement des données et rendu de la carte
 data/                   # données JSON et sources
-docs/SOURCES.md         # méthode, sources, extension avant 2017
+docs/SOURCES.md         # méthode et sources
 scripts/serve.mjs       # serveur de développement sans dépendance
-scripts/validate-data.mjs
+scripts/validate-data.mjs   # cohérence des données
+scripts/fetch-worlds.mjs    # collecte des titulaires depuis Leaguepedia
 ```
 
 ## Contribuer
