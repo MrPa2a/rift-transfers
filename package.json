@@ -1,7 +1,7 @@
 {
   "name": "rift-transfers",
-  "version": "1.1.0",
-  "description": "Carte interactive des rosters des grandes équipes de League of Legends aux Worlds 2013–2026.",
+  "version": "1.2.0",
+  "description": "Carte interactive des rosters des grandes équipes de League of Legends aux Worlds 2011–2026.",
   "private": true,
   "type": "module",
   "scripts": {

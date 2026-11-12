@@ -2,7 +2,7 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions selon [SemVer](https://semver.org/lang/fr/).
 
-## [Non publié]
+## [1.2.0] — 2026-11-12
 
 ### Corrigé
 - **Les clubs traversés hors Worlds ont un sigle.** Les 37 clubs sans colonne affichaient leur **nom entier** dans un badge taillé pour trois lettres : comme ce badge ne se comprime pas et que le pseudo est le seul à le faire, c'est le nom du joueur qui disparaissait en ellipse. Ils portent maintenant leur sigle, replié depuis `Teams.Short` exactement comme un code de colonne, puisque les deux se lisent côte à côte dans « Autres équipes » — nouvelle table `clubs` de `data/careers.json`, calculée en § 14.4 du rapport. Les 37 en ont un, sans aucune collision ni entre eux ni avec un code de colonne. Un club dont la source ne donne pas d'abréviation n'en recevrait **aucun** et sa case resterait sans badge : un code de colonne est une clé et il lui en faut un, un sigle de club n'est qu'un libellé, et abréger un nom d'équipe de soi-même serait écrire une donnée que la source ne porte pas.
