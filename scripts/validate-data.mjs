@@ -241,6 +241,7 @@ const trousDe = (id) => {
   return creux;
 };
 let nbEtapes = 0;
+const clubsVus = new Set(); // clubs sans colonne réellement cités par une étape
 for (const [name, fiche] of Object.entries(careers)) {
   const where = `carrière de ${name}`;
   const id = low(name);
@@ -293,11 +294,35 @@ for (const [name, fiche] of Object.entries(careers)) {
         if (teamCodes.has(step.club)) errors.push(`${at} : « ${step.club} » est un code de colonne, à écrire en "team"`);
         const col = teamsData.teams.find((t) => t.name === step.club);
         if (col) errors.push(`${at} : « ${step.club} » est le nom de la colonne ${col.code}, à écrire en "team"`);
+        clubsVus.add(step.club);
       }
       nbEtapes++;
     }
   }
 }
+// --- sigles des clubs sans colonne
+// Le badge de leur case dans « Autres équipes ». Même forme qu'un code de colonne, parce que
+// les deux se lisent côte à côte. Une entrée orpheline est une donnée morte ; un club sans
+// entrée est accepté — sa case reste sans badge, et c'est ce que fait le script quand
+// `Teams.Short` ne donne rien d'exploitable.
+const clubSigles = careersData.clubs ?? {};
+if (careersData.clubs !== undefined && (typeof clubSigles !== "object" || Array.isArray(clubSigles))) {
+  errors.push(`"clubs" doit être un objet « nom de club » → sigle`);
+} else {
+  const parSigle = new Map();
+  for (const [club, sigle] of Object.entries(clubSigles)) {
+    const where = `sigle de club « ${club} »`;
+    if (!/^[A-Z0-9]{2,5}$/.test(String(sigle))) errors.push(`${where} : « ${sigle} » n'est pas un sigle valide (2 à 5 lettres ou chiffres en majuscules)`);
+    if (!clubsVus.has(club)) errors.push(`${where} : aucune étape ne cite ce club`);
+    if (teamCodes.has(String(sigle))) warnings.push(`${where} : « ${sigle} » est aussi le code de la colonne du même nom — deux badges identiques pour deux choses différentes`);
+    if (parSigle.has(sigle)) warnings.push(`${where} : même sigle que « ${parSigle.get(sigle)} »`);
+    else parSigle.set(sigle, club);
+  }
+  for (const club of [...clubsVus].sort()) {
+    if (!Object.hasOwn(clubSigles, club)) warnings.push(`club « ${club} » : pas de sigle, sa case s'affichera sans badge`);
+  }
+}
+
 // Une carrière manquante pour un joueur à trou n'est pas une erreur de structure, mais une
 // collecte inachevée : le fil sautera le trou en silence.
 for (const [id, seen] of appearances) {

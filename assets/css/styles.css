@@ -270,7 +270,12 @@ path.cap{stroke-width:2;opacity:0}
 .nat.imp{color:var(--accent);border-color:var(--accent)}
 .showNat .chip .nat{display:inline-block}
 .chip .sen{display:none;font:600 10px var(--f-mono);color:var(--muted);margin-left:auto;flex:0 0 auto}
-.chip .sen + .q,.chip .sen + .t{margin-left:4px}
+/* L'ancienneté prend le `margin-left:auto`, et ce qui la suit se colle à elle. Mais la règle
+   doit être portée par `.showSen` : hors de cette option `.sen` est en `display:none` et ne
+   pousse plus rien, alors que le sélecteur `+` continuait de matcher — le tag d'équipe et les
+   marques `*` / `?` perdaient leur alignement à droite pour venir coller au nom. Même raison
+   pour `:not(.half)` : une demi-case masque son ancienneté faute de place. */
+.showSen .chip:not(.half) .sen + .q,.showSen .chip:not(.half) .sen + .t{margin-left:4px}
 .showSen .chip{background:color-mix(in srgb,var(--sen) var(--s),var(--chip))}
 /* Une etape n'a pas d'anciennete : la barre de seniorite ne doit pas lui manger sa rayure. */
 .showSen .chip.step{background:repeating-linear-gradient(135deg,var(--absent) 0 5px,transparent 5px 10px),var(--chip)}

@@ -39,7 +39,9 @@
   <div class="pct" id="zpct">100%</div>
 </div>
 
-<details id="legend" class="float" open>
+<!-- Fermée par défaut : la légende compte une dizaine de lignes et masquait le bas gauche
+     de la carte dès l'ouverture. Elle reste à un clic. -->
+<details id="legend" class="float">
   <summary>Légende</summary>
   <div id="legendBody"></div>
 </details>
@@ -88,7 +90,7 @@
         <li>Une colonne est repliée avant la création de l'organisation et après sa disparition : ni roster, ni « Pas aux Worlds ».</li>
         <li>Un joueur qui a changé de pseudo est affiché sous celui qu'il portait cette année-là, mais son fil de carrière reste continu. La recherche accepte les deux.</li>
         <li>Toutes les équipes ayant joué au moins un Worlds ont leur colonne, et la carte s'ouvre sur les 120. Le filtre « Présence aux Worlds » la dégrossit d'un clic : 54 colonnes à partir de deux apparitions, 33 à partir de trois, 19 à partir de cinq.</li>
-        <li>La colonne « Autres équipes » recueille deux choses : les joueurs d'une région ou d'une équipe masquée qui croisent une équipe affichée, avec le code de leur équipe, et les clubs traversés hors Worlds qui n'ont pas de colonne — ceux-là n'apparaissent qu'au survol du joueur, mais aucun filtre ne peut les en sortir : ils ne sont jamais allés aux Worlds. Les trois filtres se cumulent : le seuil de présence agit à l'intérieur des régions affichées, et le masquage à l'intérieur de ce qui reste. Seules y figurent les éditions qui touchent la carte visible — le départ, le retour, et les clubs qu'une ligne traverserait sinon en silence. Un clic sur le joueur donne toujours sa carrière complète avec les années exactes.</li>
+        <li>La colonne « Autres équipes » recueille deux choses : les joueurs d'une région ou d'une équipe masquée qui croisent une équipe affichée, avec le code de leur équipe, et les clubs traversés hors Worlds qui n'ont pas de colonne, avec leur sigle — ceux-là n'apparaissent qu'au survol du joueur, mais aucun filtre ne peut les en sortir : ils ne sont jamais allés aux Worlds. Un club dont la source ne donne pas d'abréviation n'a pas de sigle, et sa case n'en porte aucun plutôt qu'une abréviation inventée. Les trois filtres se cumulent : le seuil de présence agit à l'intérieur des régions affichées, et le masquage à l'intérieur de ce qui reste. Seules y figurent les éditions qui touchent la carte visible — le départ, le retour, et les clubs qu'une ligne traverserait sinon en silence. Un clic sur le joueur donne toujours sa carrière complète avec les années exactes.</li>
         <li>Nationalité : codes recoupés avec Leaguepedia ; sans code, elle n'a pas été vérifiée. « Importé » = nationalité différente des pays de la région de l'équipe, pays arrêtés région par région : Taïwan et Hong Kong comptent domestiques en LPL comme en LMS, le Vietnam l'est aussi en LCP, et l'espace post-soviétique l'est en LCL.</li>
         <li>Pas encore inclus : les quatre coéquipiers d'une étape hors Worlds, et le MSI. Toutes les équipes des seize Worlds ont en revanche leur colonne, quelle que soit leur région.</li>
         <li>Méthode et sources année par année : <a href="https://github.com/MrPa2a/rift-transfers/blob/main/docs/SOURCES.md" target="_blank" rel="noopener">docs/SOURCES.md</a>. Une erreur ? <a href="https://github.com/MrPa2a/rift-transfers/issues/new/choose" target="_blank" rel="noopener">Signale-la</a>.</li>

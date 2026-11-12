@@ -1128,6 +1128,22 @@ async function fetchRegions(computed, outDir, lineage) {
 const SEUIL_ETAPE = 0.2;
 const NIVEAU_ETAPE = "Primary";
 
+// Sigle d'un club sans colonne. Le **même repli** que les codes de colonne — `Teams.Short` en
+// ASCII majuscule sans ponctuation, tronqué à 5 caractères, voir l'en-tête de `TEAM_CODE` :
+// dans « Autres équipes » le badge d'une colonne et celui d'un club se lisent côte à côte, et
+// rien ne justifierait deux graphies. Sans ce sigle la carte affichait le **nom entier** du
+// club dans un badge dimensionné pour trois lettres, et c'est le nom du joueur qui se faisait
+// écraser en ellipse.
+//
+// Un club dont la fiche ne porte pas de `Short` exploitable n'en reçoit aucun : la case reste
+// sans badge. On n'abrège pas de soi-même un nom d'équipe — ce serait inventer une donnée.
+const REPLIS = { "Ø": "O", "ø": "o", "Ł": "L", "ł": "l" };
+function sigleDe(short) {
+  const s = String(short ?? "").normalize("NFD").replace(/\p{Mn}/gu, "")
+    .replace(/[ØøŁł]/g, (c) => REPLIS[c]).replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 5);
+  return /^[A-Z0-9]{2,5}$/.test(s) ? s : null;
+}
+
 async function fetchCareers({ selected, census, lineage, outDir, refresh }) {
   // nom d'équipe (toutes les graphies de la lignée) → code de colonne. C'est la lignée déjà
   // close par `fetchActive` : alias de `TeamRedirects`, prédécesseurs de `Teams.RenamedTo` et
@@ -1228,12 +1244,14 @@ async function fetchCareers({ selected, census, lineage, outDir, refresh }) {
   for (const chunk of chunks([...new Set(noms.map(pageDe))], CHUNK)) {
     const rows = await cargoAll({
       tables: "Teams",
-      fields: "Teams.OverviewPage=page,Teams.Name=name,Teams.Region=region",
+      // `Short` sert au badge des clubs sans colonne, pas au filtre de bruit : la fiche est
+      // déjà interrogée pour `estClub`, un champ de plus ne coûte aucune requête.
+      fields: "Teams.OverviewPage=page,Teams.Name=name,Teams.Short=short,Teams.Region=region",
       where: `Teams.OverviewPage IN (${sqlList(chunk)})`,
     });
     for (const r of rows) {
       const page = asText(r.page);
-      if (page) fiches.set(low(page), { name: asText(r.name), region: asText(r.region) });
+      if (page) fiches.set(low(page), { name: asText(r.name), short: asText(r.short), region: asText(r.region) });
     }
     await sleep(THROTTLE_MS);
   }
@@ -1267,7 +1285,7 @@ async function fetchCareers({ selected, census, lineage, outDir, refresh }) {
 
   // --- règle 5, année par année.
   const careers = {};
-  const sansColonne = new Map(); // club sans colonne → nombre d'étapes
+  const sansColonne = new Map(); // club sans colonne → { n: étapes, sigle }
   const horsNiveau = []; // années-trous où le joueur a joué, mais rien de niveau `Primary`
   const creuses = []; // années-trous sans la moindre partie : l'état c des libellés
   const ids = [...worlds.keys()].sort((a, b) => low(census.get(a).spelling).localeCompare(low(census.get(b).spelling)));
@@ -1297,24 +1315,36 @@ async function fetchCareers({ selected, census, lineage, outDir, refresh }) {
         if (steps.length && g / total < SEUIL_ETAPE) continue;
         const code = codeDe(club);
         if (code) { steps.push({ team: code }); continue; }
-        const label = fiches.get(low(pageDe(club)))?.name ?? pageDe(club);
+        const f = fiches.get(low(pageDe(club)));
+        const label = f?.name ?? pageDe(club);
         if (steps.some((s) => s.club === label)) continue; // deux graphies d'un même club
         steps.push({ club: label });
-        sansColonne.set(label, (sansColonne.get(label) ?? 0) + 1);
+        const vu = sansColonne.get(label) ?? { n: 0, sigle: sigleDe(f?.short) };
+        vu.n += 1;
+        sansColonne.set(label, vu);
       }
       fiche.years[y] = { steps };
     }
     careers[nom] = fiche;
   }
 
+  // Sigle de chaque club sans colonne, une entrée par club et non une par étape : c'est un
+  // libellé d'affichage, il n'a aucune raison d'être répété dans chaque `steps`.
+  const clubs = Object.fromEntries([...sansColonne]
+    .filter(([, v]) => v.sigle)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([nom, v]) => [nom, v.sigle]));
+
   await writeFile(join(outDir, "careers.json"), `${JSON.stringify({
-    $comment: "Étapes de carrière hors Worlds calculées par scripts/fetch-worlds.mjs (règle 5 de docs/SOURCES.md) : club majoritaire de l'année, plus tout autre club à 20 % des parties ou plus, sur les seuls tournois de niveau Primary et les seules entités ayant une fiche Teams. Une année n'y figure que si elle est un trou entre deux apparitions aux Worlds. `seen` donne la première et la dernière année où une partie est recensée. À recopier dans data/careers.json. Voir § 14 du rapport.",
+    $comment: "Étapes de carrière hors Worlds calculées par scripts/fetch-worlds.mjs (règle 5 de docs/SOURCES.md) : club majoritaire de l'année, plus tout autre club à 20 % des parties ou plus, sur les seuls tournois de niveau Primary et les seules entités ayant une fiche Teams. Une année n'y figure que si elle est un trou entre deux apparitions aux Worlds. `seen` donne la première et la dernière année où une partie est recensée. `clubs` donne le sigle des clubs sans colonne, replié depuis Teams.Short comme un code de colonne — c'est le badge de leur case dans « Autres équipes ». À recopier dans data/careers.json. Voir § 14 du rapport.",
+    clubs,
     careers,
   }, null, 1)}\n`);
 
   return {
     careers,
-    sansColonne: [...sansColonne].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),
+    clubs,
+    sansColonne: [...sansColonne].sort((a, b) => b[1].n - a[1].n || a[0].localeCompare(b[0])),
     ecartees: [...ecartees].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),
     horsNiveau, creuses,
   };
@@ -2061,6 +2091,16 @@ function renderReport({ years, computed, pageCheck, census, collisions, nearColl
     for (const nom of Object.keys(saisies)) {
       if (!careers.careers[nom]) careerDiffs.push({ nom, text: "saisi dans careers.json sans carrière calculée — joueur absent des lineups ?" });
     }
+    // La table `clubs` tombe dans le même § 14.2 que les étapes : c'est une valeur calculée
+    // puis recopiée à la main, elle relève du même invariant de contrôle.
+    const sigles = careersData.clubs ?? {};
+    for (const nom of [...new Set([...Object.keys(sigles), ...Object.keys(careers.clubs)])].sort()) {
+      const a = sigles[nom], b = careers.clubs[nom];
+      if (a === b) continue;
+      if (!a) careerDiffs.push({ nom, text: `sigle de club manquant — calculé \`${b}\`` });
+      else if (!b) careerDiffs.push({ nom, text: `sigle de club \`${a}\` saisi, sans club sans colonne correspondant` });
+      else careerDiffs.push({ nom, text: `sigle de club saisi \`${a}\`, calculé \`${b}\`` });
+    }
   }
 
   const aliasRows = [];
@@ -2258,8 +2298,8 @@ function renderReport({ years, computed, pageCheck, census, collisions, nearColl
     L.push("", "**Hors niveau `Primary`**", "");
     list(careers.horsNiveau, "aucune.");
     h(3, `14.4 Clubs traversés sans colonne (${careers.sansColonne.length})`);
-    L.push("Ils vont dans « Autres équipes », avec leur nom pour tag. Listés pour qu'aucun ne soit en réalité une colonne que la lignée n'aurait pas reliée.", "");
-    list(careers.sansColonne.map(([nom, n]) => `${nom} (${n})`), "aucun.");
+    L.push("Ils vont dans « Autres équipes », avec pour badge le **sigle** replié depuis `Teams.Short` comme un code de colonne — la table `clubs` de `careers.json`, à recopier dans `data/careers.json`. Un club dont la fiche n'en porte pas d'exploitable est marqué « sans sigle » et sa case reste sans badge : on n'abrège pas un nom d'équipe de soi-même. Listés aussi pour qu'aucun ne soit en réalité une colonne que la lignée n'aurait pas reliée.", "");
+    list(careers.sansColonne.map(([nom, v]) => `\`${v.sigle ?? "— sans sigle —"}\` ${nom} (${v.n})`), "aucun.");
     h(3, `14.5 Entités écartées faute de fiche Teams (${careers.ecartees.length})`);
     L.push("Second test du filtre de bruit, avec leurs parties de niveau `Primary`. Toutes doivent être des sélections ou des équipes d'un soir : un club réel qui apparaîtrait ici est à inscrire comme colonne ou à relier par `LIGNEES_ARBITREES`.", "");
     list(careers.ecartees.map(([nom, n]) => `${nom} (${n} parties)`), "aucune.");
@@ -2379,7 +2419,7 @@ async function main() {
   console.log(complete ? "Étapes de carrière hors Worlds (règle 5)…" : "Étapes de carrière : ignorées (exécution partielle).");
   const careers = complete
     ? await fetchCareers({ selected, census, lineage, outDir, refresh })
-    : { careers: {}, sansColonne: [], ecartees: [], horsNiveau: [], creuses: [], partiel: true };
+    : { careers: {}, clubs: {}, sansColonne: [], ecartees: [], horsNiveau: [], creuses: [], partiel: true };
   notes.push(...places.notes);
   const reportPath = join(outDir, "report.md");
   await writeFile(reportPath, renderReport({ years, computed, pageCheck, census, collisions, nearCollisions, eraCandidates, caseIssues, diffs, activeWindows, places, regions, careers, teamsData, resultsData, careersData, notes, gameCounts }));

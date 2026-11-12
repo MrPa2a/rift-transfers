@@ -369,6 +369,21 @@ mot de son nom — `Gambit Esports` devient `GMBE`, `Gambit Gaming` gardant `GMB
 départage qu'ait demandé les 120 colonnes. Quand `Teams.Short` manque — un cas, `Flamengo
 Esports` — le code dérive du nom de la page.
 
+### Sigle d'un club sans colonne
+
+Un club traversé hors Worlds qui n'a pas de colonne (règle 5, section « Hors Worlds ») s'affiche
+dans « Autres équipes », où sa case porte un badge à côté du pseudo. Ce badge suit **le même
+repli** que le code de colonne, parce que les deux se lisent côte à côte dans la même colonne :
+`Teams.Short` en ASCII majuscule sans ponctuation, tronqué à cinq caractères. Les 37 clubs
+mesurés en portent tous un, sans aucune collision — ni entre eux, ni avec un code de colonne.
+Le script le calcule en § 14.4 du rapport et l'écrit dans la table `clubs` de `careers.json`.
+
+La différence avec une colonne est le **cas où la source ne dit rien**. Un code de colonne est
+une clé : il lui en faut un, d'où le repli sur le nom de la page. Un sigle de club n'est qu'un
+libellé : sans `Teams.Short` exploitable il n'y en a pas, et la case reste sans badge. Abréger
+un nom d'équipe de soi-même serait écrire une donnée que la source ne porte pas, et afficher le
+nom entier dans un badge taillé pour trois lettres écrasait le pseudo du joueur en ellipse.
+
 Le **nom** de la colonne est celui de la page d'organisation, privé du discriminant de
 désambiguïsation du wiki : `Griffin (Korean Team)` → Griffin, `Rogue (European Team)` → Rogue,
 `Evil Geniuses.NA` → Evil Geniuses, `LYON (2024 American Team)` → LYON. Ce discriminant sépare

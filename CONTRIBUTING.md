@@ -78,13 +78,17 @@ Nationalité (code ISO à 2 lettres) par joueur, et pays « domestiques » de ch
 Où était chaque joueur les années **sans rangée**, entre deux de ses apparitions aux Worlds — ce qui permet au fil de ne plus sauter le trou.
 
 ```json
-"Faker": {"seen": [2013, 2026], "years": {"2014": {"steps": [{"team": "T1"}]}}},
-"Rookie": {"seen": [2014, 2026], "years": {"2022": {"steps": [{"club": "Victory Five"}]}}},
-"Bwipo": {"seen": [2018, 2026], "years": {"2023": {"steps": []}}},
-"Fudge": {"seen": [2019, 2026], "years": {"2020": {"steps": [], "offLevel": true}}}
+"clubs": {"Victory Five": "V5", "Nongshim RedForce": "NS"},
+"careers": {
+  "Faker": {"seen": [2013, 2026], "years": {"2014": {"steps": [{"team": "T1"}]}}},
+  "Rookie": {"seen": [2014, 2026], "years": {"2022": {"steps": [{"club": "Victory Five"}]}}},
+  "Bwipo": {"seen": [2018, 2026], "years": {"2023": {"steps": []}}},
+  "Fudge": {"seen": [2019, 2026], "years": {"2020": {"steps": [], "offLevel": true}}}
+}
 ```
 
 - `team` est un **code de colonne**, `club` un club qui n'en a pas et qui s'affiche dans « Autres équipes ». Une étape porte l'un ou l'autre, jamais les deux. Écrire en `club` le nom d'une colonne est une erreur de `npm run validate` : le fil contournerait une colonne affichée.
+- `clubs` donne le **sigle** de chaque club sans colonne : le badge de sa case, replié depuis `Teams.Short` exactement comme un code de colonne, puisque les deux se lisent côte à côte. Une entrée que plus aucune étape ne cite est une erreur de `npm run validate`. Un club **absent** de la table est accepté : sa case reste sans badge, et c'est ce que le script écrit quand la source ne donne pas d'abréviation — on n'en invente pas, et le nom entier écraserait le pseudo du joueur.
 - `steps` vide : **aucune partie professionnelle recensée** cette année-là. Avec `offLevel`, le joueur a joué, mais rien qui soit de niveau `Primary` — académie, ligue secondaire, showmatch : on n'en dit alors rien du tout.
 - `seen` donne la première et la dernière année où une partie lui est recensée. Ce sont les deux bouts de son fil, et les libellés qui vont avec disent « apparition connue », jamais « début » ni « fin de carrière ».
 - Une année qui n'est pas un trou entre deux Worlds du joueur est une erreur, comme une lineup hors de la fenêtre `active` d'une équipe.

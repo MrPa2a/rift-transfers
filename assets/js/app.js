@@ -85,10 +85,14 @@ players.forEach(p => p.apps.sort((a, b) => a.year - b.year || a.half - b.half));
 // alors une pseudo-équipe qu'aucun filtre ne peut rendre visible, et tombe donc dans
 // « Autres équipes » par le prédicat existant, sans cas particulier ailleurs.
 const CAREERS = CAREERS_DATA.careers || {};
+// Sigle des clubs sans colonne, replié par le script depuis `Teams.Short` comme un code de
+// colonne. Un club que la source ne sait pas abréger n'y figure pas : sa case restera sans
+// badge plutôt que de porter une abréviation inventée.
+const CLUB_SIGLES = CAREERS_DATA.clubs || {};
 const byCode = new Map(teams.map(t => [t.code, t]));
 const clubTeams = new Map();
 const clubTeam = name => {
-  if (!clubTeams.has(name)) clubTeams.set(name, { code: `@${name}`, name, label: name, tag: name, region: null, i: -1, active: [], years: {}, club: true });
+  if (!clubTeams.has(name)) clubTeams.set(name, { code: `@${name}`, name, label: name, tag: CLUB_SIGLES[name] || null, region: null, i: -1, active: [], years: {}, club: true });
   return clubTeams.get(name);
 };
 // Première et dernière année où une partie est recensée au joueur : les deux bornes que les
@@ -149,6 +153,11 @@ const vp=$("vp"), world=$("world"), hdr=$("hdr"), rail=$("rail");
 const yTop=y=>YEARS.indexOf(y)*ROWH+TOPPAD;
 const regionVar=r=>`var(--${r.toLowerCase()})`;
 const shortName=t=>t.label||t.code;
+// Badge d'une case de « Autres équipes ». Une colonne porte son code. Un club sans colonne
+// porte le sigle de `CLUB_SIGLES`, et **rien du tout** s'il n'en a pas : son nom entier dans un
+// badge taillé pour trois lettres écrasait le pseudo du joueur en ellipse, puisque `.t` ne se
+// comprime pas et que `.n` est le seul à le faire.
+const tagDe=t=>t.club?t.tag:(t.tag||t.code);
 let H=YEARS.length*ROWH+20;
 // Dix voies de courbe au lieu de cinq : deux par poste, sinon les deux fils d'une case
 // partagée se superposeraient.
@@ -161,7 +170,8 @@ const laneAt=(cx,ri,half)=>cx+14+(2*ri+half)*((chipW-28)/9);
 // sortir de sous le nom voisin. On corrige l'attache — le point de départ et d'arrivée passe
 // au centre de la chip, rejoint par un court coude — et le couloir reste intact.
 const ELBOW=14;
-// Longueur de l'amorce et de la terminaison de #7a, et demi-largeur de leur barre.
+// Demi-largeur de la barre qui ferme les deux bouts du fil (#7a). Sa hampe, elle, n'a pas de
+// longueur propre : elle court jusqu'à la jonction entre deux éditions (voir `cap`).
 const CAP=9;
 const attache=n=>n.lane>=n.x&&n.lane<=n.x+n.w?n.lane:n.x+n.w/2;
 // Fenêtre d'existence de l'organisation, bornée par la plage affichée.
@@ -392,9 +402,16 @@ function render(){
     // recense au-delà est une autre chose, et c'est `seen` qui la porte, dans le panneau de
     // détail : 567 joueurs ont une partie après leur dernier Worlds.
     const suite=players.get(id).apps;
+    // La barre se posait à 9 px du bord de la chip, c'est-à-dire **dans la rangée du poste
+    // voisin** : au focus, où les autres cases tombent à .28 d'opacité, elle se lisait comme
+    // la marque du joueur du dessus. Elle se pose désormais sur la jonction entre deux
+    // éditions, dans la gouttière où aucune case ne vit — exactement les deux points où les
+    // segments attachent leur trajet vertical, `yTop(année)-6` en haut et `n.bottom` en bas.
+    // La hampe s'allonge pour l'y rejoindre et croise les rangées intermédiaires de la
+    // colonne, comme le fait déjà toute ligne : les chips sont peintes par-dessus le SVG.
     const cap=(n,fin)=>{
-      const x=attache(n), y=fin?n.y+CH:n.y, d=fin?CAP:-CAP;
-      paths+=`<path class="l cap ${n.a.role}" data-p="${id}" data-r="${n.a.role}" d="M${x},${y} L${x},${y+d} M${x-CAP/2},${y+d} L${x+CAP/2},${y+d}"/>`;
+      const x=attache(n), y=fin?n.y+CH:n.y, b=fin?n.bottom:yTop(n.a.year)-6;
+      paths+=`<path class="l cap ${n.a.role}" data-p="${id}" data-r="${n.a.role}" d="M${x},${y} L${x},${b} M${x-CAP/2},${b} L${x+CAP/2},${b}"/>`;
     };
     if(ns[0].a===suite[0]) cap(ns[0],false);
     if(ns.at(-1).a===suite.at(-1)) cap(ns.at(-1),true);
@@ -427,7 +444,8 @@ function render(){
       : `${a.name}${a.shown!==a.name?` (${a.shown} à l'époque)`:""}${nat?" ("+nat+")":""} · ${ROLE_NAME[a.role]} · ${label} ${a.year}`
         +(a.sen>1?` · ${a.sen}e Worlds avec l'équipe`:"")
         +(duo?` · poste partagé avec ${duo.name}`:"")+(a.alt?` · rotation avec ${a.alt}`:"")+(a.doubt?" · à vérifier":"");
-    const mark=n.other?`<span class="t">${a.team.tag||a.team.code}</span>`:(!a.step&&(a.alt||a.doubt)?`<span class="q">${a.doubt?"?":"*"}</span>`:"");
+    const tag=n.other?tagDe(a.team):null;
+    const mark=n.other?(tag?`<span class="t">${tag}</span>`:""):(!a.step&&(a.alt||a.doubt)?`<span class="q">${a.doubt?"?":"*"}</span>`:"");
     html+=`<div class="chip${demi?" half":""}${droite?" right":""}${a.step?" step":""}" data-p="${a.id}" data-c="${a.id}:${a.year}" data-r="${a.role}" data-w="${n.w}"${a.step&&!n.other?` data-cell="${a.team.code}:${a.year}"`:""}${n.voisin?` data-voisin="${n.voisin}"`:""} style="left:${n.x}px;top:${n.y}px;width:${n.w}px;--s:${Math.min(a.sen-1,5)*11}%" title="${tip}"><span class="r ${a.role}"></span>${nat?`<span class="nat${isImport(a)?" imp":""}">${nat}</span>`:""}<span class="n">${a.shown}</span>${a.sen>1?`<span class="sen">${a.sen}e</span>`:""}${mark}</div>`;
   }));
   world.style.width=W+"px"; world.style.height=H+"px";
@@ -919,7 +937,8 @@ $("filters").querySelector(".dbody").addEventListener("scroll",closeTip,{passive
 })();
 
 // ---------- démarrage ----------
-if(innerWidth<700) $("legend").open=false;
+// La légende est fermée par défaut à toutes les largeurs (attribut `open` retiré du HTML) :
+// il n'y a donc plus de cas étroit à rattraper ici.
 remplirAnnees();
 render();
 view.k=innerWidth<700?.7:.9; view.x=16; view.y=70; applyView();
