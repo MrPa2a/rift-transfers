@@ -133,6 +133,12 @@
   --accent:#1f5bd6; --sen:#0f8f86;
   --top:#c4472f; --jgl:#2f8a4c; --mid:#2c63c9; --bot:#c98a12; --sup:#8a45b8;
   --lck:#1f5bd6; --lpl:#c8322a; --lec:#0f8f86; --lcs:#5a4bd1; --lms:#b06a12;
+  /* Les neuf régions mineures. La couleur de région ne sert qu'à deux pastilles
+     accolées à un libellé texte — l'en-tête de colonne et la pilule de filtre —
+     jamais au fond d'une colonne ni à une ligne : il suffit que deux familles
+     voisines dans l'ordre des colonnes ne se confondent pas. */
+  --lcp:#1683a8; --ljl:#b8336b; --vcs:#4d8a1b; --gpl:#8a7414; --lco:#8a3fb0;
+  --tcl:#c25a1f; --lcl:#5c6b8a; --cblol:#2c8a6a; --lla:#a8338a;
   --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --f-body:"Barlow",system-ui,-apple-system,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
@@ -141,12 +147,18 @@
   --bg:#0f121a; --panel:#171b26; --fg:#e8ebf2; --muted:#949bad; --line:#2a3040; --chip:#1c2130; --absent:#151924;
   --accent:#6f9bff; --sen:#3fc7bb;
   --top:#ec7a5f; --jgl:#5cc07a; --mid:#6e9cf3; --bot:#e7b444; --sup:#bb83e3;
-  --lck:#6f9bff; --lpl:#ef6a60; --lec:#3fc7bb; --lcs:#9a8cf5; --lms:#e0a53a; color-scheme:dark}}
+  --lck:#6f9bff; --lpl:#ef6a60; --lec:#3fc7bb; --lcs:#9a8cf5; --lms:#e0a53a;
+  --lcp:#4fb9e0; --ljl:#f07aa4; --vcs:#8fcf52; --gpl:#d4b93f; --lco:#c08ae6;
+  --tcl:#f09050; --lcl:#9aa8c8; --cblol:#48c69e; --lla:#e07ac8;
+  color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0f121a; --panel:#171b26; --fg:#e8ebf2; --muted:#949bad; --line:#2a3040; --chip:#1c2130; --absent:#151924;
   --accent:#6f9bff; --sen:#3fc7bb;
   --top:#ec7a5f; --jgl:#5cc07a; --mid:#6e9cf3; --bot:#e7b444; --sup:#bb83e3;
-  --lck:#6f9bff; --lpl:#ef6a60; --lec:#3fc7bb; --lcs:#9a8cf5; --lms:#e0a53a; color-scheme:dark}
+  --lck:#6f9bff; --lpl:#ef6a60; --lec:#3fc7bb; --lcs:#9a8cf5; --lms:#e0a53a;
+  --lcp:#4fb9e0; --ljl:#f07aa4; --vcs:#8fcf52; --gpl:#d4b93f; --lco:#c08ae6;
+  --tcl:#f09050; --lcl:#9aa8c8; --cblol:#48c69e; --lla:#e07ac8;
+  color-scheme:dark}
 
 
 /* --dw : largeur du tiroir de filtres. Elle sert aussi de décalage aux outils flottants de
@@ -290,6 +302,8 @@ path.roff{display:none!important}
 .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .pill{font:600 12px var(--f-body);letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 11px 6px 9px;cursor:pointer;display:flex;align-items:center;gap:6px}
 .pill i{width:10px;height:10px;border-radius:50%;display:block}
+/* Compte porté par une pilule de région quand le seuil de présence en écarte des colonnes. */
+.pill .cnt{font-size:10px;font-weight:500;color:var(--muted);letter-spacing:0;text-transform:none;font-variant-numeric:tabular-nums}
 .pill[aria-pressed="false"]{opacity:.4}
 .row.years{gap:10px;align-items:center}
 .row.years label{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted)}

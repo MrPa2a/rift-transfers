@@ -15,6 +15,9 @@
 //   fragments/<année>.json  fragment au format data/teams.json, à recopier dans worlds[<année>]
 //   detail/<année>.json     parties par joueur et par poste, pourcentages, noms complets
 //   people.json             une fiche par personne : page canonique, graphie, nom complet, pays
+//   active.json             fenêtre d'activité calculée pour chaque colonne
+//   places.json             parcours de chaque équipe, au format data/results.json
+//   regions.json            région calculée pour chaque colonne, édition par édition
 //   report.md               cas à trancher à la main
 //
 // Ce script lit /data mais ne le modifie jamais.
@@ -61,9 +64,22 @@ const PAGES = {
 };
 const ALL_YEARS = Object.keys(PAGES).map(Number).sort((a, b) => a - b);
 
-// --- nom d'équipe Leaguepedia → code de colonne (les 32 colonnes visées par le plan).
+// --- nom d'équipe Leaguepedia → code de colonne (les 120 colonnes du périmètre).
 // Une équipe absente de cette table est hors périmètre : le rapport la liste plutôt que
 // de l'écarter en silence.
+//
+// Le périmètre est **les cinq ligues suivies, prises à l'année de l'édition** : la règle,
+// ses trois niveaux de preuve et ses deux cas limites sont dans docs/SOURCES.md, section
+// « Périmètre : la région d'une rangée est celle de l'édition ». `Teams.Region` ne fait pas
+// foi — elle donne la région de l'organisation *aujourd'hui*, qui avale la Turquie dans
+// l'EMEA et range 100 Thieves et KaBuM! sous la même étiquette « Americas ».
+//
+// Le code de colonne dérive de `Teams.Short` replié en ASCII majuscule sans ponctuation
+// (`aAa` → `AAA`, `CLG.EU` → `CLGEU`, `LØS` → `LOS`), tronqué à 5 caractères — la forme
+// qu'impose `npm run validate`. Les collisions se départagent dans cet ordre : une colonne
+// déjà publiée garde son code, sinon il va à l'organisation qui a joué le plus de parties
+// aux Worlds et l'autre prend son discriminant Leaguepedia replié de la même façon
+// (`Evil Geniuses.NA` → `EGNA`). Aucune collision à ce jour.
 const TEAM_CODE = {
   // LCK
   "SK Telecom T1": "T1", "T1": "T1",
@@ -103,15 +119,140 @@ const TEAM_CODE = {
   "ahq eSports Club": "AHQ",
   "Flash Wolves": "FW",
   "Taipei Assassins": "TPA", "J Team": "TPA",
+
+  // --- lot 4 (#8b) : les membres des cinq mêmes ligues que la carte ratait encore.
+  // LCK
+  "Azubu Frost": "AZF",
+  "Griffin (Korean Team)": "GRF",
+  "Afreeca Freecs": "DNS",
+  // LPL
+  "LNG Esports": "LNG",
+  "Weibo Gaming": "WBG",
+  "Team WE": "WE",
+  "Suning": "SN",
+  "I May": "IM",
+  // LEC
+  "Rogue (European Team)": "RGE",
+  "SK Gaming": "SK",
+  "Team BDS": "BDS",
+  "against All authority": "AAA",
+  "Gambit Gaming": "GMB",
+  "Misfits Gaming": "MSF",
+  "Lemondogs": "LD",
+  "Alliance": "ALL",
+  "Team Vitality": "VIT",
+  "Team gamed!de": "GDE",
+  "Moscow Five": "M5",
+  // LCS
+  "100 Thieves": "100T",
+  "Evil Geniuses.NA": "EG",
+  "Clutch Gaming": "CG",
+  "LYON (2024 American Team)": "LYON",
+  "NRG": "NRG",
+  "Team Vulcun": "VUL",
+  "Immortals": "IMT",
+  "Epik Gamer": "EPIK",
+  "LMQ": "LMQ",
+  "Dignitas": "DIG",
+  // LMS
+  "Hong Kong Attitude": "HKA",
+  "G-Rex": "GRX",
+  "MAD Team": "MAD",
+  "Gamania Bears": "GAB",
+
+  // --- lot 5 (#8c) : les régions mineures. Plus aucune équipe des 16 éditions n'est hors
+  // périmètre — le § 10 du rapport est désormais vide.
+  // LCP
+  "PSG Talon": "PSG",
+  "CTBC Flying Oyster": "CFO",
+  "Beyond Gaming": "BYG",
+  "Team Secret Whales": "TSW",
+  "MVK Esports": "MVK",
+  "Machi Esports": "MCX",
+  // LJL
+  "DetonatioN FocusMe": "DFM",
+  "V3 Esports": "V3",
+  "Fukuoka SoftBank HAWKS gaming": "SHG",
+  "Rampage": "RPG",
+  // VCS
+  "GIGABYTE Marines": "GAM", "GAM Esports": "GAM",
+  "Team Whales": "TW",
+  "Saigon Buffalo": "SGB",
+  "Lowkey Esports.Vietnam": "LK",
+  "Young Generation": "YGE",
+  "Phong Vũ Buffalo": "PVB",
+  "Vikings Esports (2023 Vietnamese Team)": "MVKE",
+  "Saigon Jokers": "SAJ",
+  // GPL
+  "Mineski": "MSK",
+  "Bangkok Titans": "BKT",
+  "Ascension Gaming": "ASC",
+  "MEGA": "MG",
+  "Team Pacific": "PCFC",
+  "Xan": "XAN",
+  // LCO
+  "Dire Wolves": "DW",
+  "PEACE (Oceanic Team)": "PCE",
+  "Legacy Esports": "LGC",
+  "Chiefs Esports Club": "CHF",
+  "MAMMOTH": "MEC",
+  // TCL
+  "SuperMassive Esports": "SUP", "Papara SuperMassive": "SUP",
+  "Fenerbahçe Esports": "FB",
+  "Galatasaray Esports": "GS",
+  "Royal Youth": "RYL",
+  "Dark Passage": "DP",
+  "Istanbul Wildcats": "IW",
+  // LCL
+  "Unicorns of Love.CIS": "UOL",
+  // `Gambit Gaming` (LEC 2013) et `Gambit Esports` (LCL 2017-2018) sont deux pages
+  // d'organisation distinctes, de sigle `GMB` toutes les deux. La colonne déjà publiée garde
+  // le code ; celle-ci prend l'initiale du second mot de son nom — troisième palier du
+  // départage, l'organisation n'ayant pas de discriminant Leaguepedia.
+  "Gambit Esports": "GMBE",
+  "Albus NoX Luna": "ANX",
+  "GamingGear.eu": "GGEU",
+  // CBLOL
+  "paiN Gaming": "PAIN",
+  "LOUD": "LOUD",
+  "INTZ": "INTZ",
+  "KaBuM! Esports": "KBM",
+  "FURIA": "FUR",
+  "LØS": "LOS",
+  "RED Canids": "RED",
+  "Team oNe eSports": "ONE",
+  "Vivo Keyd Stars": "VKS",
+  // Seule organisation des 16 éditions sans fiche `Teams` : pas de `Short`, donc le code
+  // dérive du nom de la page.
+  "Flamengo Esports": "FLAME",
+  // LLA
+  "Rainbow7": "R7", "Movistar R7": "R7",
+  "Isurus": "ISG",
+  "INFINITY": "INF",
+  "Kaos Latin Gamers": "KLG",
+  "Lyon Gaming (2013 Latin American Team)": "LYN",
 };
 
 // Ordre de colonnes du plan, pour que les fragments sortent dans l'ordre de teams.json.
+// Par région, puis par nombre d'éditions jouées décroissant et parties décroissantes : les
+// colonnes du lot 4 viennent donc après celles qu'elles complètent, sans déplacer aucune.
 const COLUMN_ORDER = [
-  "T1", "GEN", "HLE", "DK", "KT", "DRX", "NJN", "SSB",
-  "EDG", "RNG", "IG", "FPX", "TES", "JDG", "BLG", "AL", "OMG", "LGD",
+  "T1", "GEN", "HLE", "DK", "KT", "DRX", "NJN", "SSB", "AZF", "GRF", "DNS",
+  "EDG", "RNG", "IG", "FPX", "TES", "JDG", "BLG", "AL", "OMG", "LGD", "LNG", "WBG", "WE", "SN", "IM",
   "G2", "FNC", "MKOI", "KC", "H2K", "ORI", "CLGEU",
+  "RGE", "SK", "BDS", "AAA", "GMB", "MSF", "LD", "ALL", "VIT", "GDE", "M5",
   "C9", "TL", "FLY", "TSM", "CLG",
-  "AHQ", "FW", "TPA",
+  "100T", "EG", "CG", "LYON", "NRG", "VUL", "IMT", "EPIK", "LMQ", "DIG",
+  "AHQ", "FW", "TPA", "HKA", "GRX", "MAD", "GAB",
+  "PSG", "CFO", "BYG", "TSW", "MVK", "MCX",
+  "DFM", "V3", "SHG", "RPG",
+  "GAM", "TW", "SGB", "LK", "YGE", "PVB", "MVKE", "SAJ",
+  "MSK", "BKT", "ASC", "MG", "PCFC", "XAN",
+  "DW", "PCE", "LGC", "CHF", "MEC",
+  "SUP", "FB", "GS", "RYL", "DP", "IW",
+  "UOL", "GMBE", "ANX", "GGEU",
+  "PAIN", "LOUD", "INTZ", "KBM", "FUR", "LOS", "RED", "ONE", "VKS", "FLAME",
+  "R7", "ISG", "INF", "KLG", "LYN",
 ];
 
 // --- arbitrages actés. Le script les applique et cesse de les signaler : seules les
@@ -137,6 +278,20 @@ const GRAPHIES_ARBITREES = {
   // `bebe` (9 lignes en 2012 contre 6 en 2014), mais les deux premiers critères de la règle 4
   // disent tous deux `BeBe` : c'est la graphie de `/data` et celle du titre de page canonique.
   "bebe (chang bo-wei)": "BeBe",
+  // Arbitrage du 12/11/2026, à l'extension du lot 4. `Kevin` (5 lignes en 2011) l'emporterait
+  // sur `Kev1n` (3 lignes en 2012) par la seule fréquence, mais ce n'est pas une différence de
+  // casse : c'est un renommage, et l'identité d'un joueur renommé est la graphie de sa page
+  // canonique — comme `Jensen` contre `Incarnati0n`. `Kevin` devient donc le pseudo d'époque
+  // de 2011, dans `PSEUDOS_EPOQUE`.
+  kev1n: "Kev1n",
+  // Arbitrage du 12/11/2026, à l'extension aux régions mineures. **Première collision réelle
+  // de pseudo du jeu de données** : deux personnes portent `Violet` et sont désormais toutes
+  // deux affichées — Ngô Mạnh Quyền (Saigon Jokers 2012) et Vincent Chun Him Wong (PEACE
+  // 2021). La règle 3 veut alors un discriminant repris de Leaguepedia, et ce sont les titres
+  // de leurs pages canoniques qui le portent. Sans cela les deux carrières fusionneraient en
+  // une seule, sans alerte.
+  "violet (ngô mạnh quyền)": "Violet (Ngô Mạnh Quyền)",
+  "violet (vincent wong)": "Violet (Vincent Wong)",
 };
 
 // Départages d'égalité stricte imposés à la main, quand la règle 2 ne tranche pas.
@@ -144,6 +299,26 @@ const GRAPHIES_ARBITREES = {
 const EGALITES_ARBITREES = {
   "2016 T1 jungle": "bengi", // Bengi 10 / Blank 10, tous deux jusqu'en finale
   "2019 C9 jungle": "svenskeren", // Blaber 3 / Svenskeren 3 : titulaire actuel conservé
+};
+
+// Postes arbitrés à la main, quand les règles 1 et 2 placent un joueur sur deux postes de la
+// même rangée. Le modèle l'interdit — un joueur est une case, et `npm run validate` refuse le
+// doublon — mais la règle 1 ne l'empêche pas : un poste dont aucun candidat n'a fait son poste
+// majoritaire reçoit par défaut celui qui y a le plus joué, lequel tient déjà son propre poste.
+//
+// Clé « <année> <code> ». Valeur : par poste, `starter` pour imposer le titulaire (page
+// canonique du joueur) et `second` pour imposer la rotation — `null` la retire.
+const POSTES_ARBITRES = {
+  // Epik Gamer 2011, 7 parties, roster entièrement tournant : **cinq joueurs pour cinq
+  // postes**, et l'affectation est donc forcée, pas choisie. Le bot a été joué par Westrice
+  // (3), Dyrus (2) et Doublelift (2), sans que ce soit le poste majoritaire d'aucun des
+  // trois ; la règle 1 n'y qualifie personne et le script y place Westrice par défaut, alors
+  // qu'il tient déjà le top (4/7, son poste majoritaire). Doublelift tient le support (5/7,
+  // son poste majoritaire) : le déplacer viderait ce poste. Reste Dyrus, second du top avec
+  // 3 parties — le seul dont le déplacement ne laisse aucun poste vide. Le top perd donc sa
+  // demi-case et chacun des cinq joueurs occupe exactement un poste.
+  // Même nature que l'arbitrage Chauster (CLG 2011), détaillé dans docs/SOURCES.md.
+  "2011 EPIK": { bot: { starter: "dyrus" }, top: { second: null } },
 };
 
 // Pseudos réellement portés à une édition donnée, quand ils diffèrent de la graphie retenue.
@@ -163,6 +338,27 @@ const PSEUDOS_EPOQUE = {
   da7: { 2013: "comA" },
   clearlove: { 2017: "Clearlove7" }, // le 7 ajouté le temps de la saison 2017
   loveling: { 2013: "LoveLin" },
+  // Lot 4. Quatre cas, tous tranchés sur `PlayerRedirects` : un vrai pseudo d'époque y
+  // survit en redirection, une coquille de scoreboard non.
+  // `GoSu Pepper`, `GosuPepper` et `GoZu` y sont tous trois des alias d'`Edward`.
+  edward: { 2012: "GoSu Pepper" },
+  // `CndyPnda` y est un alias de `CandyPanda`, aux côtés de `Candy Panda` ; les 5 lignes de
+  // 2011 l'écrivent ainsi sans exception.
+  candypanda: { 2011: "CndyPnda" },
+  // Revers de l'arbitrage `kev1n` de `GRAPHIES_ARBITREES` : `Kevin (Kevin Rubiszewski)` est
+  // un alias de `Kev1n`, et c'est le pseudo des 5 lignes de 2011.
+  kev1n: { 2011: "Kevin" },
+  // Lot 5. Chen Hsiao-Hsien s'écrit `M1ssion` de 2017 à 2019 — la graphie que `/data` porte
+  // déjà, et c'est le premier critère de la règle 4 — puis `Mission` à partir de 2020, sur ses
+  // six lignes de 2020 comme sur ses six de 2022. Un `1` contre un `i` n'est pas une
+  // différence de casse : c'est un renommage, et sa page canonique dit `Mission`.
+  mission: { 2020: "Mission", 2022: "Mission" },
+  // Revers des discriminants de `GRAPHIES_ARBITREES` : le discriminant est une **identité**,
+  // pas une étiquette. Les deux Violet se sont appelés `Violet`, et c'est ce que leur case
+  // affiche ; seule la clé qui relie leurs apparitions porte le nom civil, pour que leurs deux
+  // carrières ne fusionnent pas.
+  "violet (ngô mạnh quyền)": { 2012: "Violet" },
+  "violet (vincent wong)": { 2021: "Violet" },
 };
 
 // Graphies d'année examinées puis écartées comme coquilles Leaguepedia : la graphie retenue
@@ -173,6 +369,12 @@ const COQUILLES_ECARTEES = {
   // Leaguepedia — il garde aussi `CyanideFI` en redirection — et non un pseudo porté : sa page
   // et son `Players.ID` disent l'un et l'autre `Cyanide` (arbitrage du 12/11/2026).
   "cyanide 2011": "Cyanide FI",
+  // `Ackerman` était bien le pseudo de Xiao Wang en 2014, et `PlayerRedirects` le garde sous
+  // `Ackerman (Xiao Wang)`. Il est pourtant écarté depuis le lot 5 : **une autre personne
+  // porte ce pseudo dans les données**, Gabriel Agustin Aparicio (LØS 2026), et un pseudo
+  // d'époque ne doit jamais usurper celui d'un joueur affiché — `npm run validate` le refuse.
+  // La rangée de 2014 affiche donc `GoDlike`, comme celle de 2013 (arbitrage du 12/11/2026).
+  "godlike 2014": "ackerman",
 };
 
 // Noms de colonne arrêtés par le plan. Le `name` d'une rangée n'est écrit que s'il en diffère.
@@ -185,6 +387,39 @@ const PLAN_TEAM_NAMES = {
   CLGEU: "CLG EU",
   C9: "Cloud9", TL: "Team Liquid", FLY: "FlyQuest", TSM: "TSM", CLG: "Counter Logic Gaming",
   AHQ: "ahq e-Sports Club", FW: "Flash Wolves", TPA: "Taipei Assassins",
+  // Lot 4. Le nom est celui de la page d'organisation Leaguepedia, **privé du discriminant
+  // de désambiguïsation** : `Griffin (Korean Team)` → Griffin, `Evil Geniuses.NA` → Evil
+  // Geniuses, `Rogue (European Team)` → Rogue, `LYON (2024 American Team)` → LYON. Le
+  // discriminant distingue des pages homonymes sur le wiki, il ne fait pas partie du nom.
+  AZF: "Azubu Frost", GRF: "Griffin", DNS: "DN SOOPers",
+  LNG: "LNG Esports", WBG: "Weibo Gaming", WE: "Team WE", SN: "Suning", IM: "I May",
+  RGE: "Rogue", SK: "SK Gaming", BDS: "Team BDS", AAA: "against All authority",
+  GMB: "Gambit Gaming", MSF: "Misfits Gaming", LD: "Lemondogs", ALL: "Alliance",
+  VIT: "Team Vitality", GDE: "Team gamed!de", M5: "Moscow Five",
+  "100T": "100 Thieves", EG: "Evil Geniuses", CG: "Clutch Gaming", LYON: "LYON", NRG: "NRG",
+  VUL: "Team Vulcun", IMT: "Immortals", EPIK: "Epik Gamer", LMQ: "LMQ", DIG: "Dignitas",
+  HKA: "Hong Kong Attitude", GRX: "G-Rex", MAD: "MAD Team", GAB: "Gamania Bears",
+  // Lot 5. Le discriminant de désambiguïsation s'enlève comme au lot précédent, à ceci près
+  // que Leaguepedia l'écrit **en majuscules** : `Unicorns of Love.CIS` → Unicorns of Love,
+  // `Lowkey Esports.Vietnam` → Lowkey Esports, `PEACE (Oceanic Team)` → PEACE. C'est la casse
+  // qui porte la distinction — `GamingGear.eu` garde son `.eu`, qui fait partie de la marque.
+  PSG: "PSG Talon", CFO: "CTBC Flying Oyster", BYG: "Beyond Gaming", TSW: "Team Secret Whales",
+  MVK: "MVK Esports", MCX: "Machi Esports",
+  DFM: "DetonatioN FocusMe", V3: "V3 Esports", SHG: "Fukuoka SoftBank HAWKS gaming", RPG: "Rampage",
+  GAM: "GAM Esports", TW: "Team Whales", SGB: "Saigon Buffalo", LK: "Lowkey Esports",
+  YGE: "Young Generation", PVB: "Phong Vũ Buffalo", MVKE: "MGN Vikings Esports", SAJ: "Saigon Jokers",
+  MSK: "Mineski", BKT: "Bangkok Titans", ASC: "Ascension Gaming", MG: "MEGA",
+  PCFC: "Pacific eSports", XAN: "Xan",
+  DW: "Dire Wolves", PCE: "PEACE", LGC: "Legacy Esports", CHF: "Chiefs Esports Club", MEC: "MAMMOTH",
+  SUP: "Papara SuperMassive", FB: "Fenerbahçe Esports", GS: "Galatasaray Esports",
+  RYL: "Royal Youth", DP: "Dark Passage", IW: "Istanbul Wildcats",
+  UOL: "Unicorns of Love", GMBE: "Gambit Esports", ANX: "Albus NoX Luna", GGEU: "GamingGear.eu",
+  // `paiN Gaming` garde la casse de l'organisation et des scoreboards : `Teams.Name` écrit
+  // `PaiN Gaming`, ce qui n'est qu'une différence de casse — pas un nom d'époque.
+  PAIN: "paiN Gaming", LOUD: "LOUD", INTZ: "INTZ", KBM: "KaBuM! Esports", FUR: "FURIA",
+  LOS: "LØS", RED: "RED Canids", ONE: "Team oNe eSports", VKS: "Vivo Keyd Stars",
+  FLAME: "Flamengo Esports",
+  R7: "Movistar R7", ISG: "Isurus", INF: "INFINITY", KLG: "Kaos Latin Gamers", LYN: "Lyon Gaming",
 };
 
 // Alias annuels. Décision du 11/11/2026 : cette table fait foi sur Leaguepedia, qui normalise
@@ -214,6 +449,53 @@ const PLAN_ALIASES = {
   OMG: { 2013: "Oh My God", 2014: "Oh My God" },
   // Rebrand de Taipei Assassins, rattaché à la colonne TPA (arbitrage du 11/11/2026).
   TPA: { 2019: "J Team" },
+  // Lot 4 : un seul des 33 noms d'organisation d'aujourd'hui diffère du nom porté à
+  // l'édition. `TeamRedirects` ramène `Afreeca Freecs` à la page `DN SOOPers`.
+  DNS: { 2018: "Afreeca Freecs" },
+  // Lot 5 : cinq noms d'époque réels. Les autres écarts entre nom de page et nom de rangée
+  // ne sont que le discriminant du wiki, qui n'est pas un nom porté.
+  GAM: { 2017: "GIGABYTE Marines" },
+  MVKE: { 2024: "Vikings Esports" },
+  PCFC: { 2011: "Team Pacific" },
+  SUP: { 2018: "SuperMassive Esports" },
+  R7: { 2020: "Rainbow7" },
+};
+
+// Région de chaque colonne, arrêtée par le plan. `fetchRegions()` la recalcule depuis la
+// source à chaque exécution et le rapport confronte les deux (§ 13) : cette table est la
+// décision, le calcul en est le contrôle.
+//
+// Un libellé de région est un **nom de ligue**, comme les cinq d'origine. La règle qui décide
+// de l'appartenance est dans docs/SOURCES.md, section « Périmètre » : la ligue réellement
+// jouée l'année de l'édition, jamais `Teams.Region`, qui donne celle d'aujourd'hui.
+const PLAN_REGIONS = {
+  T1: "LCK", GEN: "LCK", HLE: "LCK", DK: "LCK", KT: "LCK", DRX: "LCK", NJN: "LCK", SSB: "LCK", AZF: "LCK", GRF: "LCK", DNS: "LCK",
+  EDG: "LPL", RNG: "LPL", IG: "LPL", FPX: "LPL", TES: "LPL", JDG: "LPL", BLG: "LPL", AL: "LPL", OMG: "LPL", LGD: "LPL", LNG: "LPL", WBG: "LPL", WE: "LPL", SN: "LPL", IM: "LPL",
+  G2: "LEC", FNC: "LEC", MKOI: "LEC", KC: "LEC", H2K: "LEC", ORI: "LEC", CLGEU: "LEC", RGE: "LEC", SK: "LEC", BDS: "LEC", AAA: "LEC", GMB: "LEC", MSF: "LEC", LD: "LEC", ALL: "LEC", VIT: "LEC", GDE: "LEC", M5: "LEC",
+  C9: "LCS", TL: "LCS", FLY: "LCS", TSM: "LCS", CLG: "LCS", "100T": "LCS", EG: "LCS", CG: "LCS", LYON: "LCS", NRG: "LCS", VUL: "LCS", IMT: "LCS", EPIK: "LCS", LMQ: "LCS", DIG: "LCS",
+  AHQ: "LMS", FW: "LMS", TPA: "LMS", HKA: "LMS", GRX: "LMS", MAD: "LMS", GAB: "LMS",
+  PSG: "LCP", CFO: "LCP", BYG: "LCP", TSW: "LCP", MVK: "LCP", MCX: "LCP",
+  DFM: "LJL", V3: "LJL", SHG: "LJL", RPG: "LJL",
+  GAM: "VCS", TW: "VCS", SGB: "VCS", LK: "VCS", YGE: "VCS", PVB: "VCS", MVKE: "VCS", SAJ: "VCS",
+  MSK: "GPL", BKT: "GPL", ASC: "GPL", MG: "GPL", PCFC: "GPL", XAN: "GPL",
+  DW: "LCO", PCE: "LCO", LGC: "LCO", CHF: "LCO", MEC: "LCO",
+  SUP: "TCL", FB: "TCL", GS: "TCL", RYL: "TCL", DP: "TCL", IW: "TCL",
+  UOL: "LCL", GMBE: "LCL", ANX: "LCL", GGEU: "LCL",
+  PAIN: "CBLOL", LOUD: "CBLOL", INTZ: "CBLOL", KBM: "CBLOL", FUR: "CBLOL", LOS: "CBLOL", RED: "CBLOL", ONE: "CBLOL", VKS: "CBLOL", FLAME: "CBLOL",
+  R7: "LLA", ISG: "LLA", INF: "LLA", KLG: "LLA", LYN: "LLA",
+};
+
+// Pages de lignée Leaguepedia qu'aucun nom d'équipe des Worlds ne relie à la colonne, et que
+// la fenêtre d'activité doit pourtant couvrir. `TeamRedirects` ne les y ramène pas et
+// `Teams.RenamedTo` ne les y relie pas non plus : sans cette table, la fenêtre calculée
+// commencerait trop tard. Pages vérifiées dans `Teams` (arbitrage du 12/11/2026).
+const LIGNEES_ARBITREES = {
+  // L'organisation alignait deux équipes de 2013 à 2014, `KT Rolster B` et `KT Rolster A`,
+  // avant de les fusionner sous `KT Rolster` : deux pages d'org distinctes, sigles KT.B et KT.A.
+  KT: ["KT Rolster Bullets", "KT Rolster Arrows"],
+  // Même cas : `NaJin Black Sword` et `NaJin White Shield` ont fusionné en `NaJin e-mFire`,
+  // page d'org à part, d'où viennent les dernières parties de la lignée (novembre 2015).
+  NJN: ["NaJin e-mFire"],
 };
 
 // ---------------------------------------------------------------------- utilitaires
@@ -332,6 +614,467 @@ async function checkPages(years) {
   return { covered, excluded, outside, empty, uncovered, regional };
 }
 
+// ------------------------------------------------- parcours de chaque équipe à l'édition
+
+// `data/results.json` dit jusqu'où chaque équipe est allée. C'était la dernière donnée encore
+// établie à la main ; elle vient maintenant de `TournamentResults.Place` sur la page de
+// l'édition, traduit en libellé par la règle déjà écrite dans docs/SOURCES.md :
+//
+//   1 → W, 2 → F, 3-4 → SF, 5-8 → QF
+//
+// Au-delà du huitième rang, deux distinctions que le classement seul ne donne pas :
+//
+//  - **`P`, éliminé au play-in** — déduit des pages qui portent réellement ses parties. Une
+//    équipe dont tous les scoreboards sont sur `…/Play-In` n'a pas atteint le Main Event.
+//    C'est exact, et équipe par équipe, là où une coupure par rang serait à retrouver à
+//    chaque édition ;
+//  - **`G` (groupes) contre `S` (ronde suisse)** — lu sur les noms de tours du Main Event.
+//    De 2011 à 2022 ils s'appellent `Group Stage` ou `Day 1`…`Day 8` ; depuis 2023,
+//    `Round 1`…`Round 5`. Le Play-In est écarté du test : lui aussi emploie `Round 2`.
+//
+// Un classement non encore attribué sort `null` côté Leaguepedia — les deux finalistes de
+// 2026 au moment d'écrire. Le script ne propose alors aucun libellé et le signale : c'est le
+// cas du `F*` de `data/results.json`, qui reste un arbitrage à la main.
+const PLACE_LABEL = [[1, "W"], [2, "F"], [4, "SF"], [8, "QF"]];
+const GROUP_ROUND = /^(Group Stage|Day \d)/;
+
+async function fetchPlaces(years, computed, outDir) {
+  const out = new Map(); // année → { code → { label, place, rank, how } }
+  const notes = [];
+  for (const year of years) {
+    const rows = await cargoAll({
+      tables: "TournamentResults",
+      fields: "TournamentResults.OverviewPage=event,TournamentResults.Team=team,TournamentResults.Place=place,TournamentResults.Place_Number=rank",
+      where: `TournamentResults.OverviewPage LIKE '${PAGES[year]}%'`,
+      order_by: "TournamentResults.Place_Number ASC",
+    });
+    await sleep(THROTTLE_MS);
+    // Seule la page de l'édition classe les participants : ses qualifications régionales en
+    // sous-page classent les leurs, et le `LIKE` les ramène aussi.
+    const ranking = rows.filter((r) => asText(r.event) === PAGES[year]);
+    if (!ranking.length) { notes.push(`${year} : aucun classement sur \`${PAGES[year]}\``); continue; }
+
+    const teamsOfYear = computed.get(year) ?? new Map();
+    const byLpName = new Map([...teamsOfYear.values()].map((t) => [low(t.lpName), t]));
+    // Format du Main Event : la page de l'édition qui n'est pas le Play-In.
+    const rounds = new Set();
+    for (const t of teamsOfYear.values()) {
+      for (const page of t.pages) {
+        if (/\/Play-In$/i.test(page)) continue;
+        for (const stage of t.stages ?? []) rounds.add(stage);
+      }
+    }
+    const swiss = rounds.size > 0 && ![...rounds].some((r) => GROUP_ROUND.test(r));
+    const deep = swiss ? "S" : "G";
+
+    const year_ = {};
+    for (const r of ranking) {
+      const team = asText(r.team);
+      const rank = Number(r.rank) || 0;
+      if (!team) { notes.push(`${year} : rang ${asText(r.place) ?? "?"} encore sans équipe — finale non jouée, le libellé reste à poser à la main`); continue; }
+      const t = byLpName.get(low(team));
+      if (!t?.code) continue; // équipe hors périmètre
+      const bracket = PLACE_LABEL.find(([n]) => rank <= n)?.[1] ?? null;
+      const playInOnly = [...t.pages].every((page) => /\/Play-In$/i.test(page));
+      const label = bracket ?? (playInOnly ? "P" : deep);
+      year_[t.code] = {
+        label, place: asText(r.place), rank,
+        how: bracket ? "classement" : playInOnly ? "play-in seul" : `Main Event (${swiss ? "ronde suisse" : "groupes"})`,
+      };
+    }
+    out.set(year, year_);
+  }
+  await writeFile(join(outDir, "places.json"), `${JSON.stringify({
+    $comment: "Parcours de chaque équipe suivie, déduit de TournamentResults.Place sur la page de l'édition : 1 → W, 2 → F, 3-4 → SF, 5-8 → QF, puis P si l'équipe n'a joué que le Play-In, sinon G (groupes) ou S (ronde suisse) selon le format du Main Event. À recopier dans data/results.json. Voir § 12 du rapport.",
+    results: Object.fromEntries([...out].map(([y, e]) => [y, Object.fromEntries(Object.entries(e).map(([c, v]) => [c, v.label]))])),
+    detail: Object.fromEntries(out),
+  }, null, 1)}\n`);
+  return { places: out, notes };
+}
+
+// ----------------------------------------------------- fenêtres d'activité des colonnes
+
+// Première et dernière partie de chaque organisation sur Leaguepedia, toutes compétitions
+// confondues : la règle écrite de `active`, appliquée à la main jusqu'ici. Sur 66 colonnes
+// c'étaient 66 occasions de se tromper ; le script la calcule donc, et le rapport la
+// confronte à `data/teams.json`. Il ne l'écrit pas : l'invariant « ce script ne modifie
+// jamais /data » vaut ici comme ailleurs.
+//
+// La lignée d'une organisation est éclatée en plusieurs pages sur le wiki. Trois chemins la
+// recomposent, tous trois issus de la source : les alias de `TeamRedirects`, les
+// **prédécesseurs** de `Teams.RenamedTo` suivis jusqu'à fermeture, et la table
+// `LIGNEES_ARBITREES` pour ce qu'aucun des deux ne relie.
+//
+// Deux garde-fous, sans lesquels la fermeture avale des organisations voisines :
+//
+//  - **les prédécesseurs seulement, jamais les successeurs.** `Teams.RenamedTo` relie
+//    `Gamers2` à `G2 Esports` et `Snake Esports` à `LNG Esports` — même organisation sous
+//    un nom antérieur, à compter dans la fenêtre. Suivi vers l'avant, le même champ mène à
+//    l'organisation qui a *repris la suite* : `Alliance` → `Elements`, `Origen` →
+//    `Astralis`, `NaJin e-mFire` → `e-mFire`, `Team Vulcun` → `XDG Gaming`. Ce n'est plus
+//    la même colonne, et la borne de fin s'en trouvait repoussée de plusieurs années ;
+//  - **jamais une page qui est elle-même une colonne.** `Clutch Gaming` porte
+//    `RenamedTo: Dignitas`, et les deux ont une rangée aux Worlds : ce sont deux colonnes,
+//    par le même critère que CLG / CLG EU — une page d'organisation, une colonne. Une page
+//    sans colonne propre alimente en revanche la fenêtre de celle dont elle prolonge la
+//    lignée (`OpTic Gaming` → `Immortals`).
+//
+// La borne de fin n'est posée que si **toutes** les pages de la lignée portent
+// `IsDisbanded`. La borne de début est un **minorant** : une page de lignée qu'aucun des
+// trois chemins n'atteint fait commencer la fenêtre trop tard, et c'est pourquoi le rapport
+// signale l'écart au lieu de remplacer la valeur saisie.
+async function fetchActive(outDir) {
+  const codes = [...new Set(Object.values(TEAM_CODE))];
+  const seeds = new Map(); // code → noms de départ
+  for (const [name, code] of Object.entries(TEAM_CODE)) {
+    if (!seeds.has(code)) seeds.set(code, []);
+    seeds.get(code).push(name);
+  }
+  for (const [code, extra] of Object.entries(LIGNEES_ARBITREES)) seeds.get(code)?.push(...extra);
+
+  // nom → page d'org. `TeamRedirects` n'a pas de champ de cible : la page qui porte la
+  // redirection *est* la page d'organisation.
+  const names = [...new Set([...seeds.values()].flat())];
+  const pageOfName = new Map();
+  for (const chunk of chunks(names, CHUNK)) {
+    const rows = await cargoAll({
+      tables: "TeamRedirects",
+      fields: "TeamRedirects.AllName=alias,TeamRedirects._pageName=page",
+      where: `TeamRedirects.AllName IN (${sqlList(chunk)})`,
+    });
+    for (const r of rows) if (r.alias && r.page) pageOfName.set(low(r.alias), String(r.page));
+    await sleep(THROTTLE_MS);
+  }
+  const pagesOfCode = new Map(codes.map((c) => [c, new Set(seeds.get(c).map((n) => pageOfName.get(low(n)) ?? n))]));
+
+  // Pages qui sont elles-mêmes une colonne : la fermeture ne doit jamais les absorber.
+  const ownColumn = new Set([...pagesOfCode.values()].flatMap((set) => [...set]));
+
+  // Fermeture par les prédécesseurs de `Teams.RenamedTo`, jusqu'à ne plus rien trouver.
+  const fiches = new Map(); // page → fiche Teams, ou null si la page n'en porte pas
+  const teamsWhere = async (where) => {
+    const rows = await cargoAll({
+      tables: "Teams",
+      fields: "Teams.OverviewPage=page,Teams.Name=name,Teams.Short=short,Teams.Region=region,Teams.Location=loc,Teams.RenamedTo=renamed,Teams.IsDisbanded=disbanded",
+      where,
+    });
+    await sleep(THROTTLE_MS);
+    return rows;
+  };
+  for (let round = 0; round < 6; round++) {
+    const unknown = [...new Set([...pagesOfCode.values()].flatMap((set) => [...set]))].filter((pg) => !fiches.has(pg));
+    if (!unknown.length) break;
+    for (const chunk of chunks(unknown, CHUNK)) {
+      const rows = await teamsWhere(`Teams.OverviewPage IN (${sqlList(chunk)})`);
+      const byPage = new Map(rows.map((r) => [String(r.page), r]));
+      // Toutes les pages d'organisation ne sont pas la clé de leur propre fiche : `Teams`
+      // indexe sur `OverviewPage`, qui diffère parfois du titre de la page où vit la
+      // redirection — `ahq eSports Club`, `Saigon Jokers` et `GAM Esports` sont dans ce cas.
+      // Sans ce second passage par `Teams.Name`, leur `Location` manque, et c'est elle qui
+      // tranche les régions que Leaguepedia nomme `SEA` ou `Americas`.
+      const manquants = chunk.filter((pg) => !byPage.has(pg));
+      if (manquants.length) {
+        for (const r of await teamsWhere(`Teams.Name IN (${sqlList(manquants)})`)) {
+          const nom = asText(r.name);
+          if (nom && !byPage.has(nom)) byPage.set(nom, r);
+        }
+      }
+      for (const pg of chunk) fiches.set(pg, byPage.get(pg) ?? null);
+    }
+    // Prédécesseurs : les pages dont `RenamedTo` désigne une page déjà retenue.
+    let grew = false;
+    for (const chunk of chunks(unknown, CHUNK)) {
+      for (const r of await teamsWhere(`Teams.RenamedTo IN (${sqlList(chunk)})`)) {
+        const page = String(r.page);
+        const renamed = asText(r.renamed);
+        if (ownColumn.has(page)) continue; // page déjà colonne : elle garde sa propre fenêtre
+        for (const pages of pagesOfCode.values()) {
+          if (renamed && pages.has(renamed) && !pages.has(page)) { pages.add(page); grew = true; }
+        }
+      }
+    }
+    if (!grew && ![...pagesOfCode.values()].flatMap((set) => [...set]).some((pg) => !fiches.has(pg))) break;
+  }
+
+  // tous les noms employés par ces pages
+  const allPages = [...new Set([...pagesOfCode.values()].flatMap((s) => [...s]))];
+  const namesOfPage = new Map(allPages.map((p) => [p, new Set([p])]));
+  for (const chunk of chunks(allPages, CHUNK)) {
+    const rows = await cargoAll({
+      tables: "TeamRedirects",
+      fields: "TeamRedirects.AllName=alias,TeamRedirects._pageName=page",
+      where: `TeamRedirects._pageName IN (${sqlList(chunk)})`,
+    });
+    for (const r of rows) namesOfPage.get(String(r.page))?.add(String(r.alias));
+    await sleep(THROTTLE_MS);
+  }
+
+  // première et dernière partie, par nom d'équipe
+  const span = new Map(); // nom en minuscules → { first, last, games }
+  const allNames = [...new Set([...namesOfPage.values()].flatMap((s) => [...s]))];
+  for (const side of ["Team1", "Team2"]) {
+    for (const chunk of chunks(allNames, 40)) {
+      const rows = await cargoAll({
+        tables: "ScoreboardGames=SG",
+        fields: `SG.${side}=team,MIN(SG.DateTime_UTC)=first,MAX(SG.DateTime_UTC)=last,COUNT(*)=games`,
+        where: `SG.${side} IN (${sqlList(chunk)})`,
+        group_by: `SG.${side}`,
+      });
+      // `ScoreboardGames` ne respecte pas toujours la casse du titre de page (`yoe Flash
+      // Wolves` contre `Yoe Flash Wolves`) : la clé est donc en minuscules.
+      for (const r of rows) {
+        const k = low(r.team);
+        const cur = span.get(k) ?? { first: null, last: null, games: 0 };
+        const first = asText(r.first);
+        const last = asText(r.last);
+        if (first && (!cur.first || first < cur.first)) cur.first = first;
+        if (last && (!cur.last || last > cur.last)) cur.last = last;
+        cur.games += Number(r.games) || 0;
+        span.set(k, cur);
+      }
+      await sleep(THROTTLE_MS);
+    }
+  }
+
+  const out = new Map();
+  for (const code of codes) {
+    const pages = [...pagesOfCode.get(code)].sort();
+    let first = null;
+    let last = null;
+    let games = 0;
+    for (const page of pages) {
+      for (const name of namesOfPage.get(page) ?? [page]) {
+        const s = span.get(low(name));
+        if (!s) continue;
+        if (s.first && (!first || s.first < first)) first = s.first;
+        if (s.last && (!last || s.last > last)) last = s.last;
+        games += s.games;
+      }
+    }
+    const known = pages.map((p) => fiches.get(p)).filter(Boolean);
+    // Une seule page encore en activité suffit à laisser la fenêtre ouverte.
+    const disbanded = known.length > 0 && known.every((f) => String(f.disbanded) === "1");
+    out.set(code, {
+      pages, first, last, games, disbanded,
+      active: first ? (disbanded ? [Number(first.slice(0, 4)), Number(last.slice(0, 4))] : [Number(first.slice(0, 4))]) : null,
+      shorts: [...new Set(known.map((f) => asText(f.short)).filter(Boolean))],
+    });
+  }
+  await writeFile(join(outDir, "active.json"), `${JSON.stringify({
+    $comment: "Fenetre d'activite calculee pour chaque colonne : première et dernière partie sur Leaguepedia, toutes compétitions confondues, sur toute la lignée de pages de l'organisation. La borne de fin n'est posée que si toutes ces pages portent IsDisbanded. La borne de début est un minorant : une page de lignée hors de portée des trois chemins de résolution la fait commencer trop tard. Voir § 11 du rapport.",
+    columns: Object.fromEntries(out),
+  }, null, 1)}\n`);
+  // La lignée sert aussi à `fetchRegions` : même résolution, deux usages.
+  return { columns: out, lineage: { pagesOfCode, namesOfPage, fiches } };
+}
+
+// ------------------------------------------- région de chaque colonne, édition par édition
+
+// La règle de périmètre de docs/SOURCES.md, rendue exécutable. Elle décide à quelle famille
+// de région appartient une rangée, **à l'année de son édition** : `Teams.Region` ne fait pas
+// foi, puisqu'elle donne la région de l'organisation aujourd'hui — elle range 100 Thieves et
+// KaBuM! sous la même étiquette « Americas » et fait avaler la Turquie par l'EMEA.
+//
+// Un libellé de région est un nom de ligue. La table ci-dessous les relie aux noms que
+// Leaguepedia emploie, avec sa propre région : c'est le couple (`League`, `Region`) qui
+// identifie une ligue, le nom seul ne suffisant pas — `LoL Japan League` porte tantôt
+// « Japan », tantôt « Asia Pacific ».
+const LIGUES = [
+  ["LoL The Champions", "Korea", "LCK"], ["LoL Champions Korea", "Korea", "LCK"], ["OGN", "Korea", "LCK"],
+  ["Tencent LoL Pro League", "China", "LPL"],
+  ["Europe League Championship Series", "Europe", "LEC"],
+  ["LoL EMEA Championship", "Europe", "LEC"], ["LoL EMEA Championship", "EMEA", "LEC"],
+  ["North America League Championship Series", "North America", "LCS"],
+  ["League of Legends Championship Series", "North America", "LCS"],
+  ["League of Legends Championship of The Americas North", "Americas", "LCS"],
+  ["LoL Master Series", "LMS", "LMS"],
+  ["Turkish Championship League", "Turkey", "TCL"],
+  ["LoL Continental League", "CIS", "LCL"],
+  ["Circuit Brazilian League of Legends", "Brazil", "CBLOL"], ["Brazil Regional Finals", "Brazil", "CBLOL"],
+  ["Vietnam Championship Series", "Vietnam", "VCS"],
+  ["LoL Japan League", "Japan", "LJL"], ["LoL Japan League", "Asia Pacific", "LJL"],
+  ["Oceanic Pro League", "Oceania", "LCO"], ["LoL Circuit Oceania", "Oceania", "LCO"],
+  ["LoL Circuit Oceania", "Asia Pacific", "LCO"],
+  ["Pacific Championship Series", "Asia Pacific", "LCP"],
+  ["League of Legends Championship Pacific", "Asia Pacific", "LCP"],
+  ["Liga Latinoamerica", "Latin America", "LLA"], ["Liga Latinoamérica Norte", "LAN", "LLA"],
+  ["Copa Latinoamérica Norte", "LAN", "LLA"], ["Copa Latinoamérica Sur", "LAS", "LLA"],
+  ["Latin America Cup", "Latin America", "LLA"], ["Latin American Regional Finals", "Latin America", "LLA"],
+];
+
+// Régions Leaguepedia qui couvrent **plusieurs** familles du projet : leur nom ne désigne
+// alors aucun territoire, et c'est `Teams.Location` qui décide.
+//
+//  - `SEA` est la région de la GPL et des circuits qui lui succèdent, de Taïwan au Vietnam en
+//    passant par la Thaïlande et les Philippines. Taïwan, Hong Kong et Macao relèvent de la
+//    LMS — c'est ce qui rattache les Taipei Assassins et ahq avant 2015 — le Vietnam de la
+//    VCS, et le reste reste GPL ;
+//  - `Americas` est celle de la LTA South 2025, qui fusionne pour une saison le CBLOL et la
+//    LLA. La fusion ne succède ni à l'une ni à l'autre : le CBLOL rouvre en 2026, et c'est
+//    donc la localisation de l'organisation qui tranche sa seule rangée.
+const PAR_TERRITOIRE = {
+  SEA: { Taiwan: "LMS", "Hong Kong": "LMS", Macau: "LMS", Macao: "LMS", Vietnam: "VCS", "*": "GPL" },
+  Americas: { Brazil: "CBLOL", "*": "LLA" },
+};
+const LIGUES_MULTI = new Set([
+  "Garena Premier League|SEA", "League of Legends SEA Tour|SEA", "SEA Tour|SEA",
+  "Thailand Pro League|SEA", "Thailand Pro League 2015|SEA",
+  "Mountain Dew Championship Series|SEA", "Vietnam Championship Series A|SEA",
+  "Taiwan eSports League|SEA", "League of Legends Nova League|SEA",
+  "League of Legends Championship of The Americas South|Americas",
+]);
+// Région d'une qualification régionale des Worlds, et territoire dominant d'une année.
+const REGION_FAMILLE = {
+  Korea: "LCK", China: "LPL", Europe: "LEC", EMEA: "LEC", "North America": "LCS", LMS: "LMS",
+  Brazil: "CBLOL", Turkey: "TCL", CIS: "LCL", Vietnam: "VCS", Japan: "LJL", Oceania: "LCO",
+  LAN: "LLA", LAS: "LLA", "Latin America": "LLA",
+};
+const SANS_TERRITOIRE = new Set(["International", "Wildcard", "Asia", "", null, undefined]);
+
+const parTerritoire = (region, fiche) => PAR_TERRITOIRE[region]?.[fiche?.loc ?? ""] ?? PAR_TERRITOIRE[region]?.["*"] ?? null;
+const familleDe = (e, fiche) => (LIGUES_MULTI.has(`${e.league}|${e.region}`)
+  ? parTerritoire(e.region, fiche)
+  : LIGUES.find(([l, r]) => l === e.league && r === e.region)?.[2] ?? null);
+const estQualif = (e) => e.league === "World Championship" || /Regional Finals|World Championship\/Qualifiers/i.test(e.event ?? "");
+const plusFort = (m) => [...m].sort((a, b) => b[1] - a[1])[0];
+
+// Cinq niveaux de preuve, du plus direct au dernier recours.
+function familleDeLAnnee(events, fiche) {
+  // 1 — la qualification régionale des Worlds de l'année : la source dit d'où l'équipe sort.
+  const q = new Map();
+  for (const e of events) {
+    if (!estQualif(e)) continue;
+    const f = REGION_FAMILLE[e.region] ?? parTerritoire(e.region, fiche);
+    if (f) q.set(f, (q.get(f) ?? 0) + e.games);
+  }
+  if (q.size) return { region: plusFort(q)[0], via: "qualification" };
+
+  // 2 — la ligue domestique de niveau Primary.
+  const ligues = new Map();
+  const tournois = new Map();
+  for (const e of events) {
+    if (e.level !== "Primary") continue;
+    const f = familleDe(e, fiche);
+    if (!f) continue;
+    ligues.set(f, (ligues.get(f) ?? 0) + e.games);
+    tournois.set(f, (tournois.get(f) ?? 0) + 1);
+  }
+  const terr = new Map();
+  for (const e of events) {
+    if (SANS_TERRITOIRE.has(e.region) || estQualif(e)) continue;
+    terr.set(e.region, (terr.get(e.region) ?? 0) + 1);
+  }
+  const dom = plusFort(terr);
+  const familleDom = dom ? (REGION_FAMILLE[dom[0]] ?? parTerritoire(dom[0], fiche)) : null;
+  if (ligues.size) {
+    const best = [...ligues].sort((a, b) => (tournois.get(b[0]) - tournois.get(a[0])) || b[1] - a[1])[0][0];
+    // Participation invitée dans une ligue étrangère : CLG Prime, CLG EU et Team WE ont tous
+    // trois joué les Champions coréens de 2012 sans être coréens. Une poignée de tournois
+    // contre une saison entière ailleurs, et c'est le territoire qui l'emporte.
+    if (familleDom && familleDom !== best && dom[1] > tournois.get(best) * 2) {
+      return { region: familleDom, via: `territoire ${dom[0]}` };
+    }
+    return { region: best, via: "ligue" };
+  }
+
+  // 3 — le territoire dominant, sur les seules ligues de niveau Primary : sans ce filtre, les
+  // deux coupes européennes de Dark Passage en 2014 l'emporteraient sur ses cinq journées de TCL.
+  const prim = new Map();
+  for (const e of events) {
+    if (e.level !== "Primary" || SANS_TERRITOIRE.has(e.region) || estQualif(e)) continue;
+    prim.set(e.region, (prim.get(e.region) ?? 0) + 1);
+  }
+  const p = plusFort(prim);
+  if (p) {
+    const f = REGION_FAMILLE[p[0]] ?? parTerritoire(p[0], fiche);
+    if (f) return { region: f, via: `territoire ${p[0]}` };
+  }
+  // 4 — tous niveaux confondus quand aucune ligue de premier niveau ne porte de région, mais
+  // **seulement** si la fiche de l'organisation confirme : sans ce garde-fou, les dix coupes
+  // européennes de GamingGear.eu en 2013 l'emporteraient sur sa région CIS, alors qu'elle
+  // s'est qualifiée par le wildcard et n'a jamais joué l'EU LCS.
+  if (!p && dom && fiche) {
+    const vue = REGION_FAMILLE[fiche.region] ?? parTerritoire(fiche.region, fiche);
+    if (vue && vue === familleDom) return { region: familleDom, via: `territoire ${dom[0]} hors Primary` };
+  }
+  // 5 — dernier recours : la région d'aujourd'hui. Signalée comme telle, à confirmer à la main.
+  if (fiche) {
+    const f = REGION_FAMILLE[fiche.region] ?? parTerritoire(fiche.region, fiche);
+    if (f) return { region: f, via: `Teams.Region ${fiche.region}`, flag: true };
+  }
+  return { region: null, via: p || dom ? `aucune famille (${(p ?? dom)[0]})` : "aucun signal" };
+}
+
+async function fetchRegions(computed, outDir, lineage) {
+  const { pagesOfCode, namesOfPage, fiches } = lineage;
+  const codeOfName = new Map(); // nom d'équipe en minuscules → code de colonne
+  for (const [code, pages] of pagesOfCode) {
+    for (const page of pages) for (const name of namesOfPage.get(page) ?? [page]) codeOfName.set(low(name), code);
+  }
+  const ficheOfCode = new Map([...pagesOfCode].map(([code, pages]) => [code, [...pages].map((pg) => fiches.get(pg)).find(Boolean) ?? null]));
+  const noms = [...new Set([...namesOfPage.values()].flatMap((set) => [...set]))];
+
+  // Deux sources complémentaires : `ScoreboardTeams` compte les parties mais ne couvre pas
+  // les tournois anciens, `TournamentResults` couvre les placements depuis 2011 sans compter
+  // les parties. Un tournoi connu des seuls placements pèse 1.
+  const byCodeYear = new Map();
+  const vus = new Set();
+  const ajouter = (code, year, e) => {
+    const k = `${code}|${year}`;
+    if (!byCodeYear.has(k)) byCodeYear.set(k, []);
+    const ek = `${k}|${e.event}`;
+    if (vus.has(ek)) return;
+    vus.add(ek);
+    byCodeYear.get(k).push(e);
+  };
+  const avaler = (rows) => {
+    for (const r of rows) {
+      const code = codeOfName.get(low(r.team));
+      const year = Number(r.year) || Number(String(asText(r.start) ?? "").slice(0, 4)) || 0;
+      if (!code || !year) continue;
+      ajouter(code, year, {
+        league: asText(r.league), region: asText(r.region), level: asText(r.level),
+        event: asText(r.event), games: Number(r.games) || 1,
+      });
+    }
+  };
+  for (const chunk of chunks(noms, 25)) {
+    avaler(await cargoAll({
+      tables: "ScoreboardTeams=ST,Tournaments=T",
+      join_on: "ST.OverviewPage=T.OverviewPage",
+      fields: "ST.Team=team,T.OverviewPage=event,T.League=league,T.Region=region,T.TournamentLevel=level,T.Year=year,T.DateStart=start,COUNT(*)=games",
+      where: `ST.Team IN (${sqlList(chunk)})`,
+      group_by: "ST.Team,T.OverviewPage,T.League,T.Region,T.TournamentLevel,T.Year,T.DateStart",
+    }));
+    await sleep(THROTTLE_MS);
+  }
+  for (const chunk of chunks(noms, 40)) {
+    avaler(await cargoAll({
+      tables: "TournamentResults=TR,Tournaments=T",
+      join_on: "TR.OverviewPage=T.OverviewPage",
+      fields: "TR.Team=team,T.OverviewPage=event,T.League=league,T.Region=region,T.TournamentLevel=level,T.Year=year,T.DateStart=start",
+      where: `TR.Team IN (${sqlList(chunk)})`,
+    }));
+    await sleep(THROTTLE_MS);
+  }
+
+  const out = new Map(); // année → code → { region, via, flag }
+  for (const [year, teamsOfYear] of computed) {
+    const byCode = {};
+    for (const t of teamsOfYear.values()) {
+      if (!t.code) continue;
+      byCode[t.code] = familleDeLAnnee(byCodeYear.get(`${t.code}|${year}`) ?? [], ficheOfCode.get(t.code));
+    }
+    out.set(year, byCode);
+  }
+  await writeFile(join(outDir, "regions.json"), `${JSON.stringify({
+    $comment: "Famille de region calculee pour chaque colonne, edition par edition, par la ligue reellement jouee cette annee-la. Cinq niveaux de preuve : qualification regionale des Worlds, ligue domestique de niveau Primary, territoire dominant sur les ligues Primary, territoire tous niveaux confirme par Teams.Region, puis Teams.Region en dernier recours. Voir la section 13 du rapport et docs/SOURCES.md.",
+    regions: Object.fromEntries([...out].map(([y, e]) => [y, Object.fromEntries(Object.entries(e).map(([c, v]) => [c, v.region]))])),
+    detail: Object.fromEntries(out),
+  }, null, 1)}\n`);
+  return out;
+}
+
 // -------------------------------------------------------- collecte d'une édition
 
 // CargoExport sérialise en nombre JSON toute valeur qui ressemble à un nombre : le pseudo
@@ -380,6 +1123,13 @@ const chunks = (arr, n) => Array.from({ length: Math.ceil(arr.length / n) }, (_,
 //
 // `PlayerRedirects` donne la page canonique de chaque alias, et `Players` le pseudo de
 // référence, le nom complet et le pays.
+//
+// Deux champs de pays, et c'est le second qui compte : `Country` est le pays de
+// **naissance**, `NationalityPrimary` la **nationalité** — Biofrost est canadien né en
+// Chine, Huhi américain né en France. C'est la nationalité que `data/players.json`
+// enregistre, puisque c'est elle qui décide si un joueur est importé dans sa région
+// (docs/SOURCES.md, section « Nationalités »). Les deux sont relevés : le rapport signale
+// les joueurs chez qui ils diffèrent.
 async function resolvePeople(links, { refresh, outDir }) {
   const cache = join(outDir, "raw", "people.json");
   if (!refresh) {
@@ -409,12 +1159,17 @@ async function resolvePeople(links, { refresh, outDir }) {
   for (const chunk of chunks(pages, CHUNK)) {
     const rows = await cargoAll({
       tables: "Players",
-      fields: "Players.OverviewPage=page,Players.ID=id,Players.Name=name,Players.Country=country",
+      fields: "Players.OverviewPage=page,Players.ID=id,Players.Name=name,Players.Country=country,Players.NationalityPrimary=nationality",
       where: `Players.OverviewPage IN (${sqlList(chunk)})`,
     });
     for (const r of rows) {
       const page = asText(r.page);
-      if (page) info.set(low(page), { id: asText(r.id), fullName: asText(r.name), country: asText(r.country) });
+      if (page) {
+        info.set(low(page), {
+          id: asText(r.id), fullName: asText(r.name),
+          country: asText(r.country), nationality: asText(r.nationality),
+        });
+      }
     }
     await sleep(THROTTLE_MS);
   }
@@ -428,6 +1183,7 @@ async function resolvePeople(links, { refresh, outDir }) {
       lpId: fiche?.id ?? null,
       fullName: fiche?.fullName ?? splitLink(link).fullName,
       country: fiche?.country ?? null,
+      nationality: fiche?.nationality ?? null,
       known: Boolean(fiche),
     });
   }
@@ -451,7 +1207,7 @@ function buildCensus(rowsByYear, resolution) {
       if (!p) {
         p = {
           id, page: res?.page ?? r.link, lpId: res?.lpId ?? null, fullName: res?.fullName ?? null,
-          country: res?.country ?? null, known: Boolean(res?.known),
+          country: res?.country ?? null, nationality: res?.nationality ?? null, known: Boolean(res?.known),
           links: new Map(), spellings: new Map(), byYear: new Map(), firstYear: year, lastYear: year,
         };
         people.set(id, p);
@@ -495,10 +1251,12 @@ function buildYear(year, rows, census, resolution, notes) {
       return;
     }
     if (!r.dt) missingDates.add(r.gid);
-    if (!teams.has(r.team)) teams.set(r.team, { lpName: r.team, gameIds: new Set(), players: new Map(), pages: new Set() });
+    if (!teams.has(r.team)) teams.set(r.team, { lpName: r.team, gameIds: new Set(), players: new Map(), pages: new Set(), stages: new Set() });
     const team = teams.get(r.team);
     team.gameIds.add(r.gid);
     team.pages.add(r.page);
+    // Nom du tour, pour que `fetchPlaces` distingue les groupes de la ronde suisse.
+    if (!/\/Play-In$/i.test(r.page ?? "")) team.stages.add(roundOf(r.gid) ?? "?");
 
     const who = census.get(idFor(r.link, resolution));
     if (!team.players.has(who.id)) team.players.set(who.id, { who, roles: new Map() });
@@ -521,7 +1279,7 @@ function buildYear(year, rows, census, resolution, notes) {
     const games = team.gameIds.size;
     const limit = games * THRESHOLD;
     const code = TEAM_CODE[team.lpName] ?? null;
-    const detail = { code, lpName: team.lpName, games, threshold: limit, pages: [...team.pages].sort(), roles: {}, issues: [] };
+    const detail = { code, lpName: team.lpName, games, threshold: limit, pages: [...team.pages].sort(), stages: [...team.stages], roles: {}, issues: [] };
 
     // Règle 1, seconde condition : le poste où le joueur a joué le plus de parties.
     const majority = new Map();
@@ -621,6 +1379,48 @@ function buildYear(year, rows, census, resolution, notes) {
       detail.roles[role] = { starter, second, candidates };
     }
 
+    // Arbitrage de poste : il s'applique après coup, les règles 1 et 2 ayant déjà parlé.
+    const forcedRoles = POSTES_ARBITRES[`${year} ${code}`];
+    for (const [role, wanted] of Object.entries(forcedRoles ?? {})) {
+      const r = detail.roles[role];
+      if (!r) { detail.issues.push({ kind: "arbitrage-inapplicable", text: `${role} : POSTES_ARBITRES désigne un poste sans aucune ligne` }); continue; }
+      if (Object.hasOwn(wanted, "starter")) {
+        const c = r.candidates.find((x) => x.id === wanted.starter);
+        if (!c) { detail.issues.push({ kind: "arbitrage-inapplicable", text: `${role} : POSTES_ARBITRES impose \`${wanted.starter}\`, qui n'a joué aucune partie à ce poste` }); continue; }
+        detail.issues.push({ kind: "poste-arbitre", text: `${role} : ${c.spelling} imposé titulaire à la place de ${r.starter.spelling} (${c.games}/${games}, ${pct(c.share)}, poste majoritaire ${c.majorityRole})` });
+        r.starter = c;
+        if (r.second?.id === c.id) r.second = null;
+      }
+      if (Object.hasOwn(wanted, "second")) {
+        if (wanted.second === null) {
+          if (r.second) detail.issues.push({ kind: "poste-arbitre", text: `${role}* : ${r.second.spelling} retiré de la rotation, arbitré sur un autre poste` });
+          r.second = null;
+        } else {
+          const c = r.candidates.find((x) => x.id === wanted.second);
+          if (!c) { detail.issues.push({ kind: "arbitrage-inapplicable", text: `${role}* : POSTES_ARBITRES impose \`${wanted.second}\`, qui n'a joué aucune partie à ce poste` }); continue; }
+          detail.issues.push({ kind: "poste-arbitre", text: `${role}* : ${c.spelling} imposé en rotation` });
+          r.second = c;
+        }
+      }
+    }
+
+    // Un joueur ne peut pas tenir deux postes d'une même rangée : le modèle de la carte en
+    // fait une case, et `npm run validate` refuse le doublon. Signalé, jamais corrigé en
+    // silence — l'arbitrage revient à `POSTES_ARBITRES`.
+    const held = new Map();
+    for (const role of ROLES) {
+      for (const [slot, c] of [["lineup", detail.roles[role]?.starter], ["shared", detail.roles[role]?.second]]) {
+        if (!c) continue;
+        const was = held.get(c.id);
+        if (was) {
+          detail.issues.push({
+            kind: "joueur-sur-deux-postes",
+            text: `${c.spelling} occupe deux postes de la rangée (${was} et ${role} ${slot}) ; à trancher dans POSTES_ARBITRES`,
+          });
+        } else held.set(c.id, `${role} ${slot}`);
+      }
+    }
+
     const key = code ?? `~${team.lpName}`;
     if (out.has(key)) {
       detail.issues.push({ kind: "collision-de-code", text: `${team.lpName} et ${out.get(key).lpName} partagent le code ${code} sur cette édition` });
@@ -653,12 +1453,14 @@ function fragmentFor(year, teamsOfYear, census) {
     if (name !== PLAN_TEAM_NAMES[code]) entry.name = name;
     entry.lineup = {};
     const shared = {};
+    const split = [];
     const aliases = {};
     for (const role of ROLES) {
       const r = t.roles[role];
       if (!r) continue;
       entry.lineup[role] = r.starter.spelling;
       if (r.second) shared[role] = r.second.spelling;
+      if (r.second?.qualified) split.push(role);
       // Pseudo porté à l'époque, quand il diffère de la graphie retenue : la rangée l'affiche,
       // l'identité du joueur restant la graphie canonique, pour un fil de carrière continu.
       for (const c of [r.starter, r.second]) {
@@ -668,11 +1470,16 @@ function fragmentFor(year, teamsOfYear, census) {
       }
     }
     if (Object.keys(shared).length) entry.shared = shared;
+    // `split` liste les postes réellement coupés en deux demi-cases, c'est-à-dire ceux dont
+    // le second joueur franchit le seuil. Un second resté sous le seuil reste dans `shared`
+    // sans entrer ici : sa case porte la marque `*`. Sans ce champ les fragments du lot 4
+    // auraient dû être complétés à la main sur 33 colonnes.
+    if (split.length) entry.split = split;
     if (Object.keys(aliases).length) entry.aliases = aliases;
     frag[code] = entry;
   }
   return {
-    $comment: `Fragment Worlds ${year} produit par scripts/fetch-worlds.mjs. "name" suit la table PLAN_ALIASES et n'est présent que s'il diffère du nom de colonne. "shared" porte le second joueur, qu'il franchisse ou non le seuil de 20 %. "aliases" associe une graphie canonique au pseudo porté cette année-là. Voir detail/${year}.json et report.md.`,
+    $comment: `Fragment Worlds ${year} produit par scripts/fetch-worlds.mjs. "name" suit la table PLAN_ALIASES et n'est présent que s'il diffère du nom de colonne. "shared" porte le second joueur, qu'il franchisse ou non le seuil de 20 %, et "split" les seuls postes dont ce second joueur franchit le seuil, donc coupés en deux demi-cases. "aliases" associe une graphie canonique au pseudo porté cette année-là. Voir detail/${year}.json et report.md.`,
     [String(year)]: frag,
   };
 }
@@ -887,10 +1694,17 @@ function findDiffs(computed, teamsData) {
             year, code: t.code, kind: "rotation",
             text: `${role}* : teams.json ${wasShared ?? "—"}, calculé ${nowShared ?? "—"}${how}`,
           });
-        } else if (r.second?.qualified) {
+        }
+        // Poste coupé en deux demi-cases : le champ `split` de la rangée doit lister
+        // exactement les postes dont le second joueur franchit le seuil.
+        const wasSplit = (entry.split ?? []).includes(role);
+        const nowSplit = Boolean(r.second?.qualified);
+        if (wasSplit !== nowSplit) {
           diffs.push({
-            year, code: t.code, kind: "passage-en-demi-case",
-            text: `${role}* : ${r.second.spelling} (${r.second.games}/${t.games}, ${pct(r.second.share)}) franchit le seuil ; la marque * devient une demi-case`,
+            year, code: t.code, kind: "demi-case",
+            text: nowSplit
+              ? `${role} : ${r.second.spelling} franchit le seuil (${r.second.games}/${t.games}, ${pct(r.second.share)}) ; le poste doit figurer dans "split"`
+              : `${role} : teams.json met le poste dans "split", mais ${wasShared ?? "le second joueur"} reste sous le seuil${r.second ? ` (${r.second.games}/${t.games}, ${pct(r.second.share)})` : ""} ; la marque * suffit`,
           });
         }
       }
@@ -912,7 +1726,7 @@ function findDiffs(computed, teamsData) {
 
 // ------------------------------------------------------------------------ rapport
 
-function renderReport({ years, computed, pageCheck, census, collisions, nearCollisions, eraCandidates, caseIssues, diffs, notes, gameCounts }) {
+function renderReport({ years, computed, pageCheck, census, collisions, nearCollisions, eraCandidates, caseIssues, diffs, activeWindows, places, regions, teamsData, resultsData, notes, gameCounts }) {
   const L = [];
   const h = (n, t) => L.push("", `${"#".repeat(n)} ${t}`, "");
   const list = (items, empty) => L.push(...(items.length ? items.map((i) => `- ${i}`) : [`_${empty}_`]));
@@ -930,6 +1744,47 @@ function renderReport({ years, computed, pageCheck, census, collisions, nearColl
 
   const outOfScope = new Set();
   for (const teamsOfYear of computed.values()) for (const t of teamsOfYear.values()) if (!t.code) outOfScope.add(t.lpName);
+
+  // Fenêtres d'activité : calculé contre saisi. Une colonne nouvelle n'a pas encore de
+  // valeur saisie — elle n'est donc pas un écart, mais une valeur à reporter.
+  const stored = new Map(teamsData.teams.map((t) => [t.code, t]));
+  const activeDiffs = [];
+  const activeNew = [];
+  for (const [code, w] of activeWindows) {
+    const team = stored.get(code);
+    const calc = w.active ? `[${w.active.join(", ")}]` : "—";
+    if (!team) { activeNew.push({ code, calc, w }); continue; }
+    const saisi = team.active ? `[${team.active.join(", ")}]` : "—";
+    if (saisi !== calc) activeDiffs.push({ code, saisi, calc, w });
+  }
+
+  // Parcours : calculé contre saisi. `F*` — qualifié pour une finale pas encore jouée — ne
+  // peut pas être calculé : le classement de Leaguepedia n'est pas encore attribué.
+  const placeDiffs = [];
+  const placeNew = [];
+  for (const [year, byCode] of places.places) {
+    for (const [code, v] of Object.entries(byCode)) {
+      const was = resultsData.results?.[String(year)]?.[code] ?? null;
+      if (!was) { placeNew.push({ year, code, ...v }); continue; }
+      if (was === v.label) continue;
+      if (was.endsWith("*")) continue; // finale non jouée, arbitrage à la main
+      placeDiffs.push({ year, code, was, ...v });
+    }
+  }
+
+  // Région calculée contre région arrêtée par `PLAN_REGIONS`. Une rangée dont la région
+  // calculée diffère est soit une erreur de la table, soit une organisation qui a changé de
+  // ligue — et il faut alors décider quelle famille garde la colonne.
+  const regionDiffs = [];
+  const regionFlags = [];
+  for (const [year, byCode] of regions) {
+    for (const [code, v] of Object.entries(byCode)) {
+      if (v.flag) regionFlags.push({ year, code, ...v });
+      const plan = PLAN_REGIONS[code] ?? null;
+      if (!plan) { regionDiffs.push({ year, code, plan: "—", ...v }); continue; }
+      if (v.region !== plan) regionDiffs.push({ year, code, plan, ...v });
+    }
+  }
 
   const aliasRows = [];
   for (const [year, teamsOfYear] of computed) {
@@ -950,13 +1805,16 @@ function renderReport({ years, computed, pageCheck, census, collisions, nearColl
     ["1", "Table année → OverviewPage", pageCheck.empty.length + pageCheck.excluded.length + pageCheck.uncovered.length + pageCheck.regional.length],
     ["2", "Égalités strictes", issuesOf("egalite").length],
     ["3", "Troisièmes joueurs au-dessus du seuil", issuesOf("troisieme-au-dessus-du-seuil").length],
-    ["4", "Postes sans titulaire qualifié ou majorité indécidable", issuesOf("sans-titulaire-qualifie").length + issuesOf("poste-vide").length + issuesOf("majorite-ambigue").length],
+    ["4", "Postes sans titulaire qualifié ou majorité indécidable", issuesOf("sans-titulaire-qualifie").length + issuesOf("poste-vide").length + issuesOf("majorite-ambigue").length + issuesOf("joueur-sur-deux-postes").length],
     ["5", "Collisions de pseudo", collisions.length, `${nearCollisions.length} en veille`],
     ["6", "Divergences de casse", caseIssues.filter((c) => c.kind === "leaguepedia" || c.kind === "data").length, `${eraCandidates.length} pseudo(s) d'époque à qualifier`],
     ["7", "Écarts avec les lineups saisies", diffs.length],
     ["8", "Noms d'équipe face à la table d'alias", aliasRows.length],
     ["9", "Rotations non retenues et échanges de poste", issuesOf("rotation-non-retenue").length + issuesOf("echange-de-poste").length],
     ["10", "Équipes hors périmètre", outOfScope.size],
+    ["11", "Fenêtres d'activité", activeDiffs.length, `${activeWindows.size} colonnes`],
+    ["12", "Parcours des équipes", placeDiffs.length, `${placeNew.length} à reporter`],
+    ["13", "Région de chaque rangée", regionDiffs.length, `${regionFlags.length} par dernier recours`],
   ];
   L.push("| § | Sujet | Cas |", "|---|---|---|");
   for (const [n, name, count, note] of sections) L.push(`| ${n} | ${name} | ${count}${note ? ` (${note})` : ""} |`);
@@ -1008,6 +1866,10 @@ function renderReport({ years, computed, pageCheck, census, collisions, nearColl
   L.push("Le titulaire est alors retenu par défaut, sur le seul nombre de parties : à vérifier.");
   L.push("");
   list([...issuesOf("sans-titulaire-qualifie"), ...issuesOf("poste-vide"), ...issuesOf("majorite-ambigue")], "aucun cas.");
+  L.push("", "**Joueurs placés sur deux postes d'une même rangée** — le modèle en fait une case et `npm run validate` refuse le doublon. Chaque cas est à trancher dans `POSTES_ARBITRES` ; le script ne corrige rien de lui-même.", "");
+  list(issuesOf("joueur-sur-deux-postes"), "aucun cas.");
+  L.push("", "**Postes arbitrés** — figés dans `POSTES_ARBITRES`.", "");
+  list([...issuesOf("poste-arbitre"), ...issuesOf("arbitrage-inapplicable")], "aucun.");
 
   h(2, "5. Collisions de pseudo (homonymes)");
   L.push("Deux personnes distinctes retenues sous la même graphie : sans discriminant, elles fusionneraient en une seule carrière.");
@@ -1047,7 +1909,7 @@ function renderReport({ years, computed, pageCheck, census, collisions, nearColl
     ["rangee-sans-partie", "Rangées de teams.json sans partie côté Leaguepedia"],
     ["titulaire", "Titulaires différents"],
     ["rotation", "Rotations différentes"],
-    ["passage-en-demi-case", "Rotations identiques passant en demi-case"],
+    ["demi-case", "Postes coupés en demi-cases divergents"],
     ["nom", "Noms d'équipe — la table d'alias fait foi, pour trace"],
   ];
   kinds.forEach(([kind, title], i) => {
@@ -1074,6 +1936,32 @@ function renderReport({ years, computed, pageCheck, census, collisions, nearColl
     if (out.length) L.push(`- **${year}** : ${out.join(", ")}`);
   }
 
+  h(2, "11. Fenêtres d'activité");
+  L.push("Première et dernière partie de chaque organisation sur Leaguepedia, toutes compétitions confondues, calculées sur toute la lignée de pages du wiki : alias de `TeamRedirects`, prédécesseurs de `Teams.RenamedTo` — jamais ses successeurs, qui mènent à l'organisation ayant repris la suite — et `LIGNEES_ARBITREES` pour ce qu'aucun des deux ne relie. Une page qui est elle-même une colonne n'est jamais absorbée : `Clutch Gaming` et `Dignitas` gardent chacune la sienne. La borne de fin n'est posée que si **toutes** ces pages portent `IsDisbanded`.");
+  L.push("", "**La borne de début est un minorant.** Une page de lignée hors de portée des trois chemins fait commencer la fenêtre trop tard : c'est pourquoi le rapport signale l'écart au lieu de remplacer la valeur saisie. Élargir une fenêtre se fait à la main, en inscrivant la page manquante dans `LIGNEES_ARBITREES` avec sa raison.");
+  h(3, `11.1 Colonnes sans fenêtre saisie (${activeNew.length})`);
+  L.push("Valeur à reporter dans `data/teams.json`.", "");
+  list(activeNew.map((a) => `**${a.code}** — \`active\`: ${a.calc}${a.w.disbanded ? " (organisation dissoute : borne de fin posée)" : " (organisation en activité : fenêtre ouverte)"}, ${a.w.games} parties, pages ${a.w.pages.map((x) => `\`${x}\``).join(" + ")}`), "aucune.");
+  h(3, `11.2 Écarts avec les fenêtres saisies (${activeDiffs.length})`);
+  list(activeDiffs.map((a) => `**${a.code}** — teams.json ${a.saisi}, calculé ${a.calc} (première partie ${a.w.first ?? "—"}, dernière ${a.w.last ?? "—"}, pages ${a.w.pages.map((x) => `\`${x}\``).join(" + ")})`), "aucun écart.");
+
+  h(2, "12. Parcours des équipes");
+  L.push("`TournamentResults.Place` sur la page de l'édition, traduit en libellé de `data/results.json` : 1 → W, 2 → F, 3-4 → SF, 5-8 → QF, puis **P** si tous les scoreboards de l'équipe sont sur la page `…/Play-In`, sinon **G** ou **S** selon que les tours du Main Event s'appellent `Day 1`…`Day 8` ou `Round 1`…`Round 5`.");
+  L.push("", "Un rang encore sans équipe — les deux finalistes d'une édition en cours — ne donne aucun libellé : c'est le `F*` de `data/results.json`, qui reste posé à la main et que cette section ne compte pas comme un écart.");
+  h(3, `12.1 Parcours à reporter (${placeNew.length})`);
+  list(placeNew.map((a) => `**${a.year} ${a.code}** — \`${a.label}\` (rang ${a.place}, ${a.how})`), "aucun.");
+  h(3, `12.2 Écarts avec les parcours saisis (${placeDiffs.length})`);
+  list(placeDiffs.map((a) => `**${a.year} ${a.code}** — results.json \`${a.was}\`, calculé \`${a.label}\` (rang ${a.place}, ${a.how})`), "aucun écart.");
+
+  h(2, "13. Région de chaque rangée");
+  L.push("La règle de périmètre de `docs/SOURCES.md` appliquée rangée par rangée : la famille de région vient de la **ligue réellement jouée l'année de l'édition**, jamais de `Teams.Region`, qui donne celle de l'organisation aujourd'hui. Cinq niveaux de preuve, du plus direct au dernier recours — qualification régionale des Worlds, ligue domestique de niveau `Primary`, territoire dominant sur les ligues `Primary`, territoire tous niveaux confirmé par `Teams.Region`, puis `Teams.Region` seule.");
+  L.push("", "`PLAN_REGIONS` est la décision, ce calcul en est le contrôle. Une divergence est soit une erreur de la table, soit une organisation qui a changé de ligue : il faut alors décider quelle famille garde la colonne, le modèle n'en portant qu'une par colonne.");
+  h(3, `13.1 Divergences avec PLAN_REGIONS (${regionDiffs.length})`);
+  list(regionDiffs.map((d) => `**${d.year} ${d.code}** — table \`${d.plan}\`, calculé \`${d.region ?? "—"}\` (${d.via})`), "aucune divergence.");
+  h(3, `13.2 Rangées classées par dernier recours (${regionFlags.length})`);
+  L.push("`Teams.Region` donne la région d'aujourd'hui, pas celle de l'édition : chacune de ces rangées est à confirmer à la main.", "");
+  list(regionFlags.map((d) => `**${d.year} ${d.code}** — \`${d.region}\` d'après ${d.via}`), "aucune.");
+
   if (notes.length) {
     h(2, "Notes de collecte");
     list(notes, "aucune.");
@@ -1099,8 +1987,8 @@ async function main() {
   }
 
   for (const sub of ["raw", "fragments", "detail"]) await mkdir(join(outDir, sub), { recursive: true });
-  const [teamsData, playersData] = await Promise.all(
-    ["teams", "players"].map((n) => readFile(join(ROOT, "data", `${n}.json`), "utf8").then(JSON.parse)),
+  const [teamsData, playersData, resultsData] = await Promise.all(
+    ["teams", "players", "results"].map((n) => readFile(join(ROOT, "data", `${n}.json`), "utf8").then(JSON.parse)),
   );
 
   console.log("Contrôle de la table année → OverviewPage…");
@@ -1133,10 +2021,10 @@ async function main() {
   const unknown = [...census.values()].filter((p) => !p.known).length;
   console.log(`${census.size} personnes recensées pour ${links.length} titres de page${unknown ? `, dont ${unknown} sans fiche Players` : ""}.`);
   await writeFile(join(outDir, "people.json"), `${JSON.stringify({
-    $comment: "Recensement des personnes rencontrées sur les 16 éditions. `page` est la page canonique Leaguepedia (redirections résolues), `spelling` la graphie proposée, `links` les titres rencontrés dans les scoreboards, `spellings` les graphies observées. `country` servira au lot 2 pour data/players.json.",
+    $comment: "Recensement des personnes rencontrées sur les 16 éditions. `page` est la page canonique Leaguepedia (redirections résolues), `spelling` la graphie proposée, `links` les titres rencontrés dans les scoreboards, `spellings` les graphies observées. `nationality` est ce que data/players.json enregistre (Players.NationalityPrimary) ; `country` est le pays de naissance, gard\u00e9 pour trace.",
     people: Object.fromEntries([...census].map(([id, p]) => [id, {
       page: p.page, spelling: p.spelling, proposed: p.proposed, arbitrated: p.arbitrated, lpId: p.lpId,
-      fullName: p.fullName, country: p.country, known: p.known,
+      fullName: p.fullName, country: p.country, nationality: p.nationality, known: p.known,
       years: [p.firstYear, p.lastYear], links: Object.fromEntries(p.links), spellings: Object.fromEntries(p.spellings),
       spellingsByYear: Object.fromEntries([...p.byYear].map(([y, m]) => [y, Object.fromEntries(m)])),
     }])),
@@ -1173,12 +2061,22 @@ async function main() {
   const eraCandidates = findEraCandidates(selected, census);
   const caseIssues = findCaseIssues(selected, census, teamsData, playersData);
   const diffs = findDiffs(computed, teamsData);
+  console.log("Calcul des fenêtres d'activité (première et dernière partie, toutes compétitions)…");
+  const { columns: activeWindows, lineage } = await fetchActive(outDir);
+  console.log("Région de chaque colonne, édition par édition (ligue réellement jouée)…");
+  const regions = await fetchRegions(computed, outDir, lineage);
+  console.log("Classement de chaque équipe à son édition…");
+  const places = await fetchPlaces(years, computed, outDir);
+  notes.push(...places.notes);
   const reportPath = join(outDir, "report.md");
-  await writeFile(reportPath, renderReport({ years, computed, pageCheck, census, collisions, nearCollisions, eraCandidates, caseIssues, diffs, notes, gameCounts }));
+  await writeFile(reportPath, renderReport({ years, computed, pageCheck, census, collisions, nearCollisions, eraCandidates, caseIssues, diffs, activeWindows, places, regions, teamsData, resultsData, notes, gameCounts }));
 
   console.log("");
   console.log(`Fragments : ${join(outDir, "fragments")}`);
   console.log(`Détail    : ${join(outDir, "detail")}`);
+  console.log(`Activité  : ${join(outDir, "active.json")}`);
+  console.log(`Parcours  : ${join(outDir, "places.json")}`);
+  console.log(`Régions   : ${join(outDir, "regions.json")}`);
   console.log(`Rapport   : ${reportPath}`);
   console.log(`${collisions.length} collision(s) de pseudo, ${caseIssues.length} divergence(s) de casse, ${diffs.length} écart(s) sur les lineups saisies.`);
   if (pageCheck.empty.length || pageCheck.regional.some((r) => r.rows)) process.exit(1);

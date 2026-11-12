@@ -108,13 +108,25 @@ const activeSpan=t=>[Math.max(YEARS[0],t.active[0]??YEARS[0]),Math.min(YEARS.at(
 // n'alignent que trois et six équipes suivies, donc 500 px de rangées quasi vides en haut
 // de la carte. Elles restent à un clic, par le préréglage « Tout ».
 const DEFAULT_FROM=2013;
-const state={roles:new Set(ROLES),regions:new Set(REGIONS),hiddenTeams:new Set(),showNat:false,showSen:false,teamMode:"players",pinned:null,pinnedTeam:null,hover:null,
+
+// Nombre d'apparitions aux Worlds de chaque équipe : c'est la mesure du filtre « Présence ».
+const APPS=new Map(teams.map(t=>[t.code,Object.keys(t.years).length]));
+// Paliers du filtre, choisis sur la distribution réelle : 120 colonnes au total, 54 à partir
+// de deux apparitions, 33 à partir de trois, 19 à partir de cinq. Un curseur continu irait de
+// 1 à 13 alors que 87 colonnes sur 120 sont à une ou deux apparitions — il passerait la moitié
+// de sa course à ne rien déplacer. La carte s'ouvre sur **toutes** les colonnes : être
+// exhaustif est le propos de l'outil, et c'est aux filtres de dégrossir.
+const PRESENCE=[1,2,3,5];
+const DEFAULT_MIN_APPS=1;
+
+const state={roles:new Set(ROLES),regions:new Set(REGIONS),hiddenTeams:new Set(),minApps:DEFAULT_MIN_APPS,showNat:false,showSen:false,teamMode:"players",pinned:null,pinnedTeam:null,hover:null,
   yearFrom:Math.max(ALL_YEARS[0],DEFAULT_FROM),yearTo:ALL_YEARS.at(-1)};
-// Une colonne est affichée si sa région l'est **et** si l'équipe n'est pas masquée une à une :
-// les deux filtres se cumulent, le masquage agissant à l'intérieur du sous-ensemble déjà
-// retenu par les régions. Une équipe masquée se déverse dans « Autres équipes » exactement
-// comme une région masquée — c'est le même prédicat qui décide, partout.
-const visible=t=>state.regions.has(t.region)&&!state.hiddenTeams.has(t.code);
+// Une colonne est affichée si sa région l'est, **et** si elle atteint le seuil de présence,
+// **et** si l'équipe n'est pas masquée une à une : les trois filtres se cumulent, chacun
+// agissant à l'intérieur du sous-ensemble déjà retenu par les précédents. Une équipe écartée
+// par l'un des trois se déverse dans « Autres équipes » exactement comme une région masquée —
+// c'est le même prédicat qui décide, partout.
+const visible=t=>state.regions.has(t.region)&&APPS.get(t.code)>=state.minApps&&!state.hiddenTeams.has(t.code);
 // Et une colonne n'est dessinée que si l'équipe a au moins une édition dans la période : c'est
 // ce compte-là, et non `visible` seul, qui dit s'il reste quelque chose à l'écran.
 const colonne=t=>visible(t)&&YEARS.some(y=>t.years[y]);
@@ -268,7 +280,7 @@ function render(){
 
   // Sous-titre de la colonne « Autres équipes » : les régions masquées, puis le nombre
   // d'équipes masquées une à une — celles dont la région, elle, est bien affichée.
-  const nMasquees=teams.filter(t=>state.regions.has(t.region)&&state.hiddenTeams.has(t.code)).length;
+  const nMasquees=teams.filter(t=>state.regions.has(t.region)&&!visible(t)).length;
   const dehors=[...REGIONS.filter(r=>!state.regions.has(r)),...(nMasquees?[`${nMasquees} équipe${nMasquees>1?"s":""}`]:[])].join(" · ");
   hdr.innerHTML=cols.map(c=>c.other
     ?`<div class="th other" data-x="${c.x}" data-w="${c.w}" title="Joueurs passés par des équipes qui ne sont pas affichées"><span class="rg">${dehors}</span><span class="tn">Autres équipes</span></div>`
@@ -278,6 +290,7 @@ function render(){
     :`<div class="th" data-team="${c.t.code}" data-x="${c.x}" data-w="${c.w}" title="${c.t.name}"><span class="rg"><b style="background:${regionVar(c.t.region)}"></b>${c.t.region}</span><span class="tn">${shortName(c.t)}</span><button type="button" class="hide" data-hide="${c.t.code}" aria-label="Masquer ${shortName(c.t)}" title="Masquer cette colonne">×</button></div>`).join("");
   rail.innerHTML=YEARS.map(y=>`<div class="ylab" data-y="${yTop(y)+2.5*STEP}">${y}${y===ONGOING_YEAR?"<small>EN COURS</small>":""}</div>`).join("");
   if(state.pinnedTeam&&!vis.some(t=>t.code===state.pinnedTeam)) state.pinnedTeam=null;
+  if(typeof majRegionPills==="function") majRegionPills();
   renderTeamList();
   applyView(); apply();
 }
@@ -555,10 +568,21 @@ yFrom.addEventListener("change",()=>setPeriode(+yFrom.value,state.yearTo));
 yTo.addEventListener("change",()=>setPeriode(state.yearFrom,+yTo.value));
 
 ROLES.forEach(r=>pill($("roles"),ROLE_NAME[r],`var(--${r})`,true,()=>{state.roles.has(r)?state.roles.delete(r):state.roles.add(r); apply(); return state.roles.has(r);}));
-REGIONS.forEach(r=>pill($("regions"),r,regionVar(r),true,()=>{
+const regionBtns=new Map(REGIONS.map(r=>[r,pill($("regions"),r,regionVar(r),true,()=>{
   if(state.regions.has(r)){ if(state.regions.size===1) return true; state.regions.delete(r); } else state.regions.add(r);
   render(); return state.regions.has(r);
-}));
+})]));
+// Le seuil de présence peut vider une région entière — la GPL dès « 2+ », quatre familles à
+// « 3+ ». Une pilule cochée sans aucune colonne derrière serait incomprise : elle porte donc
+// son compte, et c'est le compte qui dit d'abaisser le seuil.
+function majRegionPills(){
+  for(const [r,b] of regionBtns){
+    const total=teams.filter(t=>t.region===r).length;
+    const n=teams.filter(t=>t.region===r&&APPS.get(t.code)>=state.minApps).length;
+    b.innerHTML=`<i style="background:${regionVar(r)}"></i>${r}`+(n<total?`<span class="cnt">${n}/${total}</span>`:"");
+    b.title=n<total?`${n} colonne${n>1?"s":""} sur ${total} au seuil de présence actuel`:`${total} colonne${total>1?"s":""}`;
+  }
+}
 // ---------- masquage des colonnes d'équipe ----------
 // La liste à cocher est la source de vérité, le `×` de l'en-tête un raccourci : une colonne
 // masquée doit pouvoir revenir sans deviner où cliquer. Elle est groupée par région et ne
@@ -566,6 +590,22 @@ REGIONS.forEach(r=>pill($("regions"),r,regionVar(r),true,()=>{
 // sous-ensemble retenu par le filtre de régions. Une équipe masquée dont la région est
 // ensuite masquée reste masquée au retour de celle-ci — « tout réafficher » est le filet qui
 // garantit le retour en un geste.
+// Seuil de présence : « au moins N apparitions aux Worlds ». Une seule borne, pas deux —
+// une période est un intervalle, un nombre d'apparitions est un seuil, et une borne haute ne
+// répondrait à aucune question qu'on se pose.
+const presenceBtns=PRESENCE.map(n=>{
+  const b=pill($("presence"),n===1?"Toutes":`${n}+`,null,n===DEFAULT_MIN_APPS,()=>{
+    state.minApps=n;
+    presenceBtns.forEach(x=>x.setAttribute("aria-pressed",x===b));
+    state.pinnedTeam=null; state.hover=null;
+    render();
+    return true;
+  },"pill mode");
+  const combien=teams.filter(t=>APPS.get(t.code)>=n).length;
+  b.title=n===1 ? `Les ${combien} équipes` : `${combien} équipes sur ${teams.length}, venues au moins ${n} fois`;
+  return b;
+});
+
 const teamsList=$("teamsList"), teamsSum=$("teamsSum");
 function renderTeamList(){
   const dedans=teams.filter(t=>state.regions.has(t.region)), n=dedans.filter(t=>state.hiddenTeams.has(t.code)).length;
@@ -582,7 +622,11 @@ function renderTeamList(){
         // Une équipe sans aucune édition dans la période affichée n'a pas de colonne : la
         // case reste utile mais ne change rien tant que la période n'est pas élargie.
         const vide=!YEARS.some(y=>t.years[y]);
-        return `<label class="toggle tm${vide?" vide":""}" title="${t.name}${vide?" · aucune édition dans la période affichée":""}"><input type="checkbox" data-team="${t.code}"${state.hiddenTeams.has(t.code)?"":" checked"}> ${shortName(t)}</label>`;
+        // Une équipe sous le seuil de présence n'a pas de colonne non plus : sa case reste
+        // cochée — ce n'est pas elle qui l'écarte — mais le libellé le dit.
+        const sousSeuil=APPS.get(t.code)<state.minApps;
+        const pourquoi=vide?" · aucune édition dans la période affichée":sousSeuil?` · ${APPS.get(t.code)} apparition${APPS.get(t.code)>1?"s":""}, sous le seuil de présence`:"";
+        return `<label class="toggle tm${vide||sousSeuil?" vide":""}" title="${t.name}${pourquoi}"><input type="checkbox" data-team="${t.code}"${state.hiddenTeams.has(t.code)?"":" checked"}> ${shortName(t)}</label>`;
       }).join("")+`</div></div>`;
   });
   if(state.hiddenTeams.size) h+=`<button type="button" class="pill mode" data-showall="1">Tout réafficher (${state.hiddenTeams.size})</button>`;

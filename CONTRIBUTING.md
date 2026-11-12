@@ -40,8 +40,8 @@ Aucune dépendance n'est nécessaire : Node.js 18 ou plus suffit.
 | `code` | Identifiant unique de la colonne (2 à 5 caractères, majuscules) |
 | `name` | Nom actuel de l'organisation |
 | `label` / `tag` | Optionnels : texte de l'en-tête et étiquette courte dans « Autres équipes » |
-| `region` | `LCK`, `LPL`, `LEC`, `LCS` ou `LMS` |
-| `active` | `[début]` ou `[début, fin]` : la fenêtre d'existence de l'organisation. Hors de cette fenêtre, la colonne est repliée |
+| `region` | L'une des 14 familles : `LCK`, `LPL`, `LEC`, `LCS`, `LMS`, `LCP`, `LJL`, `VCS`, `GPL`, `LCO`, `TCL`, `LCL`, `CBLOL`, `LLA`. Elle vient de la **ligue réellement jouée l'année de l'édition**, pas de la région de l'organisation aujourd'hui : voir [docs/SOURCES.md](docs/SOURCES.md), section « Périmètre » |
+| `active` | `[début]` ou `[début, fin]` : la fenêtre d'existence de l'organisation, de sa première à sa dernière partie sur Leaguepedia, la borne de fin n'étant posée que si elle est dissoute. Hors de cette fenêtre, la colonne est repliée. `fetch-worlds.mjs` la calcule — § 11 du rapport |
 | `worlds.<année>.name` | Optionnel : nom de l'équipe cette année-là (`SKT T1`, `DAMWON`…) |
 | `worlds.<année>.lineup` | Les 5 titulaires, un par poste : voir les règles de sélection dans [docs/SOURCES.md](docs/SOURCES.md) |
 | `worlds.<année>.shared` | Optionnel : joueur qui a partagé le poste |
@@ -54,7 +54,8 @@ Règles :
 - **Un joueur s'écrit toujours de la même façon** (même casse) : c'est ce qui relie ses apparitions entre les équipes. Cela vaut pour les titulaires **et** pour les rotations de `shared`, que le validateur contrôle de la même façon.
 - Un joueur qui a changé de pseudo garde **une seule** graphie dans `lineup` et `shared` — son identité, donc son fil de carrière. Le pseudo de l'époque se déclare à part, dans `aliases` : la carte l'affiche sans rompre le fil. Une simple différence de casse ne justifie jamais un `aliases`.
 - `shared` recense le second joueur d'un poste, qu'il ait beaucoup joué ou non ; `split` dit lesquels ont assez joué pour mériter une demi-case. Un rôle listé dans `split` doit avoir une entrée dans `shared`.
-- Un même joueur ne peut pas occuper deux postes d'une même rangée, ni jouer pour deux équipes la même année.
+- Un même joueur ne peut pas occuper deux postes d'une même rangée, ni jouer pour deux équipes la même année. Quand les règles de sélection y mènent malgré tout — un roster entièrement tournant, comme Epik Gamer en 2011 — le poste se tranche dans `POSTES_ARBITRES`, en tête du script.
+- **Deux personnes au même pseudo reçoivent un discriminant repris de Leaguepedia**, et seulement dans ce cas : les deux `Violet` du jeu de données s'écrivent `Violet (Ngô Mạnh Quyền)` et `Violet (Vincent Wong)` dans `lineup`. Le discriminant est une identité, pas une étiquette — leurs cases affichent `Violet`, par `aliases`.
 - On ne renseigne une année que si l'équipe a joué les Worlds cette année-là, et dans la fenêtre `active` si elle est déclarée.
 - Le titulaire est retenu sur les parties réellement jouées, pas sur le roster inscrit : au moins 20 % des parties de l'équipe, et le poste où le joueur a le plus joué. [`scripts/fetch-worlds.mjs`](scripts/fetch-worlds.mjs) applique ces règles et signale les écarts avec `data/`.
 
@@ -62,11 +63,13 @@ Règles :
 
 ### `data/results.json`
 
-Parcours de chaque équipe par année : `W` vainqueur, `F` finale, `SF` demi-finale, `QF` quart, `G` groupes, `S` phase suisse, `P` play-in, `F*` finale pas encore jouée. `ongoingYear` affiche « EN COURS » à côté de l'année ; passez-le à `null` une fois la finale jouée.
+Parcours de chaque équipe par année : `W` vainqueur, `F` finale, `SF` demi-finale, `QF` quart, `G` groupes, `S` phase suisse, `P` play-in, `F*` finale pas encore jouée. `fetch-worlds.mjs` les calcule depuis le classement de Leaguepedia — § 12 du rapport — sauf `F*`, qu'il ne peut pas déduire. `ongoingYear` affiche « EN COURS » à côté de l'année ; passez-le à `null` une fois la finale jouée.
 
 ### `data/players.json`
 
-Nationalité (code ISO à 2 lettres) par joueur, et pays « domestiques » de chaque région pour repérer les joueurs importés. N'ajoutez une nationalité que si elle est vérifiée.
+Nationalité (code ISO à 2 lettres) par joueur, et pays « domestiques » de chaque région pour repérer les joueurs importés. N'ajoutez une nationalité que si elle est vérifiée : c'est `Players.NationalityPrimary` de Leaguepedia qui fait foi, et non `Players.Country`, qui donne le pays de naissance.
+
+`homeCountries` est une **décision**, pas un relevé : un code oublié fait passer tout joueur de ce pays pour un importé, en silence, et `npm run validate` ne peut vérifier que la forme. Les 14 listes sont justifiées une à une dans [docs/SOURCES.md](docs/SOURCES.md), section « Pays domestiques de chaque région » ; une région nouvelle en exige une.
 
 `countryNames` donne le nom français de chaque code : le panneau de détail écrit « Corée du Sud » là où le badge des chips garde `KR`, faute de place. Un code employé par `nationality` sans entrée dans `countryNames` est une erreur de `npm run validate`.
 

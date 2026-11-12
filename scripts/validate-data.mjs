@@ -22,6 +22,13 @@ const HOMONYMES_VERIFIES = new Map([
   ["cuzz", "Moon Woo-chan, page Cuzz — Longzhu 2017, KT 2023 et 2025"],
   ["theshy", "Kang Seung-lok, page TheShy — IG 2018-2019, Weibo 2023 hors périmètre, IG 2025-2026"],
   ["rookie", "Song Eui-jin, page Rookie — IG 2015, 2018-2019, 2025-2026"],
+  ["contractz", "Juan Arturo Garcia, page Contractz — Cloud9 2017, NRG 2023"],
+  ["josedeodo", "Brandon Joel Villegas, page Josedeodo — Movistar R7 2020, Team Liquid 2026"],
+  ["isles", "Jonah Rosario, page Isles — Legacy Esports 2020, LYON 2026"],
+  ["betty", "Lu Yu-Hung, page Betty — Flash Wolves 2017-2018, PSG Talon 2024-2025"],
+  ["holyphoenix", "Anıl Işık, page HolyPhoenix — Dark Passage 2014, Istanbul Wildcats 2022"],
+  ["dynquedo", "Matheus Rossini Miranda, page DyNquedo — KaBuM! 2018, paiN Gaming 2024"],
+  ["tinowns", "Thiago Sartori, page Tinowns — KaBuM! 2014, LOUD 2022-2023"],
 ]);
 const years = new Set(teamsData.years);
 const regions = new Set(teamsData.regions);

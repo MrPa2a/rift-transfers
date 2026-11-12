@@ -61,6 +61,10 @@
     </div>
     <div class="grp"><span class="lbl">Postes</span><div class="row" id="roles"></div></div>
     <div class="grp"><span class="lbl">Régions</span><div class="row" id="regions"></div></div>
+    <div class="grp"><span class="lbl">Présence aux Worlds</span>
+      <div class="row" id="presence"></div>
+      <p class="notes" style="margin:.4rem 0 0">Nombre d'éditions jouées par l'équipe. 66 des 120 colonnes n'en ont qu'une.</p>
+    </div>
     <div class="grp"><span class="lbl">Équipes</span>
       <details class="teamlist" id="teamsBox">
         <summary id="teamsSum"></summary>
@@ -81,9 +85,10 @@
         <li>Un poste tenu par deux joueurs est affiché en deux demi-cases, le plus titularisé à gauche. Chacune est ciblable et relie sa propre carrière. Un joueur retenu sur moins de 20 % des parties n'occupe pas de demi-case : il reste signalé par * sur la case du titulaire.</li>
         <li>Une colonne est repliée avant la création de l'organisation et après sa disparition : ni roster, ni « Pas aux Worlds ».</li>
         <li>Un joueur qui a changé de pseudo est affiché sous celui qu'il portait cette année-là, mais son fil de carrière reste continu. La recherche accepte les deux.</li>
-        <li>Quand une région ou une équipe est masquée, ses joueurs qui croisent une équipe affichée passent par la colonne « Autres équipes », avec le code de leur équipe. Les deux filtres se cumulent : masquer une équipe agit à l'intérieur des régions affichées. Seules y figurent les éditions qui touchent la carte visible — le départ, le retour, et les clubs qu'une ligne traverserait sinon en silence. Un clic sur le joueur donne toujours sa carrière complète avec les années exactes.</li>
-        <li>Nationalité : codes recoupés avec Leaguepedia ; sans code, elle n'a pas été vérifiée. « Importé » = nationalité différente de la région de l'équipe ; Taïwan et Hong Kong comptent comme domestiques en LPL comme en LMS.</li>
-        <li>Pas encore inclus : le MSI et les équipes plus ponctuelles (Afreeca, LNG, WBG, 100T, Vitality…).</li>
+        <li>Toutes les équipes ayant joué au moins un Worlds ont leur colonne, et la carte s'ouvre sur les 120. Le filtre « Présence aux Worlds » la dégrossit d'un clic : 54 colonnes à partir de deux apparitions, 33 à partir de trois, 19 à partir de cinq.</li>
+        <li>Quand une région ou une équipe est masquée, ses joueurs qui croisent une équipe affichée passent par la colonne « Autres équipes », avec le code de leur équipe. Les trois filtres se cumulent : le seuil de présence agit à l'intérieur des régions affichées, et le masquage à l'intérieur de ce qui reste. Seules y figurent les éditions qui touchent la carte visible — le départ, le retour, et les clubs qu'une ligne traverserait sinon en silence. Un clic sur le joueur donne toujours sa carrière complète avec les années exactes.</li>
+        <li>Nationalité : codes recoupés avec Leaguepedia ; sans code, elle n'a pas été vérifiée. « Importé » = nationalité différente des pays de la région de l'équipe, pays arrêtés région par région : Taïwan et Hong Kong comptent domestiques en LPL comme en LMS, le Vietnam l'est aussi en LCP, et l'espace post-soviétique l'est en LCL.</li>
+        <li>Pas encore inclus : le MSI. Toutes les équipes des seize Worlds ont en revanche leur colonne, quelle que soit leur région.</li>
         <li>Méthode et sources année par année : <a href="https://github.com/MrPa2a/rift-transfers/blob/main/docs/SOURCES.md" target="_blank" rel="noopener">docs/SOURCES.md</a>. Une erreur ? <a href="https://github.com/MrPa2a/rift-transfers/issues/new/choose" target="_blank" rel="noopener">Signale-la</a>.</li>
       </ul>
     </details>
@@ -94,7 +99,7 @@
 <aside id="statsDrawer" class="drawer" aria-label="Statistiques">
   <div class="dhead"><h2>Statistiques</h2><button class="dclose" type="button" data-close="statsDrawer" aria-label="Fermer">×</button></div>
   <div class="dbody">
-    <p class="notes" style="margin:0">Calculées sur les 33 équipes suivies et leurs titulaires aux Worlds 2011–2026. Touche un nom pour le retrouver sur la carte.</p>
+    <p class="notes" style="margin:0">Calculées sur les 120 équipes suivies et leurs titulaires aux Worlds 2011–2026. Touche un nom pour le retrouver sur la carte.</p>
     <div class="stats" id="stats"></div>
   </div>
 </aside>
