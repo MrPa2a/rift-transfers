@@ -172,12 +172,23 @@ button{font:inherit;color:inherit}
 #rail{position:fixed;top:calc(env(safe-area-inset-top,0px) + var(--HH));left:0;bottom:0;width:var(--YW);overflow:hidden;background:var(--panel);border-right:1px solid var(--line);z-index:5}
 #corner{position:fixed;top:env(safe-area-inset-top,0px);left:0;width:var(--YW);height:var(--HH);background:var(--panel);border-right:1px solid var(--line);border-bottom:1px solid var(--line);z-index:6;display:flex;align-items:center;justify-content:center;font:700 13px var(--f-display);letter-spacing:.06em;color:var(--muted)}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
-.th{position:absolute;top:0;height:100%;padding:6px 8px;display:flex;flex-direction:column;justify-content:center;gap:2px;border-left:1px solid var(--line);cursor:pointer;user-select:none;overflow:hidden;background:var(--panel)}
-.th:hover,.th.on{background:var(--absent)}
+.th{position:absolute;top:0;height:100%;padding:6px 8px;display:flex;flex-direction:column;justify-content:center;gap:2px;border-left:1px solid var(--line);cursor:pointer;user-select:none;overflow:hidden;background:var(--panel);transition:opacity .15s,background .15s}
+/* Trois états, et le survol ne partage plus le style de l'épinglée — sinon la colonne qu'on
+   vient de cliquer se confond avec celle qu'on frôle. Épinglée : anneau d'accent. En lien :
+   affichage normal. Sans rapport : grisée, c'est elle qui fait le tri (82 % des colonnes). */
+.th:hover{background:var(--absent)}
+.th.on{background:var(--absent);box-shadow:inset 0 0 0 2px var(--accent)}
+.th.on .tn{color:var(--accent)}
+.th.dim{opacity:.34}
 .th .tn{font:700 16px/1.05 var(--f-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .th .rg{font:600 9.5px var(--f-body);letter-spacing:.1em;display:flex;align-items:center;gap:5px;color:var(--muted);white-space:nowrap}
 .th .rg b{width:12px;height:3px;border-radius:2px;display:block;flex:0 0 auto}
 .th.other{cursor:default;background:var(--absent)}
+/* Le `×` n'est cliquable qu'une fois visible : invisible, il resterait une zone piégeuse en
+   haut à droite de chaque en-tête, là où un doigt vise l'épinglage. Il reste tabulable. */
+.th .hide{position:absolute;top:2px;right:2px;width:18px;height:18px;padding:0;border:none;border-radius:4px;background:none;color:var(--muted);font:600 14px/1 var(--f-body);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .15s}
+.th:hover .hide,.th .hide:focus-visible{opacity:1;pointer-events:auto}
+.th .hide:hover{background:var(--line);color:var(--fg)}
 .ylab{position:absolute;left:0;right:0;text-align:center;font:500 13px var(--f-mono);color:var(--muted);transform:translateY(-50%)}
 .ylab small{display:block;font:600 9px var(--f-body);letter-spacing:.1em;margin-top:2px}
 
@@ -287,7 +298,24 @@ path.roff{display:none!important}
 .pill.mode{text-transform:none;letter-spacing:0;font-size:13px;padding:6px 12px}
 .pill.mode[aria-pressed="true"]{background:var(--fg);color:var(--panel);border-color:var(--fg)}
 .pill.mode[aria-pressed="false"]{opacity:1}
+/* Liste à cocher des équipes : repliée par défaut, elle tiendra 130 entrées sans pousser le
+   reste du tiroir hors de vue. Groupée par région, deux colonnes par groupe. */
+.teamlist>summary{cursor:pointer;font-size:13px;color:var(--muted);padding:2px 0;list-style:none;display:flex;align-items:center;gap:6px}
+.teamlist>summary::-webkit-details-marker{display:none}
+.teamlist>summary::after{content:"▾";margin-left:auto}
+.teamlist[open]>summary::after{content:"▴"}
+#teamsList{display:flex;flex-direction:column;align-items:flex-start;gap:10px;margin-top:8px}
+#teamsList>.tgrp{align-self:stretch}
+.thd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px}
+.thd b{display:flex;align-items:center;gap:6px;font:600 10.5px var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.thd i{width:10px;height:10px;border-radius:50%;display:block;flex:0 0 auto}
+.thd button{background:none;border:none;color:var(--muted);font:600 11px var(--f-body);cursor:pointer;padding:2px 4px;border-radius:4px}
+.thd button:hover{color:var(--accent)}
+.labs{display:grid;grid-template-columns:1fr 1fr;gap:1px 10px}
 .toggle{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:14px;padding:3px 0}
+.toggle.tm{gap:7px;font-size:13px;padding:1px 0;min-width:0}
+.toggle.tm input{width:15px;height:15px}
+.toggle.vide{color:var(--muted);opacity:.65}
 .toggle input{width:17px;height:17px;accent-color:var(--accent);margin:0}
 .info{width:17px;height:17px;border-radius:50%;border:1px solid var(--muted);background:none;color:var(--muted);font:700 10px/1 var(--f-body);padding:0;cursor:pointer;letter-spacing:0}
 .info[aria-expanded="true"],.info:hover{border-color:var(--accent);color:var(--accent)}

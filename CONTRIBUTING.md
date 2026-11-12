@@ -39,7 +39,7 @@ Aucune dépendance n'est nécessaire : Node.js 18 ou plus suffit.
 |---|---|
 | `code` | Identifiant unique de la colonne (2 à 5 caractères, majuscules) |
 | `name` | Nom actuel de l'organisation |
-| `label` / `tag` | Optionnels : texte de l'en-tête et étiquette courte dans « Autres régions » |
+| `label` / `tag` | Optionnels : texte de l'en-tête et étiquette courte dans « Autres équipes » |
 | `region` | `LCK`, `LPL`, `LEC`, `LCS` ou `LMS` |
 | `active` | `[début]` ou `[début, fin]` : la fenêtre d'existence de l'organisation. Hors de cette fenêtre, la colonne est repliée |
 | `worlds.<année>.name` | Optionnel : nom de l'équipe cette année-là (`SKT T1`, `DAMWON`…) |

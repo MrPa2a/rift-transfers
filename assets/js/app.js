@@ -104,8 +104,16 @@ const attache=n=>n.lane>=n.x&&n.lane<=n.x+n.w?n.lane:n.x+n.w/2;
 // Fenêtre d'existence de l'organisation, bornée par la plage affichée.
 const activeSpan=t=>[Math.max(YEARS[0],t.active[0]??YEARS[0]),Math.min(YEARS.at(-1),t.active[1]??Infinity)];
 
-const state={roles:new Set(ROLES),regions:new Set(REGIONS),showNat:false,showSen:false,teamMode:"players",pinned:null,pinnedTeam:null,hover:null,
+const state={roles:new Set(ROLES),regions:new Set(REGIONS),hiddenTeams:new Set(),showNat:false,showSen:false,teamMode:"players",pinned:null,pinnedTeam:null,hover:null,
   yearFrom:ALL_YEARS[0],yearTo:ALL_YEARS.at(-1)};
+// Une colonne est affichée si sa région l'est **et** si l'équipe n'est pas masquée une à une :
+// les deux filtres se cumulent, le masquage agissant à l'intérieur du sous-ensemble déjà
+// retenu par les régions. Une équipe masquée se déverse dans « Autres équipes » exactement
+// comme une région masquée — c'est le même prédicat qui décide, partout.
+const visible=t=>state.regions.has(t.region)&&!state.hiddenTeams.has(t.code);
+// Et une colonne n'est dessinée que si l'équipe a au moins une édition dans la période : c'est
+// ce compte-là, et non `visible` seul, qui dit s'il reste quelque chose à l'écran.
+const colonne=t=>visible(t)&&YEARS.some(y=>t.years[y]);
 const view={x:0,y:0,k:1};
 let nodesByPlayer=new Map(), hasOther=false, W=0, cols=[];
 
@@ -115,17 +123,16 @@ function render(){
   H=YEARS.length*ROWH+20;
   const inRange=a=>a.year>=state.yearFrom&&a.year<=state.yearTo;
 
-  // « Autres régions » n'accueille que les régions masquées. Une équipe écartée par la
-  // période ne doit pas y tomber : les deux tests restent séparés.
-  const parRegion=teams.filter(t=>state.regions.has(t.region));
-  const vis=parRegion.filter(t=>YEARS.some(y=>t.years[y]));
+  // « Autres équipes » n'accueille que ce qui est masqué — région ou équipe. Une équipe
+  // écartée par la période ne doit pas y tomber : les deux tests restent séparés.
+  const vis=teams.filter(colonne);
   const visSet=new Set(vis);
   // La colonne n'apparaît que si elle a quelque chose à montrer : un joueur présent dans une
-  // colonne visible **et** dans une région masquée, sur la plage affichée. Sans ce test, masquer
+  // colonne visible **et** dans une équipe masquée, sur la plage affichée. Sans ce test, masquer
   // la LMS sur 2020–2026 ouvrirait une colonne vide, la région n'y ayant aucune rangée.
   hasOther=[...players.values()].some(p=>{
     const dans=p.apps.filter(inRange);
-    return dans.some(a=>visSet.has(a.team))&&dans.some(a=>!state.regions.has(a.team.region));
+    return dans.some(a=>visSet.has(a.team))&&dans.some(a=>!visible(a.team));
   });
   const colX=new Map(); let x=0;
   vis.forEach(t=>{colX.set(t,x); x+=CW;});
@@ -255,11 +262,19 @@ function render(){
   world.style.width=W+"px"; world.style.height=H+"px";
   world.innerHTML=html;
 
+  // Sous-titre de la colonne « Autres équipes » : les régions masquées, puis le nombre
+  // d'équipes masquées une à une — celles dont la région, elle, est bien affichée.
+  const nMasquees=teams.filter(t=>state.regions.has(t.region)&&state.hiddenTeams.has(t.code)).length;
+  const dehors=[...REGIONS.filter(r=>!state.regions.has(r)),...(nMasquees?[`${nMasquees} équipe${nMasquees>1?"s":""}`]:[])].join(" · ");
   hdr.innerHTML=cols.map(c=>c.other
-    ?`<div class="th other" data-x="${c.x}" data-w="${c.w}" title="Équipes des régions masquées"><span class="rg">${REGIONS.filter(r=>!state.regions.has(r)).join(" · ")}</span><span class="tn">Autres régions</span></div>`
-    :`<div class="th" data-team="${c.t.code}" data-x="${c.x}" data-w="${c.w}" title="${c.t.name}"><span class="rg"><b style="background:${regionVar(c.t.region)}"></b>${c.t.region}</span><span class="tn">${shortName(c.t)}</span></div>`).join("");
+    ?`<div class="th other" data-x="${c.x}" data-w="${c.w}" title="Joueurs passés par des équipes qui ne sont pas affichées"><span class="rg">${dehors}</span><span class="tn">Autres équipes</span></div>`
+    // Le `×` masque la colonne ; le reste de l'en-tête épingle l'équipe. Deux cibles
+    // distinctes, sans quoi les deux gestes se marcheraient dessus. La liste à cocher du
+    // tiroir reste la source de vérité — ce bouton n'en est qu'un raccourci.
+    :`<div class="th" data-team="${c.t.code}" data-x="${c.x}" data-w="${c.w}" title="${c.t.name}"><span class="rg"><b style="background:${regionVar(c.t.region)}"></b>${c.t.region}</span><span class="tn">${shortName(c.t)}</span><button type="button" class="hide" data-hide="${c.t.code}" aria-label="Masquer ${shortName(c.t)}" title="Masquer cette colonne">×</button></div>`).join("");
   rail.innerHTML=YEARS.map(y=>`<div class="ylab" data-y="${yTop(y)+2.5*STEP}">${y}${y===ONGOING_YEAR?"<small>EN COURS</small>":""}</div>`).join("");
   if(state.pinnedTeam&&!vis.some(t=>t.code===state.pinnedTeam)) state.pinnedTeam=null;
+  renderTeamList();
   applyView(); apply();
 }
 
@@ -378,7 +393,12 @@ function tap(target){
 }
 world.addEventListener("mouseover",e=>{const c=e.target.closest(".chip"); if(c&&!drag&&!state.pinned&&!state.pinnedTeam&&matchMedia("(hover:hover)").matches){state.hover=c.dataset.p;apply();}});
 world.addEventListener("mouseout",e=>{if(e.target.closest(".chip")&&state.hover){state.hover=null;apply();}});
-hdr.addEventListener("click",e=>{const th=e.target.closest(".th[data-team]"); if(!th) return; state.pinned=null; state.hover=null; state.pinnedTeam=state.pinnedTeam===th.dataset.team?null:th.dataset.team; apply();});
+hdr.addEventListener("click",e=>{
+  const x=e.target.closest(".hide");
+  if(x) return void setHidden([x.dataset.hide],true);
+  const th=e.target.closest(".th[data-team]"); if(!th) return;
+  state.pinned=null; state.hover=null; state.pinnedTeam=state.pinnedTeam===th.dataset.team?null:th.dataset.team; apply();
+});
 $("selClose").onclick=()=>{state.pinned=null; state.pinnedTeam=null; state.hover=null; $("q").value=""; apply();};
 
 function lineage(code){
@@ -408,7 +428,24 @@ function apply(){
     el.classList.toggle("hl",lin?(isPath?lin.paths.has(el.dataset.k):lin.chips.has(el.dataset.c)):(!!ids&&ids.has(el.dataset.p)));
     el.classList.toggle(isPath?"roff":"off",!state.roles.has(el.dataset.r));
   });
-  hdr.querySelectorAll(".th").forEach(th=>th.classList.toggle("on",!!pinnedTeam&&th.dataset.team===pinnedTeam));
+  // Trois états d'en-tête au clic sur une équipe : épinglée, en lien, sans rapport. L'ensemble
+  // « en lien » se déduit des chips **réellement surlignées**, et non de `lineage`, pour deux
+  // raisons : c'est le seul moyen d'être d'accord avec la carte (plage d'années, blocs jetés
+  // par `retenues`), et ça évite de faire correspondre un libellé court à un code d'équipe.
+  // L'en-tête « Autres équipes » suit la même règle : en lien s'il porte une chip surlignée.
+  let liees=null, autresLiee=false;
+  if(pinnedTeam){
+    liees=new Set();
+    nodesByPlayer.forEach(ns=>ns.forEach(n=>{
+      if(lin?!lin.chips.has(`${n.a.id}:${n.a.year}`):!ids.has(n.a.id)) return;
+      if(n.other) autresLiee=true; else if(n.a.team.code!==pinnedTeam) liees.add(n.a.team.code);
+    }));
+  }
+  hdr.querySelectorAll(".th").forEach(th=>{
+    const on=!!pinnedTeam&&th.dataset.team===pinnedTeam;
+    th.classList.toggle("on",on);
+    th.classList.toggle("dim",!!liees&&!on&&(th.dataset.team?!liees.has(th.dataset.team):!autresLiee));
+  });
   const sel=$("sel"), out=$("selText"), show=hover||pinned;
   if(show){
     const p=players.get(show), steps=[], nat=NAT[p.id];
@@ -437,7 +474,7 @@ function renderLegend(lin){
   L.push(`<span><span class="lg-res">Quarts · Demi · Finale</span> parcours de l'équipe · <b style="color:var(--bot)">★ Vainqueur</b></span>`);
   if(state.showNat) L.push(`<span><span class="lg-nat">KR</span> nationalité · <span class="lg-nat" style="color:var(--accent);border-color:var(--accent)">KR</span> joueur importé</span>`);
   if(state.showSen) L.push(`<span><span class="senbar"></span> 1er → 6e Worlds avec l'équipe</span>`);
-  if(hasOther) L.push(`<span>Autres régions : joueurs des régions masquées, à l'édition de leur départ ou de leur retour</span>`);
+  if(hasOther) L.push(`<span>Autres équipes : joueurs des régions et des équipes masquées, à l'édition de leur départ ou de leur retour</span>`);
   if(lin) L.push(`<span>Arrivées et départs : club d'avant et club d'après</span>`);
   L.push(`<span>Glisser pour se déplacer · molette ou pincer pour zoomer</span>`);
   $("legendBody").innerHTML=L.join("");
@@ -518,6 +555,60 @@ REGIONS.forEach(r=>pill($("regions"),r,regionVar(r),true,()=>{
   if(state.regions.has(r)){ if(state.regions.size===1) return true; state.regions.delete(r); } else state.regions.add(r);
   render(); return state.regions.has(r);
 }));
+// ---------- masquage des colonnes d'équipe ----------
+// La liste à cocher est la source de vérité, le `×` de l'en-tête un raccourci : une colonne
+// masquée doit pouvoir revenir sans deviner où cliquer. Elle est groupée par région et ne
+// liste que les régions affichées, puisque le masquage agit **à l'intérieur** du
+// sous-ensemble retenu par le filtre de régions. Une équipe masquée dont la région est
+// ensuite masquée reste masquée au retour de celle-ci — « tout réafficher » est le filet qui
+// garantit le retour en un geste.
+const teamsList=$("teamsList"), teamsSum=$("teamsSum");
+function renderTeamList(){
+  const dedans=teams.filter(t=>state.regions.has(t.region)), n=dedans.filter(t=>state.hiddenTeams.has(t.code)).length;
+  // Restaurer le focus : le rendu complet de la liste l'effacerait à chaque case cochée.
+  const actif=teamsList.contains(document.activeElement)?document.activeElement.dataset.team:null;
+  const aff=dedans.length-n, pl=x=>x>1?"s":"";
+  teamsSum.textContent=n?`${aff} équipe${pl(aff)} affichée${pl(aff)} sur ${dedans.length}`:`${dedans.length} équipe${pl(dedans.length)} affichée${pl(dedans.length)}`;
+  let h="";
+  REGIONS.filter(r=>state.regions.has(r)).forEach(r=>{
+    const lot=dedans.filter(t=>t.region===r);
+    h+=`<div class="tgrp"><div class="thd"><b><i style="background:${regionVar(r)}"></i>${r}</b>`
+      +`<span><button type="button" data-rg="${r}" data-on="1">Toutes</button><button type="button" data-rg="${r}">Aucune</button></span></div><div class="labs">`
+      +lot.map(t=>{
+        // Une équipe sans aucune édition dans la période affichée n'a pas de colonne : la
+        // case reste utile mais ne change rien tant que la période n'est pas élargie.
+        const vide=!YEARS.some(y=>t.years[y]);
+        return `<label class="toggle tm${vide?" vide":""}" title="${t.name}${vide?" · aucune édition dans la période affichée":""}"><input type="checkbox" data-team="${t.code}"${state.hiddenTeams.has(t.code)?"":" checked"}> ${shortName(t)}</label>`;
+      }).join("")+`</div></div>`;
+  });
+  if(state.hiddenTeams.size) h+=`<button type="button" class="pill mode" data-showall="1">Tout réafficher (${state.hiddenTeams.size})</button>`;
+  teamsList.innerHTML=h;
+  if(actif) teamsList.querySelector(`input[data-team="${actif}"]`)?.focus();
+}
+// Masquer la dernière colonne viderait la carte : on s'arrête avant. D'où le test à chaque
+// tour plutôt qu'une fois pour toutes — « Aucune » sur la seule région affichée laisse une
+// équipe debout au lieu de ne rien faire.
+function setHidden(codes,masquer){
+  let change=false;
+  for(const c of codes){
+    if(masquer){
+      if(!state.hiddenTeams.has(c)&&teams.filter(colonne).length>1){ state.hiddenTeams.add(c); change=true; }
+    } else if(state.hiddenTeams.delete(c)) change=true;
+  }
+  if(change) render();
+  return change;
+}
+teamsList.addEventListener("change",e=>{
+  const cb=e.target.closest("input[data-team]"); if(!cb) return;
+  // Refus (dernière colonne) : la case retrouve son état, `render` n'ayant pas eu lieu.
+  if(!setHidden([cb.dataset.team],!cb.checked)) cb.checked=!cb.checked;
+});
+teamsList.addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  if(b.dataset.showall) return void setHidden([...state.hiddenTeams],false);
+  if(b.dataset.rg) setHidden(teams.filter(t=>t.region===b.dataset.rg).map(t=>t.code),!b.dataset.on);
+});
+
 const MODE_TIP={players:"Surligne tous les joueurs passés par l'équipe, avec toute leur carrière",lineage:"Ne garde que le club juste avant l'arrivée et le club juste après le départ"};
 const modeBtns=[["players","Carrières complètes"],["lineage","Arrivées et départs"]].map(([m,l])=>{
   const b=pill($("teamMode"),l,null,m==="players",()=>{state.teamMode=m; modeBtns.forEach(x=>x.setAttribute("aria-pressed",x===b)); apply(); return true;},"pill mode");
