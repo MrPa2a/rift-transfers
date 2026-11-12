@@ -47,10 +47,22 @@
       "id": "leaguepedia-cargo",
       "label": "Leaguepedia — tables Cargo via Special:CargoExport (CC BY-SA 3.0)",
       "url": "https://lol.fandom.com/wiki/Special:CargoExport",
-      "covers": "Une ligne par joueur et par partie (ScoreboardPlayers) pour les 14 éditions 2013-2026 ; identité canonique des joueurs (PlayerRedirects, Players), nationalités, et classements (TournamentResults). Interrogée par scripts/fetch-worlds.mjs."
+      "covers": "Une ligne par joueur et par partie (ScoreboardPlayers) pour les 16 éditions 2011-2026 ; identité canonique des joueurs (PlayerRedirects, Players), nationalités, lignée des organisations (TeamRedirects, Teams), classements (TournamentResults) et brackets (MatchSchedule). Interrogée par scripts/fetch-worlds.mjs."
     }
   ],
   "byYear": {
+    "2011": [
+      {
+        "ref": "leaguepedia-cargo",
+        "covers": "Lineups des Worlds 2011 (parties jouées par joueur et par poste), nationalités, classement (TournamentResults), bracket (MatchSchedule) — les tours de la Season 1 s'appellent « Round 1 » à « Round 3 », et c'est le bracket qui dit à quelle profondeur chaque équipe a été éliminée"
+      }
+    ],
+    "2012": [
+      {
+        "ref": "leaguepedia-cargo",
+        "covers": "Lineups des Worlds 2012 (parties jouées par joueur et par poste), nationalités, classement (TournamentResults), bracket (MatchSchedule), et lignée des deux équipes de l'organisation CLG (TeamRedirects, Teams)"
+      }
+    ],
     "2013": [
       {
         "ref": "leaguepedia-cargo",

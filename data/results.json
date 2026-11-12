@@ -12,6 +12,8 @@
     "F*": "En finale"
   },
   "results": {
+    "2011": {"FNC": "W", "TSM": "SF", "CLG": "QF"},
+    "2012": {"TPA": "W", "CLGEU": "SF", "IG": "QF", "NJN": "QF", "TSM": "QF", "CLG": "G"},
     "2013": {"T1": "W", "RNG": "F", "FNC": "SF", "NJN": "SF", "C9": "QF", "OMG": "QF", "GEN": "G", "TSM": "G"},
     "2014": {"GEN": "W", "RNG": "F", "OMG": "SF", "SSB": "SF", "C9": "QF", "EDG": "QF", "NJN": "QF", "TSM": "QF", "AHQ": "G", "FNC": "G", "TPA": "G"},
     "2015": {

@@ -1,6 +1,6 @@
 {
   "$comment": "Titulaires de chaque équipe suivie, par édition des Worlds. Voir CONTRIBUTING.md pour le format.",
-  "years": [2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026],
+  "years": [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026],
   "regions": ["LCK", "LPL", "LEC", "LCS", "LMS"],
   "teams": [
     {
@@ -214,6 +214,10 @@
       "region": "LCK",
       "active": [2012, 2015],
       "worlds": {
+        "2012": {
+          "name": "NaJin Sword",
+          "lineup": {"top": "MaKNooN", "jungle": "Watch", "mid": "SSONG", "bot": "PraY", "support": "Cain"}
+        },
         "2013": {
           "name": "NaJin Black Sword",
           "lineup": {"top": "Expession", "jungle": "Watch", "mid": "Nagne", "bot": "PraY", "support": "Cain"}
@@ -317,6 +321,9 @@
       "region": "LPL",
       "active": [2012],
       "worlds": {
+        "2012": {
+          "lineup": {"top": "Pdd", "jungle": "illuSioN", "mid": "Zz1tai", "bot": "Kid", "support": "XiaoXiao"}
+        },
         "2015": {
           "lineup": {"top": "Zz1tai", "jungle": "KaKAO", "mid": "Rookie", "bot": "Kid", "support": "Kitties"},
           "shared": {"bot": "Time"}
@@ -508,6 +515,11 @@
       "region": "LEC",
       "active": [2011],
       "worlds": {
+        "2011": {
+          "lineup": {"top": "wewillfailer", "jungle": "Cyanide", "mid": "Shushei", "bot": "LaMiaZlt", "support": "Mellisan"},
+          "shared": {"mid": "xPeke"},
+          "split": ["mid"]
+        },
         "2013": {
           "lineup": {"top": "sOAZ", "jungle": "Cyanide", "mid": "xPeke", "bot": "Puszu", "support": "YellOwStaR"}
         },
@@ -633,6 +645,19 @@
       }
     },
     {
+      "code": "CLGEU",
+      "name": "CLG EU",
+      "label": "CLG EU",
+      "region": "LEC",
+      "active": [2012, 2012],
+      "worlds": {
+        "2012": {
+          "name": "Counter Logic Gaming Europe",
+          "lineup": {"top": "Wickd", "jungle": "Snoopeh", "mid": "Froggen", "bot": "yellowpete", "support": "Krepo"}
+        }
+      }
+    },
+    {
       "code": "C9",
       "name": "Cloud9",
       "region": "LCS",
@@ -730,6 +755,14 @@
       "region": "LCS",
       "active": [2011, 2023],
       "worlds": {
+        "2011": {
+          "name": "Team SoloMid",
+          "lineup": {"top": "TheRainMan", "jungle": "TheOddOne", "mid": "Reginald", "bot": "Chaox", "support": "Xpecial"}
+        },
+        "2012": {
+          "name": "Team SoloMid",
+          "lineup": {"top": "Dyrus", "jungle": "TheOddOne", "mid": "Reginald", "bot": "Chaox", "support": "Xpecial"}
+        },
         "2013": {
           "name": "Team SoloMid",
           "lineup": {"top": "Dyrus", "jungle": "TheOddOne", "mid": "Reginald", "bot": "WildTurtle", "support": "Xpecial"}
@@ -761,6 +794,13 @@
       "region": "LCS",
       "active": [2011, 2023],
       "worlds": {
+        "2011": {
+          "lineup": {"top": "Chauster", "jungle": "SaintVicious", "mid": "HotshotGG", "bot": "bigfatlp", "support": "Elementz"}
+        },
+        "2012": {
+          "name": "CLG Prime",
+          "lineup": {"top": "Voyboy", "jungle": "HotshotGG", "mid": "bigfatlp", "bot": "Doublelift", "support": "Chauster"}
+        },
         "2015": {
           "lineup": {"top": "Darshan", "jungle": "Xmithie", "mid": "Pobelter", "bot": "Doublelift", "support": "aphromoo"},
           "aliases": {"Darshan": "ZionSpartan"}
@@ -824,6 +864,9 @@
       "region": "LMS",
       "active": [2012, 2024],
       "worlds": {
+        "2012": {
+          "lineup": {"top": "Stanley", "jungle": "Lilballz", "mid": "Toyz", "bot": "BeBe", "support": "MiSTakE"}
+        },
         "2014": {
           "lineup": {"top": "Achie", "jungle": "Winds", "mid": "Morning", "bot": "BeBe", "support": "Jay"}
         },

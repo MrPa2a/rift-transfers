@@ -104,8 +104,12 @@ const attache=n=>n.lane>=n.x&&n.lane<=n.x+n.w?n.lane:n.x+n.w/2;
 // Fenêtre d'existence de l'organisation, bornée par la plage affichée.
 const activeSpan=t=>[Math.max(YEARS[0],t.active[0]??YEARS[0]),Math.min(YEARS.at(-1),t.active[1]??Infinity)];
 
+// Année d'ouverture de la carte. Elle n'est **pas** `ALL_YEARS[0]` : les Season 1 et 2
+// n'alignent que trois et six équipes suivies, donc 500 px de rangées quasi vides en haut
+// de la carte. Elles restent à un clic, par le préréglage « Tout ».
+const DEFAULT_FROM=2013;
 const state={roles:new Set(ROLES),regions:new Set(REGIONS),hiddenTeams:new Set(),showNat:false,showSen:false,teamMode:"players",pinned:null,pinnedTeam:null,hover:null,
-  yearFrom:ALL_YEARS[0],yearTo:ALL_YEARS.at(-1)};
+  yearFrom:Math.max(ALL_YEARS[0],DEFAULT_FROM),yearTo:ALL_YEARS.at(-1)};
 // Une colonne est affichée si sa région l'est **et** si l'équipe n'est pas masquée une à une :
 // les deux filtres se cumulent, le masquage agissant à l'intérieur du sous-ensemble déjà
 // retenu par les régions. Une équipe masquée se déverse dans « Autres équipes » exactement
@@ -460,7 +464,7 @@ function apply(){
     out.innerHTML=`<b class="nm">${t.name}</b><span class="hint">Arrivées et départs</span><br>Arrivées depuis : ${fmtFlow(lin.from)}<br>Départs vers : ${fmtFlow(lin.to)} <span class="hint">· ${lin.debut} premiers Worlds ici</span>`;
   } else if(pinnedTeam){
     const t=teams.find(t=>t.code===pinnedTeam), n=new Set(apps.filter(a=>a.team===t).map(a=>a.id)).size;
-    out.innerHTML=`<b class="nm">${t.name}</b><span class="hint">${n} joueurs titulaires aux Worlds depuis 2013, carrières complètes surlignées.</span>`;
+    out.innerHTML=`<b class="nm">${t.name}</b><span class="hint">${n} joueurs titulaires aux Worlds depuis ${ALL_YEARS[0]}, carrières complètes surlignées.</span>`;
   }
   sel.hidden=!(show||pinnedTeam);
   $("selClose").hidden=!!hover&&!pinned;
@@ -526,9 +530,9 @@ const yFrom=$("yFrom"), yTo=$("yTo");
 // rupture la plus nette du jeu de données après 2015 — 38 % de joueurs communs entre 2019 et
 // 2020, et 7 organisations entrantes pour 7 sortantes.
 const ERAS=[
-  ["Tout",ALL_YEARS[0],ALL_YEARS.at(-1),"Les 14 éditions, de 2013 à 2026"],
+  ["Tout",ALL_YEARS[0],ALL_YEARS.at(-1),`Les ${ALL_YEARS.length} éditions, de ${ALL_YEARS[0]} à ${ALL_YEARS.at(-1)}`],
   ["Ère moderne",2020,ALL_YEARS.at(-1),"Depuis 2020 : quatre régions majeures, la LMS ayant fusionné dans la PCS"],
-  ["Ère historique",ALL_YEARS[0],2019,"2013 à 2019 : la LMS est encore une cinquième région majeure"],
+  ["Ère historique",ALL_YEARS[0],2019,`${ALL_YEARS[0]} à 2019 : la LMS est encore une cinquième région majeure`],
 ];
 function remplirAnnees(){
   // La borne haute ne propose que des années ≥ borne basse, et réciproquement.

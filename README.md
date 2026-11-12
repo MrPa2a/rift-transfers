@@ -1,13 +1,13 @@
 # Rift Transfers
 
-Carte interactive des rosters des grandes équipes de League of Legends aux **Worlds 2013 → 2026**. Chaque équipe est une colonne, chaque édition des Worlds une rangée, et chaque joueur un fil coloré par poste : on suit sa carrière d'une équipe à l'autre, ou la vie d'une équipe en descendant sa colonne.
+Carte interactive des rosters des grandes équipes de League of Legends aux **Worlds 2011 → 2026**. Chaque équipe est une colonne, chaque édition des Worlds une rangée, et chaque joueur un fil coloré par poste : on suit sa carrière d'une équipe à l'autre, ou la vie d'une équipe en descendant sa colonne.
 
 ![Aperçu de Rift Transfers, la carte filtrée sur une partie des éditions](docs/screenshot.png)
 
 ## Fonctionnalités
 
 - Carte plein écran : déplacement à la souris ou au doigt, zoom à la molette ou au pincement.
-- 32 équipes de cinq régions (LCK, LPL, LEC, LCS, LMS), 2013 à 2026.
+- 33 équipes de cinq régions (LCK, LPL, LEC, LCS, LMS), 2011 à 2026. La carte s'ouvre sur 2013 → 2026 ; le préréglage « Tout » descend aux Season 1 et 2, que seules trois et six équipes suivies ont jouées.
 - Survol ou clic sur un joueur pour isoler toute sa carrière ; clic sur une équipe pour voir ses joueurs, ou seulement ses arrivées et départs — les colonnes sans échange avec elle sont grisées.
 - Filtres par poste, par région et par période, et masquage des colonnes une à une (`×` de l'en-tête ou liste à cocher du tiroir). Région ou équipe masquée, ses joueurs passent par la colonne « Autres équipes » pour garder la trace des transferts.
 - Options : nationalité (avec repérage des joueurs importés) et ancienneté dans l'équipe.
