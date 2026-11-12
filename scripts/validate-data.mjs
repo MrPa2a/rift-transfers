@@ -209,6 +209,19 @@ for (const [name, code] of Object.entries(playersData.nationality)) {
 }
 const noNat = [...allPlayers].filter((n) => !Object.keys(playersData.nationality).some((k) => low(k) === low(n)));
 
+// --- noms de pays : le panneau de détail écrit le pays en toute lettre, un code sans entrée
+// y retomberait au code brut sans que rien ne le signale.
+const countryNames = playersData.countryNames ?? {};
+const codesUtilises = new Set(Object.values(playersData.nationality));
+for (const code of codesUtilises) {
+  if (!countryNames[code]) errors.push(`countryNames : « ${code} » n'a pas de nom français, le panneau de détail afficherait le code brut`);
+}
+for (const [code, nom] of Object.entries(countryNames)) {
+  if (!/^[A-Z]{2}$/.test(code)) errors.push(`countryNames : « ${code} » n'est pas un code ISO à 2 lettres`);
+  else if (typeof nom !== "string" || !nom.trim()) errors.push(`countryNames.${code} : nom vide`);
+  else if (!codesUtilises.has(code)) warnings.push(`countryNames.${code} : aucun joueur de ce pays`);
+}
+
 // --- sources
 for (const year of teamsData.years) {
   if (!sourcesData.byYear?.[year]?.length) warnings.push(`${year} : aucune source listée dans data/sources.json`);

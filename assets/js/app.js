@@ -33,6 +33,9 @@ const RES = RESULTS_DATA.results;
 const RES_LABEL = RESULTS_DATA.labels;
 const ONGOING_YEAR = RESULTS_DATA.ongoingYear ?? null;
 const HOME = PLAYERS_DATA.homeCountries;
+// Code ISO → nom français. Le badge des chips reste au code à deux lettres, faute de place ;
+// seul le panneau de détail a la place d'écrire « Corée du Sud ».
+const COUNTRY = PLAYERS_DATA.countryNames || {};
 const NAT = {};
 for (const [name, code] of Object.entries(PLAYERS_DATA.nationality)) NAT[name.toLowerCase()] = code;
 
@@ -77,7 +80,7 @@ const isImport = a => NAT[a.id] && !HOME[a.team.region].includes(NAT[a.id]);
 players.forEach(p => { const c = {}; p.apps.forEach(a => { c[a.team.code] = (c[a.team.code] || 0) + 1; a.sen = c[a.team.code]; }); });
 
 // ---------- rendu ----------
-const CW=132, STEP=24, CH=20, TOPPAD=30, ROWH=250, OTHER_MAX_ROWS=8;
+const CW=132, STEP=24, CH=20, TOPPAD=30, ROWH=250;
 const PADX=8, chipW=CW-PADX*2;
 const KMIN=0.15, KMAX=2.5;
 const $=id=>document.getElementById(id);
@@ -89,6 +92,15 @@ let H=YEARS.length*ROWH+20;
 // Dix voies de courbe au lieu de cinq : deux par poste, sinon les deux fils d'une case
 // partagée se superposeraient.
 const laneAt=(cx,ri,half)=>cx+14+(2*ri+half)*((chipW-28)/9);
+// La voie est un **couloir de colonne** : stable par (poste, moitié), elle garantit que deux
+// lignes de postes différents ne se superposent pas sur le trajet vertical entre deux années.
+// On ne la déplace donc pas. Mais les dix voies sont réparties sur la largeur *pleine* de la
+// chip, alors qu'une demi-case n'occupe que [0, 58] ou [58, 116] : pour top droite, jungle
+// droite, bot gauche et support gauche, la voie tombe hors de la chip et la ligne semblait
+// sortir de sous le nom voisin. On corrige l'attache — le point de départ et d'arrivée passe
+// au centre de la chip, rejoint par un court coude — et le couloir reste intact.
+const ELBOW=14;
+const attache=n=>n.lane>=n.x&&n.lane<=n.x+n.w?n.lane:n.x+n.w/2;
 // Fenêtre d'existence de l'organisation, bornée par la plage affichée.
 const activeSpan=t=>[Math.max(YEARS[0],t.active[0]??YEARS[0]),Math.min(YEARS.at(-1),t.active[1]??Infinity)];
 
@@ -117,14 +129,46 @@ function render(){
   });
   const colX=new Map(); let x=0;
   vis.forEach(t=>{colX.set(t,x); x+=CW;});
-  const otherX=x; W=x+(hasOther?CW*2:0);
-  cols=vis.map(t=>({t,x:colX.get(t),w:CW}));
-  if(hasOther) cols.push({other:true,x:otherX,w:CW*2});
+  const otherX=x;
+
+  // Une apparition hors colonne n'informe que si elle touche la carte visible : sans ce
+  // filtre, un joueur parti pour de bon traîne une chip sur toutes les éditions suivantes,
+  // reliées entre elles sans jamais rejoindre une colonne affichée.
+  //
+  //  - Base : garder l'apparition dont la voisine précédente **ou** suivante tombe dans une
+  //    colonne visible.
+  //  - Garde-fou : dans un bloc jeté **ponté** — encadré de deux apparitions gardées, donc
+  //    traversé par une ligne —, garder en plus une chip par club absent des deux bornes.
+  //    Sinon la ligne saute par-dessus un club sans rien dire : Peanut, HLE seule visible,
+  //    irait de `2017 T1` à `2023 GEN` en effaçant son année LGD.
+  //
+  // Un bloc de **fin** ne porte aucune ligne — le fil s'arrête à la chip de départ : on le
+  // jette sans rien fausser, et c'est lui qui concentre le bruit. La séquence des clubs reste
+  // donc exacte, la durée approximative ; le panneau de détail, qui ne filtre rien, garde les
+  // années exactes.
+  const retenues=dans=>{
+    const vu=dans.map(a=>colX.has(a.team));
+    if(vu.every(Boolean)) return dans;
+    const garde=vu.map((v,i)=>!!(v||vu[i-1]||vu[i+1]));
+    for(let i=0;i<dans.length;i++){
+      if(garde[i]) continue;
+      let j=i; while(j+1<dans.length&&!garde[j+1]) j++;
+      if(i>0&&j<dans.length-1){
+        const bornes=new Set([dans[i-1].team,dans[j+1].team]), deja=new Set();
+        for(let k=i;k<=j;k++){
+          const t=dans[k].team;
+          if(!bornes.has(t)&&!deja.has(t)){ deja.add(t); garde[k]=true; }
+        }
+      }
+      i=j;
+    }
+    return dans.filter((a,i)=>garde[i]);
+  };
 
   nodesByPlayer=new Map();
   const otherByYear={};
   players.forEach(p=>{
-    const dans=p.apps.filter(inRange);
+    const dans=retenues(p.apps.filter(inRange));
     if(!dans.some(a=>colX.has(a.team))) return;
     nodesByPlayer.set(p.id,dans.map(a=>{
       if(colX.has(a.team)){
@@ -134,13 +178,26 @@ function render(){
       const n={a,other:true,w:chipW}; (otherByYear[a.year]??=[]).push(n); return n;
     }));
   });
+  // Largeur de « Autres » : une sous-colonne par chip simultanée d'un même poste, jamais
+  // moins de deux. Les cinq rangées étant désormais indexées par le poste, c'est ce cumul —
+  // et non le total de l'année — qui décide de la largeur.
+  const parPoste=l=>{const c={}; l.forEach(n=>c[n.a.ri]=(c[n.a.ri]||0)+1); return Math.max(0,...Object.values(c));};
+  const otherCols=Math.max(2,...Object.values(otherByYear).map(parPoste));
+  W=x+(hasOther?CW*otherCols:0);
+  cols=vis.map(t=>({t,x:colX.get(t),w:CW}));
+  if(hasOther) cols.push({other:true,x:otherX,w:CW*otherCols});
+
   Object.entries(otherByYear).forEach(([y,list])=>{
+    // La rangée vient du **poste**, comme dans une colonne d'équipe, et non d'un rang dans la
+    // liste : sans ça la chip changeait de ligne d'une année à l'autre selon le nombre de
+    // voisines, et le fil zigzaguait. Deux joueurs du même poste la même année se rangent en
+    // sous-colonnes côte à côte.
     list.sort((m,n)=>m.a.ri-n.a.ri||m.a.half-n.a.half||m.a.name.localeCompare(n.a.name));
-    const rows=Math.min(OTHER_MAX_ROWS,Math.max(5,Math.ceil(list.length/2)));
-    list.forEach((n,k)=>{
-      const cx=otherX+PADX+Math.floor(k/rows)*CW;
-      n.x=cx; n.y=yTop(+y)+(k%rows)*STEP; n.lane=laneAt(cx,n.a.ri,n.a.half);
-      n.bottom=yTop(+y)+Math.min(rows,list.length)*STEP;
+    const pris={};
+    list.forEach(n=>{
+      const cx=otherX+PADX+((pris[n.a.ri]=(pris[n.a.ri]??-1)+1))*CW;
+      n.x=cx; n.y=yTop(+y)+n.a.ri*STEP; n.lane=laneAt(cx,n.a.ri,n.a.half);
+      n.bottom=yTop(+y)+5*STEP;
     });
   });
 
@@ -160,8 +217,17 @@ function render(){
   nodesByPlayer.forEach((ns,id)=>{
     for(let k=1;k<ns.length;k++){
       const A=ns[k-1], B=ns[k];
-      const x1=A.lane,y1=A.y+CH/2,x2=B.lane,y2=B.y+CH/2,b0=A.bottom,t1=yTop(B.a.year)-6,m=(t1-b0)*.55;
-      paths+=`<path class="l ${B.a.role} ${A.a.team===B.a.team?"same":"move"}" data-p="${id}" data-k="${id}:${k}" data-r="${B.a.role}" d="M${x1},${y1} L${x1},${b0} C${x1},${b0+m} ${x2},${t1-m} ${x2},${t1} L${x2},${y2}"/>`;
+      const x1=A.lane,y1=A.y+CH/2,x2=B.lane,y2=B.y+CH/2,b0=A.bottom,t1=yTop(B.a.year)-6;
+      // Attache : la ligne descend **droit** sous le nom jusqu'au bord bas de la chip, et ne
+      // rejoint son couloir qu'une fois dégagée — sinon le coude sort par le côté de la case
+      // et on retombe sur le défaut qu'on corrige. Le coude de départ tient entre le bas de la
+      // chip et `b0` ; celui d'arrivée au-dessus de son bord haut, dans l'inter-rangée.
+      // Pour une chip pleine `attache` renvoie la voie elle-même : tout devient colinéaire et
+      // le tracé est identique à celui d'avant, au pixel près.
+      const ax=attache(A), bx=attache(B);
+      const y0=A.y+CH, yd=Math.min(y0+ELBOW,b0), sd=(yd-y0)*.6;
+      const yu=bx===x2?t1:B.y-ELBOW, te=Math.min(t1,yu), su=(B.y-yu)*.6, m=(te-b0)*.55;
+      paths+=`<path class="l ${B.a.role} ${A.a.team===B.a.team?"same":"move"}" data-p="${id}" data-k="${id}:${k}" data-r="${B.a.role}" d="M${ax},${y1} L${ax},${y0} C${ax},${y0+sd} ${x1},${yd-sd} ${x1},${yd} L${x1},${b0} C${x1},${b0+m} ${x2},${te-m} ${x2},${te} L${x2},${yu} C${x2},${yu+su} ${bx},${B.y-su} ${bx},${B.y} L${bx},${y2}"/>`;
     }
   });
   html+=`<svg width="${W}" height="${H}" aria-hidden="true">${paths}</svg>`;
@@ -200,7 +266,11 @@ function render(){
 // ---------- navigation : déplacement et zoom ----------
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function clampView(){
-  const w=vp.clientWidth, h=vp.clientHeight, m=160;
+  // Marge de débord proportionnelle au viewport : on doit pouvoir pousser la première colonne
+  // au-delà du tiroir de filtres, qui masque ~302 px (360 px moins les 58 px du rail des
+  // années). Le plancher à 320 px tient cette promesse sur une fenêtre courte, où
+  // min(w,h)*0.5 tomberait sous le seuil. Le bouton « tout afficher » sert de filet.
+  const w=vp.clientWidth, h=vp.clientHeight, m=Math.max(320,Math.min(w,h)*0.5);
   view.x=clamp(view.x, Math.min(w-W*view.k-m, m), m);
   view.y=clamp(view.y, Math.min(h-H*view.k-m, m+60), m+60);
 }
@@ -347,7 +417,7 @@ function apply(){
       if(last&&last.label===label&&last.role===a.role&&last.to===a.year-1) last.to=a.year;
       else steps.push({label,role:a.role,from:a.year,to:a.year});
     });
-    out.innerHTML=`<b class="nm">${p.name}</b>${nat?`<span class="hint">${nat} · </span>`:""}${steps.map(s=>`${s.label} <span class="hint">${s.from===s.to?s.from:s.from+"–"+s.to} · ${ROLE_NAME[s.role]}</span>`).join(" → ")}`;
+    out.innerHTML=`<b class="nm">${p.name}</b>${nat?`<span class="hint">${COUNTRY[nat]||nat} · </span>`:""}${steps.map(s=>`${s.label} <span class="hint">${s.from===s.to?s.from:s.from+"–"+s.to} · ${ROLE_NAME[s.role]}</span>`).join(" → ")}`;
   } else if(lin){
     const t=teams.find(t=>t.code===pinnedTeam);
     out.innerHTML=`<b class="nm">${t.name}</b><span class="hint">Arrivées et départs</span><br>Arrivées depuis : ${fmtFlow(lin.from)}<br>Départs vers : ${fmtFlow(lin.to)} <span class="hint">· ${lin.debut} premiers Worlds ici</span>`;
@@ -367,7 +437,7 @@ function renderLegend(lin){
   L.push(`<span><span class="lg-res">Quarts · Demi · Finale</span> parcours de l'équipe · <b style="color:var(--bot)">★ Vainqueur</b></span>`);
   if(state.showNat) L.push(`<span><span class="lg-nat">KR</span> nationalité · <span class="lg-nat" style="color:var(--accent);border-color:var(--accent)">KR</span> joueur importé</span>`);
   if(state.showSen) L.push(`<span><span class="senbar"></span> 1er → 6e Worlds avec l'équipe</span>`);
-  if(hasOther) L.push(`<span>Autres régions : joueurs des régions masquées</span>`);
+  if(hasOther) L.push(`<span>Autres régions : joueurs des régions masquées, à l'édition de leur départ ou de leur retour</span>`);
   if(lin) L.push(`<span>Arrivées et départs : club d'avant et club d'après</span>`);
   L.push(`<span>Glisser pour se déplacer · molette ou pincer pour zoomer</span>`);
   $("legendBody").innerHTML=L.join("");
@@ -396,6 +466,9 @@ q.addEventListener("input",()=>{const id=searchIndex.get(q.value.trim().toLowerC
 // ---------- tiroirs ----------
 function setDrawer(id,open){
   const d=$(id); d.classList.toggle("open",open);
+  // La barre de recherche et la légende glissent à droite du tiroir de filtres (CSS `.fopen`)
+  // pour rester lisibles au lieu de passer dessous.
+  if(id==="filters") document.body.classList.toggle("fopen",open);
   $(id==="filters"?"openFilters":"openStats").setAttribute("aria-expanded",open);
   if(!open) closeTip();
 }

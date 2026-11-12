@@ -68,6 +68,8 @@ Parcours de chaque équipe par année : `W` vainqueur, `F` finale, `SF` demi-fin
 
 Nationalité (code ISO à 2 lettres) par joueur, et pays « domestiques » de chaque région pour repérer les joueurs importés. N'ajoutez une nationalité que si elle est vérifiée.
 
+`countryNames` donne le nom français de chaque code : le panneau de détail écrit « Corée du Sud » là où le badge des chips garde `KR`, faute de place. Un code employé par `nationality` sans entrée dans `countryNames` est une erreur de `npm run validate`.
+
 ### `data/sources.json`
 
 Sources par année, avec ce que chacune a permis de vérifier. Voir aussi [docs/SOURCES.md](docs/SOURCES.md).

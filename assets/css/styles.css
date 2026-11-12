@@ -149,7 +149,9 @@
   --lck:#6f9bff; --lpl:#ef6a60; --lec:#3fc7bb; --lcs:#9a8cf5; --lms:#e0a53a; color-scheme:dark}
 
 
-:root{--shadow:0 4px 18px rgba(20,26,40,.14),0 1px 3px rgba(20,26,40,.08);--grid-dot:rgba(30,40,70,.07);--HH:46px;--YW:58px}
+/* --dw : largeur du tiroir de filtres. Elle sert aussi de décalage aux outils flottants de
+   gauche, qui glissent à sa droite quand il s'ouvre — d'où la variable partagée. */
+:root{--shadow:0 4px 18px rgba(20,26,40,.14),0 1px 3px rgba(20,26,40,.08);--grid-dot:rgba(30,40,70,.07);--HH:46px;--YW:58px;--dw:min(360px,calc(100vw - 36px))}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--shadow:0 6px 22px rgba(0,0,0,.5),0 1px 3px rgba(0,0,0,.4);--grid-dot:rgba(255,255,255,.05)}}
 :root[data-theme="dark"]{--shadow:0 6px 22px rgba(0,0,0,.5),0 1px 3px rgba(0,0,0,.4);--grid-dot:rgba(255,255,255,.05)}
 
@@ -242,8 +244,10 @@ path.roff{display:none!important}
 #legend{left:calc(var(--YW) + max(12px,env(safe-area-inset-left,0px)));bottom:calc(14px + env(safe-area-inset-bottom,0px));max-width:min(330px,calc(100vw - var(--YW) - 90px));font-size:12.5px;color:var(--muted)}
 #legend summary{cursor:pointer;padding:8px 12px;font-weight:600;color:var(--fg);list-style:none;display:flex;align-items:center;gap:6px}
 #legend summary::-webkit-details-marker{display:none}
-#legend summary::after{content:"▾";margin-left:auto;color:var(--muted)}
-#legend[open] summary::after{content:"▴"}
+/* La légende est en bas et se déplie vers le haut : fermée, le chevron montre où elle va
+   s'ouvrir ; ouverte, il montre où elle va se replier. */
+#legend summary::after{content:"▴";margin-left:auto;color:var(--muted)}
+#legend[open] summary::after{content:"▾"}
 #legendBody{padding:0 12px 10px;display:flex;flex-direction:column;gap:6px;line-height:1.4}
 #legendBody b{color:var(--fg)}
 .lg-nat{display:inline-block;font:600 9.5px var(--f-mono);border:1px solid var(--line);border-radius:3px;padding:0 3px}
@@ -261,7 +265,7 @@ path.roff{display:none!important}
 #selClose:hover{background:var(--absent)}
 
 /* ---------- tiroirs ---------- */
-.drawer{position:fixed;top:0;bottom:0;z-index:40;width:min(360px,calc(100vw - 36px));background:var(--panel);box-shadow:var(--shadow);display:flex;flex-direction:column;transition:transform .22s ease;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.drawer{position:fixed;top:0;bottom:0;z-index:40;width:var(--dw);background:var(--panel);box-shadow:var(--shadow);display:flex;flex-direction:column;transition:transform .22s ease;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 #filters{left:0;transform:translateX(-105%);border-right:1px solid var(--line);padding-left:env(safe-area-inset-left,0px)}
 #statsDrawer{right:0;transform:translateX(105%);border-left:1px solid var(--line);width:min(480px,calc(100vw - 36px));padding-right:env(safe-area-inset-right,0px)}
 #filters.open,#statsDrawer.open{transform:none}
@@ -309,6 +313,15 @@ table.fl th{font:600 11px var(--f-body);letter-spacing:.06em;color:var(--muted);
 table.fl td{min-width:42px;text-align:center;padding:6px 3px;border-radius:4px;font:500 12.5px var(--f-mono);background:color-mix(in srgb,var(--accent) var(--a,0%),var(--absent))}
 table.fl td small{color:var(--muted);font-size:10px}
 table.fl td.na{color:var(--muted);background:transparent}
+
+/* Tiroir de filtres ouvert : la barre de recherche et la légende glissent à sa droite au
+   lieu de disparaître dessous. Elles peuvent chevaucher la carte — elles sont en haut et en
+   bas, et #9 permet désormais de dégager les colonnes de dessous. Sous 900 px le tiroir
+   couvre presque tout l'écran : rien à décaler, il n'y aurait plus de place. */
+#bar,#legend{transition:transform .22s ease}
+@media (min-width:900px){
+  body.fopen #bar,body.fopen #legend{transform:translateX(calc(var(--dw) + 12px - var(--YW) - max(12px,env(safe-area-inset-left,0px))))}
+}
 
 .load-error{left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,calc(100vw - 32px));padding:14px 18px;line-height:1.5;z-index:70}
 .load-error p{margin:0}.load-error p+p{margin-top:6px}
