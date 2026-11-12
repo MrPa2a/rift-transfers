@@ -73,6 +73,24 @@ Nationalité (code ISO à 2 lettres) par joueur, et pays « domestiques » de ch
 
 `countryNames` donne le nom français de chaque code : le panneau de détail écrit « Corée du Sud » là où le badge des chips garde `KR`, faute de place. Un code employé par `nationality` sans entrée dans `countryNames` est une erreur de `npm run validate`.
 
+### `data/careers.json`
+
+Où était chaque joueur les années **sans rangée**, entre deux de ses apparitions aux Worlds — ce qui permet au fil de ne plus sauter le trou.
+
+```json
+"Faker": {"seen": [2013, 2026], "years": {"2014": {"steps": [{"team": "T1"}]}}},
+"Rookie": {"seen": [2014, 2026], "years": {"2022": {"steps": [{"club": "Victory Five"}]}}},
+"Bwipo": {"seen": [2018, 2026], "years": {"2023": {"steps": []}}},
+"Fudge": {"seen": [2019, 2026], "years": {"2020": {"steps": [], "offLevel": true}}}
+```
+
+- `team` est un **code de colonne**, `club` un club qui n'en a pas et qui s'affiche dans « Autres équipes ». Une étape porte l'un ou l'autre, jamais les deux. Écrire en `club` le nom d'une colonne est une erreur de `npm run validate` : le fil contournerait une colonne affichée.
+- `steps` vide : **aucune partie professionnelle recensée** cette année-là. Avec `offLevel`, le joueur a joué, mais rien qui soit de niveau `Primary` — académie, ligue secondaire, showmatch : on n'en dit alors rien du tout.
+- `seen` donne la première et la dernière année où une partie lui est recensée. Ce sont les deux bouts de son fil, et les libellés qui vont avec disent « apparition connue », jamais « début » ni « fin de carrière ».
+- Une année qui n'est pas un trou entre deux Worlds du joueur est une erreur, comme une lineup hors de la fenêtre `active` d'une équipe.
+
+La **règle 5** qui retient ces étapes — club majoritaire de l'année, plus tout autre club à 20 % des parties ou plus — est distincte des quatre règles des Worlds, avec son propre filtre de bruit. Elle est décrite dans [docs/SOURCES.md](docs/SOURCES.md), section « Hors Worlds : la règle 5 et les étapes de carrière ». `fetch-worlds.mjs` la calcule en § 14 du rapport ; le fichier se recopie à la main, comme le reste de `/data`.
+
 ### `data/sources.json`
 
 Sources par année, avec ce que chacune a permis de vérifier. Voir aussi [docs/SOURCES.md](docs/SOURCES.md).

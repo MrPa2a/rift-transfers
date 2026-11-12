@@ -14,9 +14,9 @@ async function loadJSON(name) {
   return res.json();
 }
 
-let TEAMS_DATA, RESULTS_DATA, PLAYERS_DATA;
+let TEAMS_DATA, RESULTS_DATA, PLAYERS_DATA, CAREERS_DATA;
 try {
-  [TEAMS_DATA, RESULTS_DATA, PLAYERS_DATA] = await Promise.all(["teams", "results", "players"].map(loadJSON));
+  [TEAMS_DATA, RESULTS_DATA, PLAYERS_DATA, CAREERS_DATA] = await Promise.all(["teams", "results", "players", "careers"].map(loadJSON));
 } catch (err) {
   const box = document.getElementById("loadError");
   box.hidden = false;
@@ -75,9 +75,70 @@ TEAMS_DATA.teams.forEach((td, ti) => {
 });
 players.forEach(p => p.apps.sort((a, b) => a.year - b.year || a.half - b.half));
 
-const isImport = a => NAT[a.id] && !HOME[a.team.region].includes(NAT[a.id]);
-// ancienneté : n-ième Worlds du joueur avec cette équipe
-players.forEach(p => { const c = {}; p.apps.forEach(a => { c[a.team.code] = (c[a.team.code] || 0) + 1; a.sen = c[a.team.code]; }); });
+// ---------- étapes de carrière hors Worlds (data/careers.json) ----------
+// Une étape dit **où était le joueur** une année sans rangée, entre deux de ses apparitions.
+// Elle entre dans le fil comme une apparition de plus, pour que la ligne ne saute plus le
+// trou, mais elle reste grise : ce n'est pas une rangée de Worlds, et la distinction doit
+// survivre à tout réglage.
+//
+// Le club traversé n'a pas toujours de colonne — il n'est jamais allé aux Worlds. Il reçoit
+// alors une pseudo-équipe qu'aucun filtre ne peut rendre visible, et tombe donc dans
+// « Autres équipes » par le prédicat existant, sans cas particulier ailleurs.
+const CAREERS = CAREERS_DATA.careers || {};
+const byCode = new Map(teams.map(t => [t.code, t]));
+const clubTeams = new Map();
+const clubTeam = name => {
+  if (!clubTeams.has(name)) clubTeams.set(name, { code: `@${name}`, name, label: name, tag: name, region: null, i: -1, active: [], years: {}, club: true });
+  return clubTeams.get(name);
+};
+// Première et dernière année où une partie est recensée au joueur : les deux bornes que les
+// marques de bout affichent. Elles ne disent **pas** une carrière — un joueur encore actif
+// n'a peut-être pas requalifié, et la source ne couvre pas tout.
+const SEEN = new Map();
+// Années-trous sans la moindre partie recensée. Le mot s'arrête là : « aucune partie
+// professionnelle recensée », jamais « sans club ».
+const VOIDS = new Map();
+const stepApps = [];
+players.forEach(p => {
+  const fiche = CAREERS[p.name];
+  if (!fiche) return;
+  if (Array.isArray(fiche.seen)) SEEN.set(p.id, fiche.seen);
+  const nouveaux = [];
+  for (const [key, entry] of Object.entries(fiche.years || {})) {
+    const year = +key;
+    if (!entry.steps?.length) {
+      // `offLevel` : le joueur a joué, mais rien qui soit de niveau Primary. On n'en dit rien
+      // — surtout pas qu'il n'a pas joué.
+      if (!entry.offLevel) {
+        if (!VOIDS.has(p.id)) VOIDS.set(p.id, new Set());
+        VOIDS.get(p.id).add(year);
+      }
+      continue;
+    }
+    // Le poste est celui de la dernière apparition d'avant : le fil garde son couloir de
+    // colonne au lieu de changer de voie sur une année dont la source ne dit pas le poste.
+    const avant = p.apps.filter(a => a.year < year).at(-1) || p.apps[0];
+    entry.steps.forEach((st, rang) => {
+      const t = st.team ? byCode.get(st.team) : clubTeam(st.club);
+      if (!t) return;
+      nouveaux.push({
+        id: p.id, name: p.name, shown: p.name, ri: avant.ri, year, alias: null, team: t,
+        role: ROLES[avant.ri], half: 0, halves: 1, alt: null, doubt: false, step: true, rang,
+      });
+    });
+  }
+  if (!nouveaux.length) return;
+  stepApps.push(...nouveaux);
+  p.apps.push(...nouveaux);
+  p.apps.sort((a, b) => a.year - b.year || a.half - b.half || (a.rang ?? 0) - (b.rang ?? 0));
+});
+
+// Une étape n'a pas de région propre : elle hérite de celle de sa colonne, qui est un
+// emplacement sur la carte et non une affirmation sur la ligue jouée cette année-là. Un club
+// sans colonne n'en a aucune, d'où la garde — `HOME[null]` ferait planter la carte.
+const isImport = a => !a.step && NAT[a.id] && !HOME[a.team.region].includes(NAT[a.id]);
+// ancienneté : n-ième Worlds du joueur avec cette équipe. Une étape n'en est pas un.
+players.forEach(p => { const c = {}; p.apps.forEach(a => { if (a.step) { a.sen = 0; return; } c[a.team.code] = (c[a.team.code] || 0) + 1; a.sen = c[a.team.code]; }); });
 
 // ---------- rendu ----------
 const CW=132, STEP=24, CH=20, TOPPAD=30, ROWH=250;
@@ -100,6 +161,8 @@ const laneAt=(cx,ri,half)=>cx+14+(2*ri+half)*((chipW-28)/9);
 // sortir de sous le nom voisin. On corrige l'attache — le point de départ et d'arrivée passe
 // au centre de la chip, rejoint par un court coude — et le couloir reste intact.
 const ELBOW=14;
+// Longueur de l'amorce et de la terminaison de #7a, et demi-largeur de leur barre.
+const CAP=9;
 const attache=n=>n.lane>=n.x&&n.lane<=n.x+n.w?n.lane:n.x+n.w/2;
 // Fenêtre d'existence de l'organisation, bornée par la plage affichée.
 const activeSpan=t=>[Math.max(YEARS[0],t.active[0]??YEARS[0]),Math.min(YEARS.at(-1),t.active[1]??Infinity)];
@@ -188,6 +251,49 @@ function render(){
     return dans.filter((a,i)=>garde[i]);
   };
 
+  // Place d'une étape dans une case de colonne. Elle garde le poste de l'apparition d'avant —
+  // le fil reste dans son couloir — mais ce poste est parfois déjà tenu : Nagne était chez
+  // NaJin en 2014, l'année où Ggoong y a joué les Worlds. Les deux sont vrais, et l'étape
+  // n'est pas un poste de la rangée.
+  //
+  // Elle prend alors la **demi-case de droite**, collée au titulaire, exactement comme un
+  // poste partagé — en pointillé, et seulement au focus. Le titulaire ne se resserre qu'au
+  // moment où l'étape paraît : au repos sa case est pleine, inchangée. C'est `apply()` qui
+  // s'en charge, l'étape portant dans `data-voisin` la case à resserrer.
+  //
+  // 18 cas sur 371, dont 4 entre deux étapes — les deux sont alors des demi-cases. Aucune
+  // saturation à ce jour : une étape tombant sur un poste **déjà** coupé en deux descendrait
+  // sous les cinq, faute de place.
+  const placeEtape=new Map();
+  {
+    const cle=(a)=>`${a.id}:${a.year}:${a.team.code}`;
+    const tenu=new Map(); // « code:année:poste » → occupants de la case, titulaires compris
+    const occupantsDe=(code,year,ri)=>{
+      const e=byCode.get(code)?.years[year];
+      return e?e.all.filter(b=>b.ri===ri).map(b=>({worlds:b})):[];
+    };
+    const dansLaCase=stepApps.filter(a=>colX.has(a.team))
+      .sort((m,n)=>m.year-n.year||m.team.code.localeCompare(n.team.code)||m.name.localeCompare(n.name));
+    for(const a of dansLaCase){
+      const k=`${a.team.code}:${a.year}:${a.ri}`;
+      if(!tenu.has(k)) tenu.set(k,occupantsDe(a.team.code,a.year,a.ri));
+      const occ=tenu.get(k);
+      if(!occ.length){ occ.push({etape:a}); placeEtape.set(cle(a),{ri:a.ri,demi:false,droite:false,voisin:null}); continue; }
+      if(occ.length===1){
+        const g=occ[0];
+        // Deux étapes sur le même poste : les deux sont des demi-cases, rien à resserrer.
+        if(g.etape) placeEtape.get(cle(g.etape)).demi=true;
+        occ.push({etape:a});
+        placeEtape.set(cle(a),{ri:a.ri,demi:true,droite:true,voisin:g.worlds?`${g.worlds.id}:${a.year}`:null});
+        continue;
+      }
+      let i=5;
+      while(tenu.get(`${a.team.code}:${a.year}:${i}`)?.length) i++;
+      tenu.set(`${a.team.code}:${a.year}:${i}`,[{etape:a}]);
+      placeEtape.set(cle(a),{ri:i,demi:false,droite:false,voisin:null});
+    }
+  }
+
   nodesByPlayer=new Map();
   const otherByYear={};
   players.forEach(p=>{
@@ -195,7 +301,15 @@ function render(){
     if(!dans.some(a=>colX.has(a.team))) return;
     nodesByPlayer.set(p.id,dans.map(a=>{
       if(colX.has(a.team)){
-        const cx=colX.get(a.team)+PADX, w=chipW/a.halves;
+        const cx=colX.get(a.team)+PADX;
+        if(a.step){
+          // Le couloir reste celui du poste hérité : seule la case bouge dans sa cellule.
+          const pl=placeEtape.get(`${a.id}:${a.year}:${a.team.code}`)??{ri:a.ri,demi:false,droite:false,voisin:null};
+          const w=pl.demi?chipW/2:chipW;
+          return {a,x:cx+(pl.droite?w:0),w,y:yTop(a.year)+pl.ri*STEP,lane:laneAt(cx,a.ri,pl.droite?1:0),
+            bottom:yTop(a.year)+Math.max(5,pl.ri+1)*STEP,demi:pl.demi,droite:pl.droite,voisin:pl.voisin};
+        }
+        const w=chipW/a.halves;
         return {a,x:cx+a.half*w,w,y:yTop(a.year)+a.ri*STEP,lane:laneAt(cx,a.ri,a.half),bottom:yTop(a.year)+5*STEP};
       }
       const n={a,other:true,w:chipW}; (otherByYear[a.year]??=[]).push(n); return n;
@@ -215,7 +329,9 @@ function render(){
     // liste : sans ça la chip changeait de ligne d'une année à l'autre selon le nombre de
     // voisines, et le fil zigzaguait. Deux joueurs du même poste la même année se rangent en
     // sous-colonnes côte à côte.
-    list.sort((m,n)=>m.a.ri-n.a.ri||m.a.half-n.a.half||m.a.name.localeCompare(n.a.name));
+    // Les chips de Worlds prennent les sous-colonnes de gauche, les étapes celles d'après :
+    // les étapes ne se montrant qu'au focus, la colonne reste compacte à l'œil au repos.
+    list.sort((m,n)=>m.a.ri-n.a.ri||(m.a.step?1:0)-(n.a.step?1:0)||m.a.half-n.a.half||m.a.name.localeCompare(n.a.name));
     const pris={};
     list.forEach(n=>{
       const cx=otherX+PADX+((pris[n.a.ri]=(pris[n.a.ri]??-1)+1))*CW;
@@ -237,21 +353,51 @@ function render(){
   });
   YEARS.forEach((y,j)=>{ if(j) html+=`<div class="yrule" style="top:${yTop(y)-70}px;width:${W}px"></div>`; });
   let paths="";
-  nodesByPlayer.forEach((ns,id)=>{
-    for(let k=1;k<ns.length;k++){
-      const A=ns[k-1], B=ns[k];
-      const x1=A.lane,y1=A.y+CH/2,x2=B.lane,y2=B.y+CH/2,b0=A.bottom,t1=yTop(B.a.year)-6;
-      // Attache : la ligne descend **droit** sous le nom jusqu'au bord bas de la chip, et ne
-      // rejoint son couloir qu'une fois dégagée — sinon le coude sort par le côté de la case
-      // et on retombe sur le défaut qu'on corrige. Le coude de départ tient entre le bas de la
-      // chip et `b0` ; celui d'arrivée au-dessus de son bord haut, dans l'inter-rangée.
-      // Pour une chip pleine `attache` renvoie la voie elle-même : tout devient colinéaire et
-      // le tracé est identique à celui d'avant, au pixel près.
-      const ax=attache(A), bx=attache(B);
-      const y0=A.y+CH, yd=Math.min(y0+ELBOW,b0), sd=(yd-y0)*.6;
-      const yu=bx===x2?t1:B.y-ELBOW, te=Math.min(t1,yu), su=(B.y-yu)*.6, m=(te-b0)*.55;
-      paths+=`<path class="l ${B.a.role} ${A.a.team===B.a.team?"same":"move"}" data-p="${id}" data-k="${id}:${k}" data-r="${B.a.role}" d="M${ax},${y1} L${ax},${y0} C${ax},${y0+sd} ${x1},${yd-sd} ${x1},${yd} L${x1},${b0} C${x1},${b0+m} ${x2},${te-m} ${x2},${te} L${x2},${yu} C${x2},${yu+su} ${bx},${B.y-su} ${bx},${B.y} L${bx},${y2}"/>`;
+  // Deux fils, et un seul visible à la fois.
+  //
+  //  - le **raccourci** (`base`) saute l'année-trou d'une apparition de Worlds à la suivante,
+  //    comme la carte le faisait avant les étapes. C'est lui qu'on voit au repos : sans cela,
+  //    des centaines de lignes partent vers « Autres équipes », tout à droite de 120 colonnes,
+  //    et la carte devient illisible pour une information qu'on ne lit qu'un joueur à la fois ;
+  //  - le **détail** (`deep`) passe par les étapes, et ne paraît qu'au focus, avec elles.
+  //
+  // Un segment qui ne touche aucune étape est commun aux deux : il n'est tracé qu'une fois.
+  const segment=(A,B,cls,cle)=>{
+    const x1=A.lane,y1=A.y+CH/2,x2=B.lane,y2=B.y+CH/2,b0=A.bottom,t1=yTop(B.a.year)-6;
+    const ax=attache(A), bx=attache(B);
+    if(A.a.year===B.a.year){
+      paths+=`<path class="l ${B.a.role} move duo${cls}" data-p="${A.a.id}" data-k="${cle}" data-r="${B.a.role}" d="M${ax},${y1} L${bx},${y2}"/>`;
+      return;
     }
+    const creux=VOIDS.get(A.a.id);
+    let vide=false;
+    if(creux) for(let y=A.a.year+1;y<B.a.year;y++) if(creux.has(y)) vide=true;
+    const y0=A.y+CH, yd=Math.min(y0+ELBOW,b0), sd=(yd-y0)*.6;
+    const yu=bx===x2?t1:B.y-ELBOW, te=Math.min(t1,yu), su=(B.y-yu)*.6, m=(te-b0)*.55;
+    paths+=`<path class="l ${B.a.role} ${A.a.team===B.a.team?"same":"move"}${vide?" void":""}${cls}" data-p="${A.a.id}" data-k="${cle}" data-r="${B.a.role}" d="M${ax},${y1} L${ax},${y0} C${ax},${y0+sd} ${x1},${yd-sd} ${x1},${yd} L${x1},${b0} C${x1},${b0+m} ${x2},${te-m} ${x2},${te} L${x2},${yu} C${x2},${yu+su} ${bx},${B.y-su} ${bx},${B.y} L${bx},${y2}"/>`;
+  };
+  nodesByPlayer.forEach((ns,id)=>{
+    for(let k=1;k<ns.length;k++) segment(ns[k-1],ns[k],(ns[k-1].a.step||ns[k].a.step)?" deep":"",`${id}:${k}`);
+    // Raccourci : seulement là où le détail s'en écarte, c'est-à-dire par-dessus une étape.
+    const mondiaux=ns.map((n,i)=>({n,i})).filter(x=>!x.n.a.step);
+    for(let j=1;j<mondiaux.length;j++){
+      if(mondiaux[j].i-mondiaux[j-1].i>1) segment(mondiaux[j-1].n,mondiaux[j].n," base",`${id}:raccourci:${j}`);
+    }
+    // Amorce et terminaison du fil. Les deux bouts ne sont posés que si la chip dessinée
+    // **est** la première ou la dernière apparition du joueur : la plage d'années comme les
+    // blocs écartés par `retenues` coupent le fil sans le terminer, et une marque y
+    // mentirait. Elles ne paraissent qu'au survol, comme la note le demande.
+    //
+    // La marque dit où s'arrête le fil **dessiné**, c'est-à-dire les Worlds. Ce que la source
+    // recense au-delà est une autre chose, et c'est `seen` qui la porte, dans le panneau de
+    // détail : 567 joueurs ont une partie après leur dernier Worlds.
+    const suite=players.get(id).apps;
+    const cap=(n,fin)=>{
+      const x=attache(n), y=fin?n.y+CH:n.y, d=fin?CAP:-CAP;
+      paths+=`<path class="l cap ${n.a.role}" data-p="${id}" data-r="${n.a.role}" d="M${x},${y} L${x},${y+d} M${x-CAP/2},${y+d} L${x+CAP/2},${y+d}"/>`;
+    };
+    if(ns[0].a===suite[0]) cap(ns[0],false);
+    if(ns.at(-1).a===suite.at(-1)) cap(ns.at(-1),true);
   });
   html+=`<svg width="${W}" height="${H}" aria-hidden="true">${paths}</svg>`;
   vis.forEach(t=>{
@@ -260,20 +406,29 @@ function render(){
       const e=t.years[y], cx=colX.get(t)+PADX, top=yTop(y);
       // Hors de la fenêtre d'activité, rien n'est dessiné : l'org n'existait pas encore,
       // ou plus. « Pas aux Worlds » ne vaut que pendant son existence.
-      if(!e){ if(y>=from&&y<=to) html+=`<div class="absent" style="left:${cx}px;top:${top}px;width:${chipW}px;height:${5*STEP-4}px">Pas aux Worlds</div>`; return; }
+      // Le libellé reste : les étapes ne s'affichent qu'au focus, et c'est `apply()` qui le
+      // fait taire sur les seules cases dont une étape est effectivement montrée.
+      if(!e){ if(y>=from&&y<=to) html+=`<div class="absent" data-cell="${t.code}:${y}" style="left:${cx}px;top:${top}px;width:${chipW}px;height:${5*STEP-4}px"><span>Pas aux Worlds</span></div>`; return; }
       const r=RES[y]?.[t.code];
       if(e.alias) html+=`<div class="alias" style="left:${cx}px;top:${top-16}px;width:${r?chipW-56:chipW}px">${e.alias}</div>`;
       if(r) html+=`<div class="res${r==="W"?" win":""}" style="left:${cx}px;top:${top-16}px;width:${chipW}px">${RES_LABEL[r]}</div>`;
     });
   });
   nodesByPlayer.forEach(ns=>ns.forEach(n=>{
-    const a=n.a, label=a.alias||a.team.name, nat=NAT[a.id], demi=a.halves>1;
-    const duo=demi?a.team.years[a.year].all.find(b=>b.ri===a.ri&&b!==a):null;
-    const tip=`${a.name}${a.shown!==a.name?` (${a.shown} à l'époque)`:""}${nat?" ("+nat+")":""} · ${ROLE_NAME[a.role]} · ${label} ${a.year}`
-      +(a.sen>1?` · ${a.sen}e Worlds avec l'équipe`:"")
-      +(duo?` · poste partagé avec ${duo.name}`:"")+(a.alt?` · rotation avec ${a.alt}`:"")+(a.doubt?" · à vérifier":"");
-    const mark=n.other?`<span class="t">${a.team.tag||a.team.code}</span>`:(a.alt||a.doubt?`<span class="q">${a.doubt?"?":"*"}</span>`:"");
-    html+=`<div class="chip${demi?" half":""}${demi&&a.half?" right":""}" data-p="${a.id}" data-c="${a.id}:${a.year}" data-r="${a.role}" style="left:${n.x}px;top:${n.y}px;width:${n.w}px;--s:${Math.min(a.sen-1,5)*11}%" title="${tip}"><span class="r ${a.role}"></span>${nat?`<span class="nat${isImport(a)?" imp":""}">${nat}</span>`:""}<span class="n">${a.shown}</span>${a.sen>1?`<span class="sen">${a.sen}e</span>`:""}${mark}</div>`;
+    const a=n.a, label=a.alias||a.team.name, nat=NAT[a.id];
+    // Une étape prend la demi-case de droite quand son poste est déjà tenu : même forme
+    // qu'un poste partagé, mais elle n'en est pas un — pas de « duo », pas de poste du tout.
+    const demi=n.demi??(a.halves>1), droite=n.droite??(demi&&a.half);
+    const duo=!a.step&&demi?a.team.years[a.year].all.find(b=>b.ri===a.ri&&b!==a):null;
+    // Ce que la source dit d'une étape se limite à « chez X cette année-là » : ni poste —
+    // la rangée n'en a pas —, ni ancienneté, ni rotation.
+    const tip=a.step
+      ? `${a.name}${nat?" ("+nat+")":""} · chez ${label} en ${a.year} · pas aux Worlds cette année-là`
+      : `${a.name}${a.shown!==a.name?` (${a.shown} à l'époque)`:""}${nat?" ("+nat+")":""} · ${ROLE_NAME[a.role]} · ${label} ${a.year}`
+        +(a.sen>1?` · ${a.sen}e Worlds avec l'équipe`:"")
+        +(duo?` · poste partagé avec ${duo.name}`:"")+(a.alt?` · rotation avec ${a.alt}`:"")+(a.doubt?" · à vérifier":"");
+    const mark=n.other?`<span class="t">${a.team.tag||a.team.code}</span>`:(!a.step&&(a.alt||a.doubt)?`<span class="q">${a.doubt?"?":"*"}</span>`:"");
+    html+=`<div class="chip${demi?" half":""}${droite?" right":""}${a.step?" step":""}" data-p="${a.id}" data-c="${a.id}:${a.year}" data-r="${a.role}" data-w="${n.w}"${a.step&&!n.other?` data-cell="${a.team.code}:${a.year}"`:""}${n.voisin?` data-voisin="${n.voisin}"`:""} style="left:${n.x}px;top:${n.y}px;width:${n.w}px;--s:${Math.min(a.sen-1,5)*11}%" title="${tip}"><span class="r ${a.role}"></span>${nat?`<span class="nat${isImport(a)?" imp":""}">${nat}</span>`:""}<span class="n">${a.shown}</span>${a.sen>1?`<span class="sen">${a.sen}e</span>`:""}${mark}</div>`;
   }));
   world.style.width=W+"px"; world.style.height=H+"px";
   world.innerHTML=html;
@@ -436,12 +591,16 @@ const fmtFlow=o=>Object.entries(o).sort((a,b)=>b[1].length-a[1].length).map(([t,
 function apply(){
   const {hover,pinned,pinnedTeam}=state;
   const lin=!hover&&!pinned&&pinnedTeam&&state.teamMode==="lineage"?lineage(pinnedTeam):null;
-  const ids=hover?new Set([hover]):pinned?new Set([pinned]):(pinnedTeam&&!lin)?new Set(apps.filter(a=>a.team.code===pinnedTeam).map(a=>a.id)):null;
+  // Une étape compte comme passage par la colonne : épingler T1 doit surligner le fil de
+  // Faker en 2014, année où il y était sans aller aux Worlds.
+  const ids=hover?new Set([hover]):pinned?new Set([pinned]):(pinnedTeam&&!lin)?new Set([...apps,...stepApps].filter(a=>a.team.code===pinnedTeam).map(a=>a.id)):null;
   world.classList.toggle("focus",!!ids||!!lin);
   world.classList.toggle("showNat",state.showNat);
   world.classList.toggle("showSen",state.showSen);
+  const parCase=new Map(); // data-c → chip, pour retrouver le titulaire à resserrer
   world.querySelectorAll("[data-p]").forEach(el=>{
     const isPath=el.tagName==="path";
+    if(!isPath&&el.dataset.c) parCase.set(el.dataset.c,el);
     el.classList.toggle("hl",lin?(isPath?lin.paths.has(el.dataset.k):lin.chips.has(el.dataset.c)):(!!ids&&ids.has(el.dataset.p)));
     el.classList.toggle(isPath?"roff":"off",!state.roles.has(el.dataset.r));
   });
@@ -463,15 +622,50 @@ function apply(){
     th.classList.toggle("on",on);
     th.classList.toggle("dim",!!liees&&!on&&(th.dataset.team?!liees.has(th.dataset.team):!autresLiee));
   });
+  // Une case « Pas aux Worlds » dont l'étape est effectivement montrée se tait : le libellé
+  // est centré, la chip lui passerait dessus. Hors focus il reste, puisque rien ne s'affiche.
+  const tues=new Set();
+  world.querySelectorAll(".chip.step.hl[data-cell]").forEach(el=>tues.add(el.dataset.cell));
+  world.querySelectorAll(".absent[data-cell]").forEach(el=>el.classList.toggle("muette",tues.has(el.dataset.cell)));
+
+  // Et un titulaire dont le poste reçoit une étape se resserre en demi-case le temps qu'elle
+  // paraisse. Au repos sa case est pleine : c'est la rangée des Worlds, elle ne doit rien
+  // perdre pour une information qu'on n'a pas demandée.
+  world.querySelectorAll(".chip.serre").forEach(el=>{
+    el.classList.remove("serre","half");
+    el.style.width=`${el.dataset.w}px`;
+  });
+  world.querySelectorAll(".chip.step.hl[data-voisin]").forEach(el=>{
+    const v=parCase.get(el.dataset.voisin);
+    if(!v) return;
+    v.classList.add("serre","half");
+    v.style.width=`${+v.dataset.w/2}px`;
+  });
+
   const sel=$("sel"), out=$("selText"), show=hover||pinned;
   if(show){
-    const p=players.get(show), steps=[], nat=NAT[p.id];
+    const p=players.get(show), nat=NAT[p.id], creux=VOIDS.get(p.id)||new Set();
+    // Le panneau ne filtre rien : il donne la suite des clubs, étapes hors Worlds comprises,
+    // et les années que la source ne recense pas. Une étape se fond dans la période du club
+    // qu'elle prolonge — c'est la carrière qu'on lit ici, la carte portant la distinction.
+    const items=[];
     p.apps.forEach(a=>{
-      const label=a.alias||a.team.name, last=steps[steps.length-1];
-      if(last&&last.label===label&&last.role===a.role&&last.to===a.year-1) last.to=a.year;
-      else steps.push({label,role:a.role,from:a.year,to:a.year});
+      const dernier=[...items].reverse().find(i=>i.kind==="run");
+      for(let y=(dernier?dernier.to+1:a.year);y<a.year;y++) if(creux.has(y)) items.push({kind:"void",year:y});
+      const label=a.alias||a.team.name, last=items[items.length-1];
+      if(last?.kind==="run"&&last.label===label&&last.role===a.role&&last.to===a.year-1) last.to=a.year;
+      else items.push({kind:"run",label,role:a.role,from:a.year,to:a.year});
     });
-    out.innerHTML=`<b class="nm">${p.name}</b>${nat?`<span class="hint">${COUNTRY[nat]||nat} · </span>`:""}${steps.map(s=>`${s.label} <span class="hint">${s.from===s.to?s.from:s.from+"–"+s.to} · ${ROLE_NAME[s.role]}</span>`).join(" → ")}`;
+    // « aucune partie professionnelle recensée », jamais « sans club » : la source dit qu'elle
+    // ne recense rien, pas que le joueur n'avait pas d'équipe.
+    const chaine=items.map(i=>i.kind==="void"
+      ?`<span class="hint">${i.year} · aucune partie professionnelle recensée</span>`
+      :`${i.label} <span class="hint">${i.from===i.to?i.from:i.from+"–"+i.to} · ${ROLE_NAME[i.role]}</span>`).join(" → ");
+    // Les deux bornes du fil. « Connue » et pas « début » ni « fin de carrière » : un joueur
+    // encore actif peut n'avoir pas requalifié, et la couverture de la source a ses limites.
+    const vu=SEEN.get(p.id);
+    const bornes=vu?`<br><span class="hint">première apparition connue : ${vu[0]} · dernière apparition connue : ${vu[1]}</span>`:"";
+    out.innerHTML=`<b class="nm">${p.name}</b>${nat?`<span class="hint">${COUNTRY[nat]||nat} · </span>`:""}${chaine}${bornes}`;
   } else if(lin){
     const t=teams.find(t=>t.code===pinnedTeam);
     out.innerHTML=`<b class="nm">${t.name}</b><span class="hint">Arrivées et départs</span><br>Arrivées depuis : ${fmtFlow(lin.from)}<br>Départs vers : ${fmtFlow(lin.to)} <span class="hint">· ${lin.debut} premiers Worlds ici</span>`;
@@ -489,9 +683,14 @@ function renderLegend(lin){
   L.push(`<span><svg width="30" height="10"><line x1="2" y1="5" x2="28" y2="5" stroke="currentColor" stroke-width="1.8"/></svg> changement d'équipe, coloré par poste</span>`);
   L.push(`<span><span class="lg-half"><i></i><i></i></span> poste tenu par deux joueurs, chacun ciblable · <b>*</b> rotation ponctuelle (survol pour le nom)${apps.some(a=>a.doubt)?" · <b>?</b> à vérifier":""}</span>`);
   L.push(`<span><span class="lg-res">Quarts · Demi · Finale</span> parcours de l'équipe · <b style="color:var(--bot)">★ Vainqueur</b></span>`);
+  // Dire « premier » et « dernier Worlds », et pas « début » ni « fin de carrière » : la
+  // carte ne voit que les éditions, et un joueur encore actif n'a peut-être pas requalifié.
+  L.push(`<span><svg width="30" height="12"><line x1="10" y1="2" x2="20" y2="2" stroke="currentColor" stroke-width="2"/><line x1="15" y1="2" x2="15" y2="10" stroke="currentColor" stroke-width="2"/></svg> au survol, les deux bouts du fil : premier et dernier Worlds du joueur</span>`);
   if(state.showNat) L.push(`<span><span class="lg-nat">KR</span> nationalité · <span class="lg-nat" style="color:var(--accent);border-color:var(--accent)">KR</span> joueur importé</span>`);
   if(state.showSen) L.push(`<span><span class="senbar"></span> 1er → 6e Worlds avec l'équipe</span>`);
-  if(hasOther) L.push(`<span>Autres équipes : joueurs des régions et des équipes masquées, à l'édition de leur départ ou de leur retour</span>`);
+  L.push(`<span><span class="lg-step">Club</span> au survol d'un joueur ou au clic sur une équipe : où il était les années sans Worlds, et le fil passe par là</span>`);
+  L.push(`<span><svg width="30" height="10"><line x1="2" y1="5" x2="28" y2="5" stroke="currentColor" stroke-width="1.8" stroke-dasharray="3 4"/></svg> au survol, fil en pointillé : aucune partie professionnelle recensée sur l'intervalle</span>`);
+  if(hasOther) L.push(`<span>Autres équipes : joueurs des régions et des équipes masquées, et les clubs traversés qui n'ont pas de colonne</span>`);
   if(lin) L.push(`<span>Arrivées et départs : club d'avant et club d'après</span>`);
   L.push(`<span>Glisser pour se déplacer · molette ou pincer pour zoomer</span>`);
   $("legendBody").innerHTML=L.join("");
@@ -679,9 +878,18 @@ $("filters").querySelector(".dbody").addEventListener("scroll",closeTip,{passive
 // ---------- statistiques ----------
 (function stats(){
   const plist=[...players.values()];
+  // Toutes ces mesures comptent des **Worlds** : « le plus de Worlds », « d'un Worlds à
+  // l'autre », « titulaires ». Une étape hors Worlds n'en est pas un, et la colonne qu'elle
+  // traverse n'a pas toujours de région — `flow[null]` ferait planter le tiroir.
+  const mondiaux=p=>p.apps.filter(a=>!a.step);
   const btn=p=>`<button type="button" class="pl" data-id="${p.id}">${p.name}</button>`;
-  const most=plist.map(p=>({p,n:p.apps.length})).sort((a,b)=>b.n-a.n||a.p.name.localeCompare(b.p.name)).slice(0,10);
-  const trav=plist.map(p=>({p,n:new Set(p.apps.map(a=>a.team.code)).size})).filter(x=>x.n>=3).sort((a,b)=>b.n-a.n||b.p.apps.length-a.p.apps.length).slice(0,10);
+  const most=plist.map(p=>({p,n:mondiaux(p).length})).sort((a,b)=>b.n-a.n||a.p.name.localeCompare(b.p.name)).slice(0,10);
+  const trav=plist.map(p=>({p,n:new Set(mondiaux(p).map(a=>a.team.code)).size})).filter(x=>x.n>=3).sort((a,b)=>b.n-a.n||mondiaux(b.p).length-mondiaux(a.p).length).slice(0,10);
+  // Deux voyageurs différents, et la confusion entre les deux était la faute : le premier
+  // compte les équipes **avec lesquelles on est allé aux Worlds**, le second tous les clubs
+  // traversés, étapes hors Worlds et clubs sans colonne compris.
+  const carr=plist.map(p=>({p,n:new Set(p.apps.map(a=>a.team.code)).size,w:new Set(mondiaux(p).map(a=>a.team.code)).size}))
+    .filter(x=>x.n>=4).sort((a,b)=>b.n-a.n||a.p.name.localeCompare(b.p.name)).slice(0,10);
   const stable=[];
   teams.forEach(t=>{
     const ys=ALL_YEARS.filter(y=>t.years[y]); let run=[ys[0]];
@@ -694,14 +902,15 @@ $("filters").querySelector(".dbody").addEventListener("scroll",closeTip,{passive
   });
   stable.sort((a,b)=>b.n-a.n||a.from-b.from);
   const flow={}; REGIONS.forEach(a=>{flow[a]={}; REGIONS.forEach(b=>flow[a][b]=0);});
-  plist.forEach(p=>p.apps.forEach((a,k)=>{const b=p.apps[k+1]; if(b&&b.team!==a.team) flow[a.team.region][b.team.region]++;}));
+  plist.forEach(p=>{const w=mondiaux(p); w.forEach((a,k)=>{const b=w[k+1]; if(b&&b.team!==a.team) flow[a.team.region][b.team.region]++;});});
   const fmax=Math.max(...REGIONS.flatMap(a=>REGIONS.map(b=>flow[a][b])));
   const imp={}; REGIONS.forEach(r=>{imp[r]={}; ALL_YEARS.forEach(y=>{
     const s=apps.filter(a=>a.year===y&&a.team.region===r);
     imp[r][y]=s.length?{i:s.filter(isImport).length,n:s.length}:null;
   });});
   let h=`<div class="st"><h3>Le plus de Worlds</h3><ol>${most.map(x=>`<li>${btn(x.p)}<span class="v">${x.n}</span></li>`).join("")}</ol></div>`;
-  h+=`<div class="st"><h3>Plus grands voyageurs</h3><p class="note">Nombre d'équipes différentes parmi celles suivies</p><ol>${trav.map(x=>`<li>${btn(x.p)}<span class="v">${x.n} équipes</span></li>`).join("")}</ol></div>`;
+  h+=`<div class="st"><h3>Plus grands voyageurs aux Worlds</h3><p class="note">Nombre d'équipes différentes <b>avec lesquelles le joueur est allé aux Worlds</b></p><ol>${trav.map(x=>`<li>${btn(x.p)}<span class="v">${x.n} équipes</span></li>`).join("")}</ol></div>`;
+  h+=`<div class="st"><h3>Plus grands voyageurs, carrière entière</h3><p class="note">Tous les clubs traversés, Worlds ou non — les étapes hors Worlds et les clubs sans colonne compris. Entre parenthèses, la part faite aux Worlds.</p><ol>${carr.map(x=>`<li>${btn(x.p)}<span class="v">${x.n} clubs <small>(${x.w} aux Worlds)</small></span></li>`).join("")}</ol></div>`;
   h+=`<div class="st"><h3>Rosters inchangés</h3><p class="note">Même cinq titulaires sur des Worlds consécutifs</p><ol>${stable.map(s=>`<li><span><b>${shortName(s.t)}</b> ${s.from}–${s.to}<br><span class="note">${s.names}</span></span><span class="v">${s.n} ans</span></li>`).join("")}</ol></div>`;
   h+=`<div class="st"><h3>Flux entre régions</h3><p class="note">Changements d'équipe d'un Worlds à l'autre. Ligne : région quittée, colonne : région rejointe.</p><div class="tw"><table class="fl"><tr><th></th>${REGIONS.map(r=>`<th>→ ${r}</th>`).join("")}</tr>${REGIONS.map(a=>`<tr><th>${a}</th>${REGIONS.map(b=>`<td style="--a:${Math.round(flow[a][b]/fmax*70)}%">${flow[a][b]||"·"}</td>`).join("")}</tr>`).join("")}</table></div></div>`;
   h+=`<div class="st"><h3>Joueurs importés</h3><p class="note">Titulaires dont la nationalité n'est pas celle de la région de l'équipe</p><div class="tw"><table class="fl"><tr><th></th>${ALL_YEARS.map(y=>`<th>${String(y).slice(2)}</th>`).join("")}</tr>${REGIONS.map(r=>`<tr><th>${r}</th>${ALL_YEARS.map(y=>{const c=imp[r][y]; return c?`<td style="--a:${Math.round(c.i/c.n*90)}%">${c.i}<small>/${c.n}</small></td>`:`<td class="na">–</td>`;}).join("")}</tr>`).join("")}</table></div></div>`;

@@ -4,8 +4,8 @@
 import { readFile } from "node:fs/promises";
 
 const read = async (name) => JSON.parse(await readFile(new URL(`../data/${name}.json`, import.meta.url), "utf8"));
-const [teamsData, resultsData, playersData, sourcesData] = await Promise.all(
-  ["teams", "results", "players", "sources"].map(read),
+const [teamsData, resultsData, playersData, sourcesData, careersData] = await Promise.all(
+  ["teams", "results", "players", "sources", "careers"].map(read),
 );
 
 const errors = [];
@@ -229,13 +229,90 @@ for (const [code, nom] of Object.entries(countryNames)) {
   else if (!codesUtilises.has(code)) warnings.push(`countryNames.${code} : aucun joueur de ce pays`);
 }
 
+// --- étapes de carrière hors Worlds
+// Le pendant de la fenêtre `active` d'une équipe, côté joueur : une étape se pose dans une
+// année-trou — une année sans rangée, **entre** deux apparitions du même joueur. Hors de ce
+// creux, elle n'a rien à relier et n'est donc pas une étape mais une affirmation.
+const careers = careersData.careers ?? {};
+const trousDe = (id) => {
+  const vus = [...(appearances.get(id) ?? [])].map((y) => editions.indexOf(y)).filter((i) => i >= 0).sort((a, b) => a - b);
+  const creux = new Set();
+  for (let i = 1; i < vus.length; i++) for (let j = vus[i - 1] + 1; j < vus[i]; j++) creux.add(editions[j]);
+  return creux;
+};
+let nbEtapes = 0;
+for (const [name, fiche] of Object.entries(careers)) {
+  const where = `carrière de ${name}`;
+  const id = low(name);
+  if (!byLower.has(id)) { errors.push(`${where} : joueur absent des lineups`); continue; }
+  if (byLower.get(id) !== name) errors.push(`${where} : graphie « ${byLower.get(id)} » dans les lineups — un joueur s'écrit partout de la même façon`);
+
+  // `seen` : première et dernière année où une partie est recensée. Elle encadre forcément
+  // les Worlds joués, sans quoi l'un des deux est faux.
+  const seen = fiche.seen;
+  const okSeen = Array.isArray(seen) && seen.length === 2 && seen.every((y) => Number.isInteger(y)) && seen[0] <= seen[1];
+  if (!okSeen) errors.push(`${where} : "seen" doit être [première, dernière] année, en années entières`);
+  const vus = [...(appearances.get(id) ?? [])].sort((a, b) => a - b);
+  if (okSeen && vus.length && (seen[0] > vus[0] || seen[1] < vus.at(-1))) {
+    errors.push(`${where} : "seen" [${seen.join(", ")}] n'encadre pas ses Worlds (${vus[0]}–${vus.at(-1)})`);
+  }
+
+  const creux = trousDe(id);
+  const annees = Object.keys(fiche.years ?? {});
+  for (const key of annees) {
+    const y = Number(key);
+    const at = `${where}, ${key}`;
+    if (!years.has(y)) { errors.push(`${at} : année hors de la liste "years"`); continue; }
+    // Une étape hors trou est une erreur, exactement comme une lineup hors fenêtre `active`.
+    if (!creux.has(y)) { errors.push(`${at} : cette année n'est pas un trou entre deux Worlds du joueur`); continue; }
+    const entry = fiche.years[key];
+    const steps = entry?.steps;
+    if (!Array.isArray(steps)) { errors.push(`${at} : "steps" doit être une liste`); continue; }
+    // La règle 5 retient le club majoritaire plus tout autre club à 20 % des parties ou
+    // plus : au-delà de cinq, le compte ne tiendrait pas, et trois est le maximum mesuré.
+    if (steps.length > 3) errors.push(`${at} : ${steps.length} étapes, le seuil de 20 % n'en permet pas autant`);
+    if (entry.offLevel !== undefined) {
+      if (entry.offLevel !== true) errors.push(`${at} : "offLevel" ne prend que la valeur true`);
+      else if (steps.length) errors.push(`${at} : "offLevel" marque une année sans étape retenue`);
+    }
+    const vu = new Set();
+    for (const step of steps) {
+      const keys = Object.keys(step ?? {});
+      if (keys.length !== 1 || !["team", "club"].includes(keys[0])) {
+        errors.push(`${at} : une étape porte soit "team" (code de colonne), soit "club" (club sans colonne)`);
+        continue;
+      }
+      const val = step.team ?? step.club;
+      if (typeof val !== "string" || !val.trim()) { errors.push(`${at} : étape vide`); continue; }
+      if (vu.has(low(val))) errors.push(`${at} : ${val} apparaît deux fois`);
+      vu.add(low(val));
+      if (step.team && !teamCodes.has(step.team)) errors.push(`${at} : code d'équipe inconnu « ${step.team} »`);
+      // Un club qui est en réalité une colonne doit la rejoindre : sinon le fil contourne
+      // une colonne affichée pour aller se poser dans « Autres équipes ».
+      if (step.club) {
+        if (teamCodes.has(step.club)) errors.push(`${at} : « ${step.club} » est un code de colonne, à écrire en "team"`);
+        const col = teamsData.teams.find((t) => t.name === step.club);
+        if (col) errors.push(`${at} : « ${step.club} » est le nom de la colonne ${col.code}, à écrire en "team"`);
+      }
+      nbEtapes++;
+    }
+  }
+}
+// Une carrière manquante pour un joueur à trou n'est pas une erreur de structure, mais une
+// collecte inachevée : le fil sautera le trou en silence.
+for (const [id, seen] of appearances) {
+  if (!trousDe(id).size) continue;
+  if (!Object.hasOwn(careers, byLower.get(id))) warnings.push(`${byLower.get(id)} : ${trousDe(id).size} année(s) entre deux Worlds, sans entrée dans careers.json`);
+  void seen;
+}
+
 // --- sources
 for (const year of teamsData.years) {
   if (!sourcesData.byYear?.[year]?.length) warnings.push(`${year} : aucune source listée dans data/sources.json`);
 }
 
 const lineups = [...present.keys()].length;
-console.log(`${teamsData.teams.length} équipes, ${lineups} lineups, ${allPlayers.size} joueurs affichés, ${noNat.length} sans nationalité vérifiée.`);
+console.log(`${teamsData.teams.length} équipes, ${lineups} lineups, ${allPlayers.size} joueurs affichés, ${noNat.length} sans nationalité vérifiée, ${nbEtapes} étapes hors Worlds.`);
 for (const w of warnings) console.log(`  avertissement · ${w}`);
 if (errors.length) {
   for (const e of errors) console.error(`  ERREUR · ${e}`);

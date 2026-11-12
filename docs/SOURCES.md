@@ -50,6 +50,145 @@ Le jeu de données *LeagueOfLegendsCompetitiveNetwork* (scrapé sur Leaguepedia)
 - Pour départager une rotation, on utilise une paire qui n'existe qu'une seule année. Exemple : Bwipo et Caps n'ont joué ensemble qu'en 2018 (13 matchs), sOAZ et Hylissang aussi (4 matchs) → Bwipo est le titulaire de Fnatic en 2018.
 - Exemple de déduction : Ambition a 33 matchs avec CuVee (17 en 2016 + 16 en 2017) et Haru 6 matchs (les 6 matchs de Gen.G en 2018) → Ambition titulaire en 2017, Haru en 2018.
 
+## Hors Worlds : la règle 5 et les étapes de carrière
+
+Les quatre règles ci-dessus décident d'une **rangée de Worlds** : qui a joué l'édition pour
+l'équipe. La règle 5 décide d'autre chose, et c'est pourquoi elle est à part : **où était un
+joueur une année sans rangée**, pour que son fil ne saute plus le trou en silence. Les
+données vivent dans [`data/careers.json`](../data/careers.json), le calcul en § 14 du rapport
+de collecte.
+
+**Règle 5. Club majoritaire de l'année, plus tout autre club à 20 % des parties ou plus.**
+C'est le seuil de la règle 1, transposé de l'axe des postes à l'axe du temps. Le majoritaire
+seul perdait non pas du bruit mais des demi-saisons réelles, souvent dans des clubs qui *ont*
+une colonne — Breathe 2022 (RNG 82 parties, BLG 52), Zven 2016 (G2 50, Origen 34), Mata 2014
+(Samsung Ozone 39, Samsung White 37 — deux colonnes distinctes ici). Mesuré sur 25 joueurs : le
+seuil de 20 % ramène la perte de 29 à 13 clubs-années, et 30 % ou 40 % font moins bien.
+
+**Le contrôle de la règle 5 est la rangée de Worlds elle-même.** Appliquée aux 1 557
+joueur-années *qui ont* une rangée, elle retrouve la bonne colonne **1 549 fois sur 1 557**.
+Les 8 écarts sont des transferts de mi-saison où le club des Worlds pèse moins de 20 % de
+l'année — Juhan 2022, Deftly 2019, Voyboy 2012, Winds 2013, Crash 2017, Kongyue et Uniboy
+2020, UDYSOF 2018. Sur une année de Worlds la rangée fait foi et aucune étape n'est écrite :
+le contrôle ne sert qu'à valider la règle là où la réponse est connue.
+
+### Périmètre : l'année-trou, et elle seule
+
+Une étape n'est écrite que pour une **année sans rangée située entre deux apparitions** du
+joueur. Avant sa première et après sa dernière, le fil n'a rien à relier : ce sont les deux
+bouts du fil, et c'est `seen` qui porte ce qu'on en sait.
+
+Ce choix est aussi ce qui tient la charge de la carte. Les 419 années-trous des 749 joueurs
+ajoutent **435 cases**, soit +28 % sur les 1 557 d'origine, dont 64 seulement dans « Autres
+équipes ». Étendre les étapes à toute la carrière dans l'horizon en ajouterait **3 358**, dont
+1 436 dans la seule colonne « Autres équipes » : la carte triplerait et changerait de sujet.
+
+Au rendu, ces 435 cases ne paraissent qu'au survol d'un joueur ou au clic sur une équipe, et
+celles dont le poste est déjà tenu cette année-là se collent au titulaire en demi-case — une
+étape n'a pas de poste, elle n'en emprunte un que pour garder le couloir du fil. Au
+repos le fil garde le raccourci d'avant, d'une apparition de Worlds à la suivante : les lignes
+qui partent vers « Autres équipes », tout à droite de 120 colonnes, sont illisibles en masse
+pour une information qui se lit un joueur à la fois.
+
+### Filtre de bruit : deux champs de la source, aucun motif de nom
+
+`ScoreboardPlayers` mêle aux clubs des entités qui ne sont pas des étapes de carrière.
+Reconnaître « Team Fire » ou « Newbee Young » à leur orthographe serait deviner ; deux champs
+de la source tranchent à leur place.
+
+1. **`Tournaments.TournamentLevel = 'Primary'`.** Écarte les ligues secondaires et les
+   académies (`Secondary` : LCK CL, LDL, LCS Academy, `FlyQuest Academy`, `Newbee Young`,
+   `Team WE Future`) comme les All-Star et les showmatchs (`Showmatch` : `LPL Allstars`,
+   `Team Fire`, `Team Ice`, `TeamRookie`). Sur les 8 259 lignes groupées rendues par la
+   collecte, 2 567 tombent ici.
+2. **Une fiche `Teams` est exigée.** Le niveau de tournoi ne prend pas les sélections
+   nationales — les qualifications des Asian Games 2018 sont `Primary` — ni les sélections
+   régionales coréennes du KeSPA Cup (`Seoul`, `Gyeonggi`, `Ulsan`, `Chungnam`, `Gwangju`) ni
+   les équipes d'un soir de la Demacia Cup (`LCC`, `ZSM`, `Huya RST`, `FRK`). Aucune de ces
+   entités n'a de fiche dans `Teams` ; 34 sont écartées à ce titre, toutes vérifiées par leur
+   tournoi. Un club réel sans fiche existe — `Flamengo Esports` — mais il a une colonne, et
+   une entité déjà reliée à une colonne n'est jamais écartée par ce test.
+
+**`IsOfficial` a été essayé et écarté** : LMS, GPL, CBLOL et le LPL d'avant 2017 n'y sont pas
+marqués, et le filtre viderait des années entières — 38 joueur-années en 2012, 118 en 2015,
+144 en 2016.
+
+Il reste une table explicite, et elle est **vide** : dans la fenêtre des années-trous, les
+deux champs suffisent. Elle n'existe que pour le cas inverse — un club réel sans fiche `Teams`
+qui n'aurait pas de colonne — et une entrée y viendrait avec sa justification écrite, comme
+dans `GRAPHIES_ARBITREES`.
+
+### Lignée d'organisation : `RenamedTo`, jamais `OrganizationPage`
+
+Un club traversé est soit une colonne, soit « Autres équipes ». Le rattachement se fait par la
+lignée que `fetchActive()` ferme déjà pour les fenêtres `active` : alias de `TeamRedirects`,
+prédécesseurs de `Teams.RenamedTo`, et `LIGNEES_ARBITREES`. Vingt et un clubs s'y rattachent
+sans qu'aucune table soit écrite — `Snake Esports` → LNG, `Team Curse` → TL, `Incredible
+Miracle` et `Kingzone DragonX` → DRX, `KSV eSports` → GEN, `Gamers2` → G2, `OpTic Gaming` →
+IMT, `Boba Marines` → GAM, `Team Secret (Vietnamese Team)` → TSW.
+
+`Teams.RenamedTo` ne porte pas toujours un **titre de page** : il porte le nom sous lequel
+l'équipe a continué, qui n'est parfois qu'une redirection. `Kingzone DragonX` est renommée en
+« DragonX », alias de la page `DRX` : comparer les chaînes brutes coupait la lignée là. La
+cible est donc résolue par `TeamRedirects` avant d'être comparée.
+
+**`Teams.OrganizationPage` n'est pas employée.** Elle ne diverge que sur dix clubs, et aucun
+ne doit rejoindre la colonne qu'elle désigne :
+
+| club | org Leaguepedia | colonne visée | pourquoi non |
+| --- | --- | --- | --- |
+| `SK Telecom T1 S` | SK Telecom T1 | T1 | jumelle de 2013-2014, jamais allée aux Worlds |
+| `Taipei Snipers`, `Taipei Berserkers` | Taipei Assassins | TPA | idem |
+| `Team WE Future`, `Team WE Academy` | Team WE | WE | formations secondaires |
+| `SK Gaming Prime`, `SuperMassive TNG`, `Team Liquid Academy` | — | SK, SUP, TL | idem |
+| `Vikings Gaming` | Vikings Gaming | MVK / SGB / MVKE | trois colonnes, ambigu par construction |
+
+C'est la même décision que pour GEN / SSB et SKT K / S : deux équipes d'une même organisation
+sont deux équipes, et seule celle qui a joué les Worlds a une colonne.
+
+Une seule entrée a été ajoutée à `LIGNEES_ARBITREES` pour la règle 5, et c'est le revers exact
+de cette décision : **`SK Telecom T1 K` → T1**. Cette page est la branche qui a gagné les
+Worlds 2013, c'est-à-dire la rangée `T1 2013` elle-même, que `PLAN_ALIASES` nomme déjà
+« SKT T1 K ». Ni `TeamRedirects` ni `RenamedTo` ne la relient à `T1` ; sans l'entrée, l'année
+2014 de Faker, Bengi et Piglet tomberait dans « Autres équipes » avec la colonne T1 juste à
+côté. Sa jumelle `SK Telecom T1 S` reste dehors.
+
+### Une étape n'a pas de région
+
+La règle de périmètre — la région d'une rangée est celle de l'édition — décide **à quelle
+colonne appartient une rangée**, le modèle n'en portant qu'une région par colonne. Une étape
+n'ajoute aucune colonne : elle ne décide donc rien. Elle se pose dans la colonne du club
+traversé et hérite de sa région comme d'un **emplacement sur la carte**, pas comme d'une
+affirmation sur la ligue jouée cette année-là.
+
+Mesuré : sur les 371 étapes d'année-trou rattachées à une colonne, **327** tombent dans une
+colonne dont la région est bien l'une de celles que le joueur a jouées cette année-là, 14 non,
+30 ne sont pas décidables (régions Leaguepedia `Asia`, `International`, sans famille). Onze
+des quatorze sont la migration de la colonne elle-même, déjà arbitrée au niveau de la colonne
+— LMS → LCP pour `TPA`, `AHQ` et `MCX`, GPL → VCS pour `SAJ` et `GAM`. Restent **trois** cas
+où le joueur était réellement ailleurs : Edward 2013 (`GMB`), Flame 2016 (`IMT`) et Josedeodo
+2025 (`ISG`), tous trois des clubs rejoints en fin d'année civile. Trois cas sur 371 ne
+justifient pas de rouvrir le calcul de région étape par étape.
+
+### Ce que la carte a le droit de dire
+
+Après la collecte, une année de joueur est dans l'un de cinq états. Le mot employé ne doit
+jamais affirmer plus que la source : un joueur peut être en académie, dans une ligue hors
+couverture Leaguepedia, ou simplement n'avoir pas requalifié.
+
+| état | ce qu'on sait | ce qui s'écrit | à ne jamais écrire |
+| --- | --- | --- | --- |
+| a | a joué les Worlds pour une équipe suivie | la case habituelle | — |
+| b | a joué pour un club, pas aux Worlds | « chez X en N » | — |
+| c | zéro partie recensée sur l'année | « aucune partie professionnelle recensée » | « sans équipe », « sans club » |
+| d | plus aucune partie après N | « dernière apparition connue : N » | « fin de carrière », « retraite » |
+| e | aucune partie avant N | « première apparition connue : N » | « débuts », « rookie » |
+
+Un sixième cas existe et n'a **pas** de libellé : une année-trou où le joueur a joué, mais
+rien qui soit de niveau `Primary` — dix cas, marqués `offLevel` dans les données. L'état c ne
+lui convient pas, puisqu'il a joué ; aucun autre non plus, puisqu'on ne retient pas ces
+parties. La carte n'en dit donc rien, et c'est la bonne réponse.
+
 ## Corrections apportées lors de l'audit du 11/11/2026
 
 | Équipe | Avant | Après | Raison |

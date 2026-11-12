@@ -216,6 +216,21 @@ path.move{stroke-width:1.8;opacity:.6}
 .focus path.l.hl{opacity:1;stroke-width:3.2}
 .focus path.same.hl{display:inline}
 path.roff{display:none!important}
+/* #7a — bouts du fil. Permanentes elles alourdiraient la carte autant que les lignes
+   elles-memes : elles n'existent qu'au survol, et la regle qui suit doit donc passer
+   apres `.focus path.l` a specificite egale. */
+/* Le fil traverse une annee sans la moindre partie recensee. Il ne dit pas « sans club » :
+   il dit que la source ne recense rien entre ces deux cases. Au survol seulement. */
+.focus path.l.hl.void{stroke-dasharray:4 5}
+/* Le fil detaille, qui passe par les etapes, et le raccourci qui les saute : l'un remplace
+   l'autre au focus, et jamais les deux ensemble. */
+path.deep{display:none}
+.focus path.deep.hl{display:inline}
+.focus path.base.hl{display:none}
+path.duo{stroke-width:1.5;opacity:.5}
+path.cap{stroke-width:2;opacity:0}
+.focus path.cap{opacity:0}
+.focus path.cap.hl{opacity:.85;stroke-width:2.4}
 
 .chip{position:absolute;height:20px;display:flex;align-items:center;gap:5px;padding:0 6px 0 0;background:var(--chip);border:1px solid var(--line);border-radius:4px;font:500 13px var(--f-body);white-space:nowrap;cursor:pointer;transition:opacity .15s;user-select:none}
 .chip .r{align-self:stretch;width:5px;border-radius:3px 0 0 3px;flex:0 0 5px}
@@ -235,6 +250,21 @@ path.roff{display:none!important}
 .focus .chip{opacity:.28}
 .focus .chip.hl{opacity:1;border-color:var(--fg);border-width:1.5px;font-weight:600}
 .chip.off{opacity:.15!important}
+/* Etape hors Worlds : la distinction doit survivre a tout reglage, donc elle tient dans la
+   case elle-meme — fond raye, texte en retrait — et pas dans un etat d'interaction. */
+/* Une etape ne se montre qu'au focus. Permanentes, les 435 cases et surtout les lignes
+   qu'elles tirent vers « Autres equipes », tout a droite de 120 colonnes, rendaient la carte
+   illisible pour une information qu'on ne lit qu'un joueur a la fois. */
+.chip.step{display:none;background:repeating-linear-gradient(135deg,var(--absent) 0 5px,transparent 5px 10px),var(--chip);border-style:dashed;color:var(--muted);font-weight:400}
+.focus .chip.step.hl{display:flex}
+/* Titulaire resserre le temps qu'une etape paraisse a cote de lui : il garde son opacite de
+   fond de carte, c'est l'etape qui est surlignee, pas lui. */
+.chip.serre{transition:width .12s}
+.chip.step .r{opacity:.45}
+.focus .chip.step.hl{border-style:dashed;font-weight:500}
+/* Case « Pas aux Worlds » dont l'etape est montree : le cadre reste, le libelle se tait. */
+.absent.muette span{visibility:hidden}
+.lg-step{display:inline-block;padding:0 5px;border:1px dashed var(--line);border-radius:4px;background:repeating-linear-gradient(135deg,var(--absent) 0 5px,transparent 5px 10px),var(--chip);color:var(--muted);font-size:11px}
 .r.top{background:var(--top)} .r.jgl{background:var(--jgl)} .r.mid{background:var(--mid)} .r.bot{background:var(--bot)} .r.sup{background:var(--sup)}
 .chip .nat{display:none;font:600 9.5px var(--f-mono);color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 3px;line-height:13px;flex:0 0 auto}
 .nat.imp{color:var(--accent);border-color:var(--accent)}
@@ -242,6 +272,8 @@ path.roff{display:none!important}
 .chip .sen{display:none;font:600 10px var(--f-mono);color:var(--muted);margin-left:auto;flex:0 0 auto}
 .chip .sen + .q,.chip .sen + .t{margin-left:4px}
 .showSen .chip{background:color-mix(in srgb,var(--sen) var(--s),var(--chip))}
+/* Une etape n'a pas d'anciennete : la barre de seniorite ne doit pas lui manger sa rayure. */
+.showSen .chip.step{background:repeating-linear-gradient(135deg,var(--absent) 0 5px,transparent 5px 10px),var(--chip)}
 .showSen .chip .sen{display:inline}
 .alias{position:absolute;font:600 10px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .res{position:absolute;text-align:right;font:500 10.5px var(--f-body);color:var(--muted);opacity:.7;white-space:nowrap;pointer-events:none}

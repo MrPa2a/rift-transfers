@@ -490,6 +490,14 @@ const PLAN_REGIONS = {
 // `Teams.RenamedTo` ne les y relie pas non plus : sans cette table, la fenêtre calculée
 // commencerait trop tard. Pages vérifiées dans `Teams` (arbitrage du 12/11/2026).
 const LIGNEES_ARBITREES = {
+  // Lot 5. `SK Telecom T1 K` est la page d'organisation de la branche qui a joué — et gagné —
+  // les Worlds 2013 : c'est exactement la rangée `T1 2013`, que `PLAN_ALIASES` nomme déjà
+  // « SKT T1 K ». Ni `TeamRedirects` ni `Teams.RenamedTo` ne la relient à `T1`, seule
+  // `Teams.OrganizationPage` le fait — et celle-ci est écartée par principe, parce qu'elle
+  // rattacherait du même geste la jumelle `SK Telecom T1 S`, qui n'est jamais allée aux
+  // Worlds et n'a donc pas de colonne. Sans cette entrée, l'année 2014 de Faker, Bengi et
+  // Piglet tomberait dans « Autres équipes » au lieu de passer par la colonne T1.
+  T1: ["SK Telecom T1 K"],
   // L'organisation alignait deux équipes de 2013 à 2014, `KT Rolster B` et `KT Rolster A`,
   // avant de les fusionner sous `KT Rolster` : deux pages d'org distinctes, sigles KT.B et KT.A.
   KT: ["KT Rolster Bullets", "KT Rolster Arrows"],
@@ -782,14 +790,33 @@ async function fetchActive(outDir) {
       for (const pg of chunk) fiches.set(pg, byPage.get(pg) ?? null);
     }
     // Prédécesseurs : les pages dont `RenamedTo` désigne une page déjà retenue.
-    let grew = false;
+    //
+    // `Teams.RenamedTo` ne porte pas toujours un **titre de page** : il porte le nom sous
+    // lequel l'équipe a continué, qui n'est parfois qu'une redirection. `Kingzone DragonX`
+    // est renommée en « DragonX », alias de la page `DRX` : comparer les chaînes brutes
+    // coupait la lignée là, et les huit étapes de 2018 tombaient dans « Autres équipes »
+    // avec la colonne DRX juste à côté. On interroge donc sur tous les noms des pages
+    // retenues, et on résout la cible avant de comparer.
+    const nomsRetenus = new Map(); // nom en minuscules → page retenue
     for (const chunk of chunks(unknown, CHUNK)) {
+      const rows = await cargoAll({
+        tables: "TeamRedirects",
+        fields: "TeamRedirects.AllName=alias,TeamRedirects._pageName=page",
+        where: `TeamRedirects._pageName IN (${sqlList(chunk)})`,
+      });
+      for (const r of rows) if (r.alias && r.page) nomsRetenus.set(low(r.alias), String(r.page));
+      await sleep(THROTTLE_MS);
+    }
+    for (const pg of unknown) nomsRetenus.set(low(pg), pg);
+    let grew = false;
+    for (const chunk of chunks([...new Set([...nomsRetenus.keys()])], CHUNK)) {
       for (const r of await teamsWhere(`Teams.RenamedTo IN (${sqlList(chunk)})`)) {
         const page = String(r.page);
-        const renamed = asText(r.renamed);
+        const cible = nomsRetenus.get(low(asText(r.renamed) ?? ""));
+        if (!cible) continue;
         if (ownColumn.has(page)) continue; // page déjà colonne : elle garde sa propre fenêtre
         for (const pages of pagesOfCode.values()) {
-          if (renamed && pages.has(renamed) && !pages.has(page)) { pages.add(page); grew = true; }
+          if (pages.has(cible) && !pages.has(page)) { pages.add(page); grew = true; }
         }
       }
     }
@@ -1073,6 +1100,224 @@ async function fetchRegions(computed, outDir, lineage) {
     detail: Object.fromEntries(out),
   }, null, 1)}\n`);
   return out;
+}
+
+// ------------------------------------------------- étapes de carrière hors Worlds (5-ii)
+
+// Les quatre règles de docs/SOURCES.md décident d'une rangée de Worlds. La **règle 5** décide
+// d'une étape hors Worlds, et c'est une règle de sélection distincte : club majoritaire en
+// parties sur l'année, plus tout autre club atteignant 20 % des parties de l'année — le seuil
+// déjà en vigueur pour les postes partagés, transposé de l'axe des postes à l'axe du temps.
+//
+// Deux tests de la source écartent ce qui n'est pas une étape de carrière, et aucun ne devine
+// par motif de nom :
+//
+//  1. `Tournaments.TournamentLevel = 'Primary'` — écarte les ligues secondaires et les
+//     académies (`Secondary`) comme les All-Star et les showmatchs (`Showmatch`). `IsOfficial`
+//     ne peut pas servir : LMS, GPL, CBLOL et le LPL d'avant 2017 n'y sont pas marqués, et il
+//     viderait des années entières — 144 joueur-années pour la seule 2016.
+//  2. une fiche `Teams` est exigée — écarte les sélections nationales, que le niveau de
+//     tournoi ne prend pas (les qualifications des Asian Games sont `Primary`), les sélections
+//     régionales du KeSPA Cup et les équipes d'un soir de la Demacia Cup. Un club réel sans
+//     fiche existe — `Flamengo Esports` — mais il a une colonne, et une entité déjà reliée à
+//     une colonne n'est jamais écartée par ce test.
+//
+// Le périmètre d'affichage est l'**année-trou** : une année sans rangée de Worlds, située
+// entre deux apparitions du joueur. Avant la première et après la dernière, le fil n'a rien à
+// relier — ce sont les deux bouts de #7a, et `seen` porte ce qu'on en sait.
+const SEUIL_ETAPE = 0.2;
+const NIVEAU_ETAPE = "Primary";
+
+async function fetchCareers({ selected, census, lineage, outDir, refresh }) {
+  // nom d'équipe (toutes les graphies de la lignée) → code de colonne. C'est la lignée déjà
+  // close par `fetchActive` : alias de `TeamRedirects`, prédécesseurs de `Teams.RenamedTo` et
+  // `LIGNEES_ARBITREES`. Une étape n'a donc pas de table de lignée à elle.
+  //
+  // `Teams.OrganizationPage` n'est **pas** employée : elle rattacherait `SK Telecom T1 S` et
+  // `Taipei Snipers` aux colonnes de leurs jumelles, et les académies à leur club principal —
+  // ce qui défait la séparation que docs/SOURCES.md acte entre deux équipes d'une même
+  // organisation. Les dix divergences mesurées sont dans la même section.
+  const codeOfName = new Map();
+  for (const [code, pages] of lineage.pagesOfCode) {
+    for (const page of pages) {
+      codeOfName.set(low(page), code);
+      for (const name of lineage.namesOfPage.get(page) ?? []) codeOfName.set(low(name), code);
+    }
+  }
+
+  // Apparitions aux Worlds, telles que le script vient de les calculer : ce sont elles qui
+  // définissent les trous, et non `data/teams.json`, que § 7 confronte par ailleurs.
+  const worlds = new Map(); // id de personne → Set d'années
+  for (const s of selected) {
+    if (!worlds.has(s.id)) worlds.set(s.id, new Set());
+    worlds.get(s.id).add(s.year);
+  }
+  const trousDe = (id) => {
+    const ys = [...worlds.get(id)].sort((a, b) => a - b);
+    const out = [];
+    for (let i = 1; i < ys.length; i++) for (let y = ys[i - 1] + 1; y < ys[i]; y++) out.push(y);
+    return out;
+  };
+
+  const pages = [...new Set([...worlds.keys()].map((id) => census.get(id).page))];
+  const cache = join(outDir, "raw", "careers.json");
+  let brut = refresh ? null : await readFile(cache, "utf8").then(JSON.parse).catch(() => null);
+  // Un cache partiel ne doit pas servir une exécution plus large : la même garde que pour
+  // `resolvePeople`, le nombre de pages en moins ne se rattrapant pas en silence.
+  if (!brut || !Array.isArray(brut.rows) || brut.pages !== pages.length) {
+    const alias = new Map(); // alias en minuscules → page canonique
+    for (const chunk of chunks(pages, CHUNK)) {
+      const rows = await cargoAll({
+        tables: "PlayerRedirects",
+        fields: "PlayerRedirects.AllName=alias,PlayerRedirects.OverviewPage=target",
+        where: `PlayerRedirects.OverviewPage IN (${sqlList(chunk)})`,
+      });
+      for (const r of rows) {
+        const a = asText(r.alias);
+        const t = asText(r.target);
+        if (a && t) alias.set(low(a), t);
+      }
+      await sleep(THROTTLE_MS);
+    }
+    for (const p of pages) if (!alias.has(low(p))) alias.set(low(p), p);
+
+    const noms = [...alias.keys()];
+    const rows = [];
+    const toutes = [];
+    for (const chunk of chunks(noms, 60)) {
+      for (const r of await cargoAll({
+        tables: "ScoreboardPlayers=SP,Tournaments=T",
+        join_on: "SP.OverviewPage=T.OverviewPage",
+        fields: "SP.Link=link,SP.Team=team,YEAR(SP.DateTime_UTC)=year,COUNT(*)=games",
+        where: `SP.Link IN (${sqlList(chunk)}) AND T.TournamentLevel='${NIVEAU_ETAPE}'`,
+        group_by: "SP.Link,SP.Team,YEAR(SP.DateTime_UTC)",
+      })) rows.push({ link: asText(r.link), team: asText(r.team), year: Number(r.year), games: Number(r.games) || 0 });
+      await sleep(THROTTLE_MS);
+      // Second passage, tous niveaux : il ne sert qu'à distinguer « aucune partie recensée »
+      // d'« a joué, mais rien de recevable ». Sans lui, une année d'académie se dirait vide.
+      for (const r of await cargoAll({
+        tables: "ScoreboardPlayers=SP",
+        fields: "SP.Link=link,YEAR(SP.DateTime_UTC)=year,COUNT(*)=games",
+        where: `SP.Link IN (${sqlList(chunk)})`,
+        group_by: "SP.Link,YEAR(SP.DateTime_UTC)",
+      })) toutes.push({ link: asText(r.link), year: Number(r.year), games: Number(r.games) || 0 });
+      await sleep(THROTTLE_MS);
+    }
+    brut = { pages: pages.length, alias: Object.fromEntries(alias), rows, toutes };
+    await writeFile(cache, `${JSON.stringify(brut)}\n`);
+  }
+  const alias = new Map(Object.entries(brut.alias));
+  const pageOfLink = (l) => alias.get(low(l)) ?? String(l);
+  const idOfPage = new Map();
+  for (const id of worlds.keys()) idOfPage.set(low(census.get(id).page), id);
+
+  // --- fiche `Teams` de chaque entité rencontrée : second test du filtre de bruit.
+  const noms = [...new Set(brut.rows.map((r) => r.team).filter(Boolean))];
+  const pageOfTeam = new Map();
+  for (const chunk of chunks(noms, CHUNK)) {
+    const rows = await cargoAll({
+      tables: "TeamRedirects",
+      fields: "TeamRedirects.AllName=alias,TeamRedirects._pageName=page",
+      where: `TeamRedirects.AllName IN (${sqlList(chunk)})`,
+    });
+    for (const r of rows) if (r.alias && r.page) pageOfTeam.set(low(r.alias), String(r.page));
+    await sleep(THROTTLE_MS);
+  }
+  const pageDe = (nom) => pageOfTeam.get(low(nom)) ?? String(nom);
+  const fiches = new Map();
+  for (const chunk of chunks([...new Set(noms.map(pageDe))], CHUNK)) {
+    const rows = await cargoAll({
+      tables: "Teams",
+      fields: "Teams.OverviewPage=page,Teams.Name=name,Teams.Region=region",
+      where: `Teams.OverviewPage IN (${sqlList(chunk)})`,
+    });
+    for (const r of rows) {
+      const page = asText(r.page);
+      if (page) fiches.set(low(page), { name: asText(r.name), region: asText(r.region) });
+    }
+    await sleep(THROTTLE_MS);
+  }
+  const codeDe = (nom) => codeOfName.get(low(nom)) ?? codeOfName.get(low(pageDe(nom))) ?? null;
+  const estClub = (nom) => fiches.has(low(pageDe(nom))) || Boolean(codeDe(nom));
+
+  // --- parties par personne, année et club, filtre de bruit appliqué.
+  const ecartees = new Map(); // entité sans fiche → parties, pour trace dans le rapport
+  const parAnnee = new Map(); // id → Map(année → Map(club → parties))
+  for (const r of brut.rows) {
+    const id = idOfPage.get(low(pageOfLink(r.link)));
+    if (!id || !r.team || !r.year) continue;
+    if (!estClub(r.team)) {
+      const k = pageDe(r.team);
+      ecartees.set(k, (ecartees.get(k) ?? 0) + r.games);
+      continue;
+    }
+    if (!parAnnee.has(id)) parAnnee.set(id, new Map());
+    const an = parAnnee.get(id);
+    if (!an.has(r.year)) an.set(r.year, new Map());
+    const m = an.get(r.year);
+    m.set(r.team, (m.get(r.team) ?? 0) + r.games);
+  }
+  const toutesParties = new Map(); // `id|année` → parties, tous niveaux
+  for (const r of brut.toutes ?? []) {
+    const id = idOfPage.get(low(pageOfLink(r.link)));
+    if (!id || !r.year) continue;
+    const k = `${id}|${r.year}`;
+    toutesParties.set(k, (toutesParties.get(k) ?? 0) + r.games);
+  }
+
+  // --- règle 5, année par année.
+  const careers = {};
+  const sansColonne = new Map(); // club sans colonne → nombre d'étapes
+  const horsNiveau = []; // années-trous où le joueur a joué, mais rien de niveau `Primary`
+  const creuses = []; // années-trous sans la moindre partie : l'état c des libellés
+  const ids = [...worlds.keys()].sort((a, b) => low(census.get(a).spelling).localeCompare(low(census.get(b).spelling)));
+  for (const id of ids) {
+    const nom = census.get(id).spelling;
+    const an = parAnnee.get(id) ?? new Map();
+    const annees = [...an.keys()].sort((a, b) => a - b);
+    const trous = trousDe(id);
+    if (!trous.length && !annees.length) continue;
+    const fiche = { seen: annees.length ? [annees[0], annees.at(-1)] : null, years: {} };
+    for (const y of trous) {
+      const m = an.get(y);
+      if (!m || !m.size) {
+        // Une année-trou creuse n'est « aucune partie professionnelle recensée » que si le
+        // joueur n'a joué nulle part. S'il a des parties hors niveau `Primary` — académie,
+        // ligue secondaire, showmatch — on ne sait rien de recevable : on le marque, et on
+        // n'écrit surtout pas qu'il n'a pas joué.
+        const ailleurs = (toutesParties.get(`${id}|${y}`) ?? 0) > 0;
+        fiche.years[y] = ailleurs ? { steps: [], offLevel: true } : { steps: [] };
+        (ailleurs ? horsNiveau : creuses).push(`**${nom} ${y}**`);
+        continue;
+      }
+      const total = [...m.values()].reduce((a, b) => a + b, 0);
+      const tri = [...m].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+      const steps = [];
+      for (const [club, g] of tri) {
+        if (steps.length && g / total < SEUIL_ETAPE) continue;
+        const code = codeDe(club);
+        if (code) { steps.push({ team: code }); continue; }
+        const label = fiches.get(low(pageDe(club)))?.name ?? pageDe(club);
+        if (steps.some((s) => s.club === label)) continue; // deux graphies d'un même club
+        steps.push({ club: label });
+        sansColonne.set(label, (sansColonne.get(label) ?? 0) + 1);
+      }
+      fiche.years[y] = { steps };
+    }
+    careers[nom] = fiche;
+  }
+
+  await writeFile(join(outDir, "careers.json"), `${JSON.stringify({
+    $comment: "Étapes de carrière hors Worlds calculées par scripts/fetch-worlds.mjs (règle 5 de docs/SOURCES.md) : club majoritaire de l'année, plus tout autre club à 20 % des parties ou plus, sur les seuls tournois de niveau Primary et les seules entités ayant une fiche Teams. Une année n'y figure que si elle est un trou entre deux apparitions aux Worlds. `seen` donne la première et la dernière année où une partie est recensée. À recopier dans data/careers.json. Voir § 14 du rapport.",
+    careers,
+  }, null, 1)}\n`);
+
+  return {
+    careers,
+    sansColonne: [...sansColonne].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),
+    ecartees: [...ecartees].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),
+    horsNiveau, creuses,
+  };
 }
 
 // -------------------------------------------------------- collecte d'une édition
@@ -1726,7 +1971,7 @@ function findDiffs(computed, teamsData) {
 
 // ------------------------------------------------------------------------ rapport
 
-function renderReport({ years, computed, pageCheck, census, collisions, nearCollisions, eraCandidates, caseIssues, diffs, activeWindows, places, regions, teamsData, resultsData, notes, gameCounts }) {
+function renderReport({ years, computed, pageCheck, census, collisions, nearCollisions, eraCandidates, caseIssues, diffs, activeWindows, places, regions, careers, teamsData, resultsData, careersData, notes, gameCounts }) {
   const L = [];
   const h = (n, t) => L.push("", `${"#".repeat(n)} ${t}`, "");
   const list = (items, empty) => L.push(...(items.length ? items.map((i) => `- ${i}`) : [`_${empty}_`]));
@@ -1783,6 +2028,38 @@ function renderReport({ years, computed, pageCheck, census, collisions, nearColl
       const plan = PLAN_REGIONS[code] ?? null;
       if (!plan) { regionDiffs.push({ year, code, plan: "—", ...v }); continue; }
       if (v.region !== plan) regionDiffs.push({ year, code, plan, ...v });
+    }
+  }
+
+  // Étapes de carrière : calculé contre saisi. Même principe que les fenêtres et les
+  // parcours — le script ne touche pas `/data`, il dit ce qui diverge.
+  const etape = (st) => (st.team ? st.team : `« ${st.club} »`);
+  const signature = (e) => (e?.steps?.length ? e.steps.map(etape).join(" + ") : e?.offLevel ? "hors niveau" : "aucune partie");
+  const careerNew = [];
+  const careerDiffs = [];
+  let careerYears = 0;
+  let careerSteps = 0;
+  if (!careers.partiel) {
+    const saisies = careersData.careers ?? {};
+    for (const [nom, calc] of Object.entries(careers.careers)) {
+      careerYears += Object.keys(calc.years).length;
+      careerSteps += Object.values(calc.years).reduce((n, e) => n + e.steps.length, 0);
+      const was = saisies[nom];
+      if (!was) { careerNew.push({ nom, calc }); continue; }
+      const vu = `[${(was.seen ?? []).join(", ")}]`;
+      const vc = `[${(calc.seen ?? []).join(", ")}]`;
+      if (vu !== vc) careerDiffs.push({ nom, text: `\`seen\` saisi ${vu}, calculé ${vc}` });
+      const annees = [...new Set([...Object.keys(was.years ?? {}), ...Object.keys(calc.years)])].sort();
+      for (const y of annees) {
+        const a = (was.years ?? {})[y];
+        const b = calc.years[y];
+        if (!a) { careerDiffs.push({ nom, text: `${y} manquante — calculé ${signature(b)}` }); continue; }
+        if (!b) { careerDiffs.push({ nom, text: `${y} saisie (${signature(a)}) sans trou correspondant` }); continue; }
+        if (signature(a) !== signature(b)) careerDiffs.push({ nom, text: `${y} — saisi ${signature(a)}, calculé ${signature(b)}` });
+      }
+    }
+    for (const nom of Object.keys(saisies)) {
+      if (!careers.careers[nom]) careerDiffs.push({ nom, text: "saisi dans careers.json sans carrière calculée — joueur absent des lineups ?" });
     }
   }
 
@@ -1962,6 +2239,32 @@ function renderReport({ years, computed, pageCheck, census, collisions, nearColl
   L.push("`Teams.Region` donne la région d'aujourd'hui, pas celle de l'édition : chacune de ces rangées est à confirmer à la main.", "");
   list(regionFlags.map((d) => `**${d.year} ${d.code}** — \`${d.region}\` d'après ${d.via}`), "aucune.");
 
+  h(2, "14. Étapes de carrière hors Worlds");
+  if (careers.partiel) {
+    L.push("_Exécution partielle : les étapes ne sont pas calculées. Un trou se mesure entre deux apparitions, et une collecte sur une partie des éditions en inventerait autant qu'elle en cacherait._");
+  } else {
+    L.push("La **règle 5** de `docs/SOURCES.md`, distincte des quatre règles des Worlds : club majoritaire en parties sur l'année, plus tout autre club à 20 % des parties ou plus. Deux tests de la source écartent ce qui n'est pas une étape de carrière — `Tournaments.TournamentLevel = 'Primary'`, puis l'existence d'une fiche `Teams`. Une entité déjà reliée à une colonne n'est jamais écartée par le second.");
+    L.push("", "Seules les **années-trous** sont écrites : une année sans rangée de Worlds située entre deux apparitions du joueur. Avant la première et après la dernière, le fil n'a rien à relier — c'est `seen` qui porte ce qu'on en sait, et les deux bouts de #7a qui l'affichent.");
+    L.push("", `**${Object.keys(careers.careers).length} joueurs, ${careerYears} années-trous, ${careerSteps} étapes.**`);
+    h(3, `14.1 Carrières à reporter (${careerNew.length})`);
+    L.push("Valeur à recopier depuis `careers.json` dans `data/careers.json`.", "");
+    list(careerNew.map((c) => `**${c.nom}** — ${Object.entries(c.calc.years).map(([y, e]) => `${y} ${signature(e)}`).join(" · ") || "aucune année-trou"}`), "aucune.");
+    h(3, `14.2 Écarts avec les étapes saisies (${careerDiffs.length})`);
+    list(careerDiffs.map((d) => `**${d.nom}** — ${d.text}`), "aucun écart.");
+    h(3, `14.3 Années-trous sans étape (${careers.creuses.length + careers.horsNiveau.length})`);
+    L.push("Deux états à ne pas confondre. **Aucune partie recensée** est le seul qui autorise le libellé « aucune partie professionnelle recensée » ; **hors niveau** veut dire que le joueur a joué, mais seulement en académie, en ligue secondaire ou en showmatch — on ne sait alors rien de recevable, et la carte n'en dit rien.", "");
+    L.push("**Aucune partie recensée**", "");
+    list(careers.creuses, "aucune.");
+    L.push("", "**Hors niveau `Primary`**", "");
+    list(careers.horsNiveau, "aucune.");
+    h(3, `14.4 Clubs traversés sans colonne (${careers.sansColonne.length})`);
+    L.push("Ils vont dans « Autres équipes », avec leur nom pour tag. Listés pour qu'aucun ne soit en réalité une colonne que la lignée n'aurait pas reliée.", "");
+    list(careers.sansColonne.map(([nom, n]) => `${nom} (${n})`), "aucun.");
+    h(3, `14.5 Entités écartées faute de fiche Teams (${careers.ecartees.length})`);
+    L.push("Second test du filtre de bruit, avec leurs parties de niveau `Primary`. Toutes doivent être des sélections ou des équipes d'un soir : un club réel qui apparaîtrait ici est à inscrire comme colonne ou à relier par `LIGNEES_ARBITREES`.", "");
+    list(careers.ecartees.map(([nom, n]) => `${nom} (${n} parties)`), "aucune.");
+  }
+
   if (notes.length) {
     h(2, "Notes de collecte");
     list(notes, "aucune.");
@@ -1990,6 +2293,9 @@ async function main() {
   const [teamsData, playersData, resultsData] = await Promise.all(
     ["teams", "players", "results"].map((n) => readFile(join(ROOT, "data", `${n}.json`), "utf8").then(JSON.parse)),
   );
+  // `data/careers.json` n'existe pas encore avant la première collecte du lot 5 : son absence
+  // n'est pas une erreur, elle met simplement tout le § 14 en « à reporter ».
+  const careersData = await readFile(join(ROOT, "data", "careers.json"), "utf8").then(JSON.parse).catch(() => ({ careers: {} }));
 
   console.log("Contrôle de la table année → OverviewPage…");
   const pageCheck = await checkPages(years);
@@ -2067,9 +2373,16 @@ async function main() {
   const regions = await fetchRegions(computed, outDir, lineage);
   console.log("Classement de chaque équipe à son édition…");
   const places = await fetchPlaces(years, computed, outDir);
+  // Les étapes hors Worlds ne se calculent que sur une collecte complète : un trou se mesure
+  // entre deux apparitions, et une exécution partielle en invente autant qu'elle en cache.
+  const complete = years.length === ALL_YEARS.length;
+  console.log(complete ? "Étapes de carrière hors Worlds (règle 5)…" : "Étapes de carrière : ignorées (exécution partielle).");
+  const careers = complete
+    ? await fetchCareers({ selected, census, lineage, outDir, refresh })
+    : { careers: {}, sansColonne: [], ecartees: [], horsNiveau: [], creuses: [], partiel: true };
   notes.push(...places.notes);
   const reportPath = join(outDir, "report.md");
-  await writeFile(reportPath, renderReport({ years, computed, pageCheck, census, collisions, nearCollisions, eraCandidates, caseIssues, diffs, activeWindows, places, regions, teamsData, resultsData, notes, gameCounts }));
+  await writeFile(reportPath, renderReport({ years, computed, pageCheck, census, collisions, nearCollisions, eraCandidates, caseIssues, diffs, activeWindows, places, regions, careers, teamsData, resultsData, careersData, notes, gameCounts }));
 
   console.log("");
   console.log(`Fragments : ${join(outDir, "fragments")}`);
@@ -2077,6 +2390,7 @@ async function main() {
   console.log(`Activité  : ${join(outDir, "active.json")}`);
   console.log(`Parcours  : ${join(outDir, "places.json")}`);
   console.log(`Régions   : ${join(outDir, "regions.json")}`);
+  if (complete) console.log(`Carrières : ${join(outDir, "careers.json")}`);
   console.log(`Rapport   : ${reportPath}`);
   console.log(`${collisions.length} collision(s) de pseudo, ${caseIssues.length} divergence(s) de casse, ${diffs.length} écart(s) sur les lineups saisies.`);
   if (pageCheck.empty.length || pageCheck.regional.some((r) => r.rows)) process.exit(1);

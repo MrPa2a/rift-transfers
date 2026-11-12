@@ -24,6 +24,7 @@ Toutes les données sont dans [`data/`](data/) au format JSON, avec leurs source
 | [`teams.json`](data/teams.json) | Équipes et titulaires par édition |
 | [`results.json`](data/results.json) | Parcours de chaque équipe |
 | [`players.json`](data/players.json) | Nationalités vérifiées |
+| [`careers.json`](data/careers.json) | Où était chaque joueur les années sans Worlds |
 | [`sources.json`](data/sources.json) | Sources année par année |
 
 La méthode de vérification (nombre de matchs joués par joueur, matchs joués ensemble…) est décrite dans [docs/SOURCES.md](docs/SOURCES.md). La collecte depuis Leaguepedia est automatisée par [`scripts/fetch-worlds.mjs`](scripts/fetch-worlds.mjs).

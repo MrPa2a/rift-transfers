@@ -266,7 +266,7 @@
       "code": "DNS",
       "name": "DN SOOPers",
       "region": "LCK",
-      "active": [2016],
+      "active": [2014],
       "worlds": {
         "2018": {
           "name": "Afreeca Freecs",
@@ -1455,7 +1455,7 @@
       "code": "GAM",
       "name": "GAM Esports",
       "region": "VCS",
-      "active": [2017],
+      "active": [2015],
       "worlds": {
         "2017": {
           "name": "GIGABYTE Marines",
