@@ -549,6 +549,75 @@ Ces listes **n'énumèrent que ce que les données portent**, et sont à complé
 contrôle automatique ne rattrape. Un cas est resté dehors sciemment : `Innaxe`, bulgare chez
 Unicorns of Love en 2019, est un importé en LCL.
 
+## Nom de ligue et zone géographique d'une région
+
+Une pilule de région n'affichait que son sigle — `LCK`, `GPL`, `LCL`, `CBLOL` — et rien ne
+disait ce que c'est, ni où ça se joue. Son infobulle porte maintenant trois lignes : le nom de
+la ligue, sa zone géographique, puis le compte de colonnes au seuil de présence courant.
+
+**Le nom vient de la source, pas de connaissances générales.** Il n'est nulle part dans
+`/data` et l'écrire de mémoire est exactement ce qu'interdit la règle absolue, même pour un
+libellé. Il est en revanche dans la table `Leagues` de Leaguepedia, champ `League`, interrogée
+par `League_Short` : les 14 sigles s'y trouvent, 14 sur 14 (relevé du 12/11/2026). Le script
+le recollecte à chaque exécution et le confronte à la table `leagueNames` de `data/teams.json`
+— § 15 du rapport. `npm run validate` exige un nom par région : un trou ne se comble pas de
+mémoire.
+
+| Sigle | `Leagues.League` |
+|---|---|
+| `LCK` | LoL Champions Korea |
+| `LPL` | Tencent LoL Pro League |
+| `LEC` | LoL EMEA Championship |
+| `LCS` | League of Legends Championship Series |
+| `LMS` | LoL Master Series |
+| `LCP` | League of Legends Championship Pacific |
+| `LJL` | LoL Japan League |
+| `VCS` | Vietnam Championship Series |
+| `GPL` | Garena Premier League |
+| `LCO` | LoL Circuit Oceania |
+| `TCL` | Turkish Championship League |
+| `LCL` | LoL Continental League |
+| `CBLOL` | Circuit Brazilian League of Legends |
+| `LLA` | Liga Latinoamerica |
+
+Ces noms sont ceux de la ligue **aujourd'hui**, alors qu'une famille de colonnes couvre seize
+ans : la LEC s'est appelée « EU LCS » pendant la moitié de sa vie. Le sigle d'une pilule est
+un **nom de famille de colonnes**, pas la ligue d'une année donnée — la région d'une rangée,
+elle, se décide à l'année de son édition (section « Périmètre » ci-dessus). Le libellé reste
+donc sobre et ne s'énonce pas comme une affirmation historique.
+
+### La zone ne vient pas de `Leagues.Region`
+
+Le réflexe serait de prendre `Leagues.Region`, qui arrive dans la même requête. Mesuré, et
+écarté : il est faux ou inutile sur trois des quatorze.
+
+| Sigle | `Leagues.Region` | `homeCountries` | Verdict |
+|---|---|---|---|
+| `LMS` | `LMS` | TW, HK | **circulaire** — le sigle renvoie à lui-même |
+| `LPL` | `China` | CN, **TW, HK** | **contredit la carte** |
+| `LCP` | `Asia Pacific` | TW, HK, VN | approximatif |
+| `GPL` · `LCL` | `SEA` · `CIS` | — | abréviations anglaises, à développer |
+| les neuf autres | correct | — | — |
+
+Le cas `LPL` est le décisif. La section « Pays domestiques de chaque région » a arbitré que
+Taïwan et Hong Kong comptent domestiques en LPL : un joueur taïwanais en LPL n'y porte donc
+**pas** la marque « importé ». Une infobulle qui annoncerait « Chine » dirait le contraire de
+ce que le badge montre sur le même écran, à quelques pixels de là.
+
+**La zone se dérive donc de `homeCountries`**, et aucune collecte n'est nécessaire pour elle :
+c'est le territoire que la carte utilise réellement pour décider qu'un joueur est importé,
+il est déjà arbitré région par région avec sa justification écrite, et il est déjà validé.
+La règle d'affichage se tire de la longueur de la liste :
+
+- **au plus trois pays, on les écrit**, en français, par `countryNames` — onze régions sur
+  quatorze : « Corée du Sud », « Chine, Taïwan et Hong Kong », « Thaïlande, Philippines et
+  Singapour » ;
+- **au-delà, un libellé court** — exactement trois régions, `LEC` (25 pays), `LCL` (8) et
+  `LLA` (7) : « Europe », « espace post-soviétique », « Amérique latine ». Ces trois libellés
+  sont arbitrés dans `ZONES_ARBITREES`, en tête d'`assets/js/app.js`. Une région trop large qui
+  n'y figurerait pas n'affiche **pas** de zone : on n'invente pas le nom d'un territoire, pas
+  plus qu'on n'abrège un nom d'équipe de soi-même.
+
 ## Licences des sources
 
 - Leaguepedia et Liquipedia : contenus sous licence **CC BY-SA 3.0**.

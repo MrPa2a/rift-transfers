@@ -59,6 +59,15 @@ Règles :
 - On ne renseigne une année que si l'équipe a joué les Worlds cette année-là, et dans la fenêtre `active` si elle est déclarée.
 - Le titulaire est retenu sur les parties réellement jouées, pas sur le roster inscrit : au moins 20 % des parties de l'équipe, et le poste où le joueur a le plus joué. [`scripts/fetch-worlds.mjs`](scripts/fetch-worlds.mjs) applique ces règles et signale les écarts avec `data/`.
 
+Hors du tableau des 120 colonnes, `data/teams.json` porte trois tables de tête : `years`, la
+liste des éditions ; `regions`, les 14 familles ; et `leagueNames`, le nom de la ligue derrière
+chaque sigle — `LCK` → « LoL Champions Korea ». Ce nom est lu au survol de la pilule de région,
+avec sa zone géographique ; il vient de `Leagues.League`, que `fetch-worlds.mjs` recollecte et
+confronte à `/data` (§ 15 du rapport). **Une région sans nom est une erreur de
+`npm run validate`** : on ne le comble pas de mémoire. La zone, elle, se dérive de
+`homeCountries` et ne se saisit pas — voir [docs/SOURCES.md](docs/SOURCES.md), section « Nom de
+ligue et zone géographique d'une région ».
+
 `npm run validate` signale aussi, en avertissement, tout pseudo dont les apparitions sont séparées par plus de quatre éditions : c'est le garde-fou contre deux personnes fondues en une seule carrière. Après vérification nominative, le pseudo s'inscrit dans `HOMONYMES_VERIFIES`, en tête de [`scripts/validate-data.mjs`](scripts/validate-data.mjs).
 
 ### `data/results.json`

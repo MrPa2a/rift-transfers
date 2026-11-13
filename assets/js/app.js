@@ -36,6 +36,40 @@ const HOME = PLAYERS_DATA.homeCountries;
 // Code ISO → nom français. Le badge des chips reste au code à deux lettres, faute de place ;
 // seul le panneau de détail a la place d'écrire « Corée du Sud ».
 const COUNTRY = PLAYERS_DATA.countryNames || {};
+// Nom de la ligue derrière chaque sigle de région, collecté dans `Leagues.League` (§ 15 du
+// rapport de collecte). C'est le nom de la ligue **aujourd'hui**, alors qu'une famille de
+// colonnes couvre seize ans : la LEC s'est appelée « EU LCS » la moitié de sa vie. Le sigle
+// d'une pilule est donc un nom de famille de colonnes, pas la ligue d'une année donnée — la
+// région d'une rangée, elle, se décide à l'année de son édition (docs/SOURCES.md,
+// « Périmètre »). D'où un libellé sobre, qui ne s'énonce pas comme une vérité historique.
+const LEAGUE_NAMES = TEAMS_DATA.leagueNames || {};
+// Zone géographique d'une région, écrite au survol de sa pilule à côté du nom de ligue.
+//
+// Elle se **dérive de `homeCountries`**, et non de `Leagues.Region` qui arrive dans la même
+// requête : sur LPL, la source dit « China » alors que la carte compte Taïwan et Hong Kong
+// domestiques — l'infobulle contredirait le badge « importé » affiché à quelques pixels de
+// là. `Leagues.Region` est par ailleurs circulaire sur LMS (« LMS ») et approximatif sur LCP.
+// `homeCountries` est le territoire que la carte utilise réellement, déjà arbitré région par
+// région avec sa justification écrite, et déjà dans /data : aucune collecte.
+const ZONE_MAX = 3; // au-delà, la liste des pays est illisible dans une infobulle
+// Les trois régions que `ZONE_MAX` écarte — LEC (25 pays), LCL (8), LLA (7) — reçoivent un
+// libellé court, et ce sont les **seuls** textes nouveaux de l'entrée : le projet les écrit
+// déjà ailleurs (« espace post-soviétique » est dans index.html et dans docs/SOURCES.md).
+// Table arbitrée : on n'invente pas le nom d'un territoire, pas plus qu'on n'abrège un nom
+// d'équipe de soi-même. Une région trop large qui n'y figure pas n'affiche **pas** de zone.
+const ZONES_ARBITREES = {
+  LEC: "Europe",
+  LCL: "espace post-soviétique",
+  LLA: "Amérique latine",
+};
+// « Thaïlande, Philippines et Singapour » — liste en français, le dernier séparé par « et ».
+function zoneDe(region) {
+  const pays = HOME[region] || [];
+  if (!pays.length) return null;
+  if (pays.length > ZONE_MAX) return ZONES_ARBITREES[region] || null;
+  const noms = pays.map(c => COUNTRY[c] || c);
+  return noms.length > 1 ? `${noms.slice(0, -1).join(", ")} et ${noms.at(-1)}` : noms[0];
+}
 const NAT = {};
 for (const [name, code] of Object.entries(PLAYERS_DATA.nationality)) NAT[name.toLowerCase()] = code;
 
@@ -203,6 +237,16 @@ const visible=t=>state.regions.has(t.region)&&APPS.get(t.code)>=state.minApps&&!
 // Et une colonne n'est dessinée que si l'équipe a au moins une édition dans la période : c'est
 // ce compte-là, et non `visible` seul, qui dit s'il reste quelque chose à l'écran.
 const colonne=t=>visible(t)&&YEARS.some(y=>t.years[y]);
+// Pourquoi l'équipe n'a **pas** de colonne à cet instant, ou `null` si elle en a une : la
+// négation de `colonne()`, détaillée cause par cause. Un raccourci de lecture qui viserait une
+// colonne absente doit dire laquelle des quatre l'écarte, et le vocabulaire est celui de la
+// liste à cocher du tiroir — les deux refus énoncent la même règle, à deux endroits.
+const sansColonne=t=>
+  !YEARS.some(y=>t.years[y]) ? "aucune édition dans la période affichée"
+  : APPS.get(t.code)<state.minApps ? `${APPS.get(t.code)} apparition${APPS.get(t.code)>1?"s":""}, sous le seuil de présence`
+  : !state.regions.has(t.region) ? `région ${t.region} décochée`
+  : state.hiddenTeams.has(t.code) ? "colonne masquée"
+  : null;
 const view={x:0,y:0,k:1};
 let nodesByPlayer=new Map(), hasOther=false, W=0, cols=[];
 
@@ -464,6 +508,7 @@ function render(){
   rail.innerHTML=YEARS.map(y=>`<div class="ylab" data-y="${yTop(y)+2.5*STEP}">${y}${y===ONGOING_YEAR?"<small>EN COURS</small>":""}</div>`).join("");
   if(state.pinnedTeam&&!vis.some(t=>t.code===state.pinnedTeam)) state.pinnedTeam=null;
   if(typeof majRegionPills==="function") majRegionPills();
+  majStatsTeams();
   renderTeamList();
   applyView(); apply();
 }
@@ -720,6 +765,42 @@ function selectPlayer(id){
   const n=nodesByPlayer.get(id)?.[0];
   if(n) centerOn(n.x+chipW/2,n.y+(nodesByPlayer.get(id).at(-1).y-n.y)/2,Math.min(1,Math.max(.45,vp.clientHeight/((nodesByPlayer.get(id).at(-1).y-n.y)+300))));
 }
+// Le pendant de `selectPlayer` pour une équipe : poser la sélection, puis recentrer sur la
+// colonne. Le mode de clic — « carrières complètes » ou « arrivées et départs » — reste celui
+// que l'utilisateur a choisi dans les filtres, ce n'est pas au raccourci d'en décider.
+//
+// **Équipe sans colonne : on refuse.** Pas de démasquage d'office — un clic dans les
+// statistiques n'a pas à modifier les filtres sans le dire — et pas de boîte de dialogue, qui
+// coûterait plus qu'elle ne rend pour un raccourci de lecture. C'est l'entrée elle-même qui
+// est grisée et porte la raison (`majStatsTeams`), et ce refus préventif dit la même règle que
+// le nettoyage de `state.pinnedTeam` par `render()` quand la colonne disparaît.
+function selectTeam(code){
+  const t=byCode.get(code);
+  if(!t||sansColonne(t)) return false;
+  state.pinned=null; state.hover=null; state.pinnedTeam=code; apply();
+  const c=cols.find(c=>c.t===t);
+  if(c){
+    // Cadrer sur les seules éditions que l'équipe a jouées dans la période affichée : une
+    // colonne de deux rangées sur seize se centrerait sinon sur du vide.
+    const ys=YEARS.filter(y=>t.years[y]), haut=yTop(ys[0]), bas=yTop(ys.at(-1))+5*STEP;
+    centerOn(c.x+c.w/2,(haut+bas)/2,Math.min(1,Math.max(.45,vp.clientHeight/((bas-haut)+300))));
+  }
+  return true;
+}
+// Les noms d'équipe de « Rosters inchangés » sont des raccourcis dont l'état dépend des
+// filtres, pas du contenu du tiroir : il se rafraîchit à chaque rendu, comme les pilules de
+// région, au lieu d'être figé à la construction.
+function majStatsTeams(){
+  document.querySelectorAll("#stats button[data-team]").forEach(b=>{
+    const t=byCode.get(b.dataset.team), pourquoi=t?sansColonne(t):"équipe absente du jeu de données";
+    // `aria-disabled` plutôt que l'attribut `disabled` : un bouton désactivé ne reçoit aucun
+    // événement de souris dans plusieurs navigateurs, et n'afficherait donc pas le `title` qui
+    // porte la raison du refus — tout l'intérêt du grisé. `selectTeam` refuse de son côté.
+    b.setAttribute("aria-disabled",String(!!pourquoi));
+    b.title=pourquoi?`${t?t.name:b.dataset.team} · ${pourquoi}`:`Voir la colonne ${t.name} sur la carte`;
+  });
+}
+
 const q=$("q");
 // Un joueur renommé se cherche aussi sous le pseudo qu'il portait à l'époque.
 const searchIndex=new Map();
@@ -792,12 +873,18 @@ const regionBtns=new Map(REGIONS.map(r=>[r,pill($("regions"),r,regionVar(r),true
 // Le seuil de présence peut vider une région entière — la GPL dès « 2+ », quatre familles à
 // « 3+ ». Une pilule cochée sans aucune colonne derrière serait incomprise : elle porte donc
 // son compte, et c'est le compte qui dit d'abaisser le seuil.
+//
+// Le `title` porte trois choses, une par ligne — un `title` natif accepte les retours à la
+// ligne : le nom de la ligue, sa zone géographique, puis le compte de colonnes. Le sigle seul
+// ne disait ni ce que c'est, ni où ça se joue. Une région sans nom collecté, ou trop large et
+// absente de `ZONES_ARBITREES`, saute simplement sa ligne : jamais de libellé inventé.
 function majRegionPills(){
   for(const [r,b] of regionBtns){
     const total=teams.filter(t=>t.region===r).length;
     const n=teams.filter(t=>t.region===r&&APPS.get(t.code)>=state.minApps).length;
     b.innerHTML=`<i style="background:${regionVar(r)}"></i>${r}`+(n<total?`<span class="cnt">${n}/${total}</span>`:"");
-    b.title=n<total?`${n} colonne${n>1?"s":""} sur ${total} au seuil de présence actuel`:`${total} colonne${total>1?"s":""}`;
+    const compte=n<total?`${n} colonne${n>1?"s":""} sur ${total} au seuil de présence actuel`:`${total} colonne${total>1?"s":""}`;
+    b.title=[LEAGUE_NAMES[r]||null,zoneDe(r),compte].filter(Boolean).join("\n");
   }
 }
 // ---------- masquage des colonnes d'équipe ----------
@@ -929,11 +1016,20 @@ $("filters").querySelector(".dbody").addEventListener("scroll",closeTip,{passive
   let h=`<div class="st"><h3>Le plus de Worlds</h3><ol>${most.map(x=>`<li>${btn(x.p)}<span class="v">${x.n}</span></li>`).join("")}</ol></div>`;
   h+=`<div class="st"><h3>Plus grands voyageurs aux Worlds</h3><p class="note">Nombre d'équipes différentes <b>avec lesquelles le joueur est allé aux Worlds</b></p><ol>${trav.map(x=>`<li>${btn(x.p)}<span class="v">${x.n} équipes</span></li>`).join("")}</ol></div>`;
   h+=`<div class="st"><h3>Plus grands voyageurs, carrière entière</h3><p class="note">Tous les clubs traversés, Worlds ou non — les étapes hors Worlds et les clubs sans colonne compris. Entre parenthèses, la part faite aux Worlds.</p><ol>${carr.map(x=>`<li>${btn(x.p)}<span class="v">${x.n} clubs <small>(${x.w} aux Worlds)</small></span></li>`).join("")}</ol></div>`;
-  h+=`<div class="st"><h3>Rosters inchangés</h3><p class="note">Même cinq titulaires sur des Worlds consécutifs</p><ol>${stable.map(s=>`<li><span><b>${shortName(s.t)}</b> ${s.from}–${s.to}<br><span class="note">${s.names}</span></span><span class="v">${s.n} ans</span></li>`).join("")}</ol></div>`;
+  h+=`<div class="st"><h3>Rosters inchangés</h3><p class="note">Même cinq titulaires sur des Worlds consécutifs</p><ol>${stable.map(s=>`<li><span><button type="button" class="pl tl" data-team="${s.t.code}">${shortName(s.t)}</button> ${s.from}–${s.to}<br><span class="note">${s.names}</span></span><span class="v">${s.n} ans</span></li>`).join("")}</ol></div>`;
   h+=`<div class="st"><h3>Flux entre régions</h3><p class="note">Changements d'équipe d'un Worlds à l'autre. Ligne : région quittée, colonne : région rejointe.</p><div class="tw"><table class="fl"><tr><th></th>${REGIONS.map(r=>`<th>→ ${r}</th>`).join("")}</tr>${REGIONS.map(a=>`<tr><th>${a}</th>${REGIONS.map(b=>`<td style="--a:${Math.round(flow[a][b]/fmax*70)}%">${flow[a][b]||"·"}</td>`).join("")}</tr>`).join("")}</table></div></div>`;
   h+=`<div class="st"><h3>Joueurs importés</h3><p class="note">Titulaires dont la nationalité n'est pas celle de la région de l'équipe</p><div class="tw"><table class="fl"><tr><th></th>${ALL_YEARS.map(y=>`<th>${String(y).slice(2)}</th>`).join("")}</tr>${REGIONS.map(r=>`<tr><th>${r}</th>${ALL_YEARS.map(y=>{const c=imp[r][y]; return c?`<td style="--a:${Math.round(c.i/c.n*90)}%">${c.i}<small>/${c.n}</small></td>`:`<td class="na">–</td>`;}).join("")}</tr>`).join("")}</table></div></div>`;
   const box=$("stats"); box.innerHTML=h;
-  box.addEventListener("click",e=>{const b=e.target.closest(".pl"); if(!b) return; if(innerWidth<900) setDrawer("statsDrawer",false); selectPlayer(b.dataset.id);});
+  // Deux raccourcis sur la même liste : un nom de joueur, un nom d'équipe. Le test sur
+  // `data-team` passe d'abord, le bouton d'équipe portant aussi la classe `.pl`.
+  box.addEventListener("click",e=>{
+    const te=e.target.closest("button[data-team]");
+    // Le tiroir ne se referme que si la sélection a bien eu lieu : sur un refus, l'entrée
+    // grisée doit rester sous les yeux avec sa raison.
+    if(te){ if(selectTeam(te.dataset.team)&&innerWidth<900) setDrawer("statsDrawer",false); return; }
+    const b=e.target.closest(".pl"); if(!b) return; if(innerWidth<900) setDrawer("statsDrawer",false); selectPlayer(b.dataset.id);
+  });
+  majStatsTeams();
 })();
 
 // ---------- démarrage ----------

@@ -386,6 +386,12 @@ path.cap{stroke-width:2;opacity:0}
 .st .v{font:500 12.5px var(--f-mono);color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
 .pl{font:600 14px var(--f-body);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
 .pl:hover{text-decoration-color:var(--accent)}
+/* Nom d'équipe de « Rosters inchangés » : même affordance que le nom de joueur, en gras —
+   c'était du texte mort, on lisait la ligne sans pouvoir aller la voir. Grisé et inerte quand
+   l'équipe n'a pas de colonne à cet instant, la raison étant dans son `title` : le même refus,
+   et le même vocabulaire, que la case « vide » de la liste à cocher du tiroir. */
+.pl.tl{font-weight:700}
+.pl[aria-disabled="true"]{color:var(--muted);text-decoration:none;cursor:default}
 .tw{overflow-x:auto}
 table.fl{border-collapse:separate;border-spacing:3px;font-variant-numeric:tabular-nums}
 table.fl th{font:600 11px var(--f-body);letter-spacing:.06em;color:var(--muted);padding:4px 5px;text-align:center;white-space:nowrap}
@@ -393,13 +399,22 @@ table.fl td{min-width:42px;text-align:center;padding:6px 3px;border-radius:4px;f
 table.fl td small{color:var(--muted);font-size:10px}
 table.fl td.na{color:var(--muted);background:transparent}
 
-/* Tiroir de filtres ouvert : la barre de recherche et la légende glissent à sa droite au
-   lieu de disparaître dessous. Elles peuvent chevaucher la carte — elles sont en haut et en
-   bas, et #9 permet désormais de dégager les colonnes de dessous. Sous 900 px le tiroir
-   couvre presque tout l'écran : rien à décaler, il n'y aurait plus de place. */
-#bar,#legend{transition:transform .22s ease}
+/* Tiroir de filtres ouvert : la barre de recherche, la légende et l'axe des années glissent
+   à sa droite au lieu de disparaître dessous. Ils peuvent chevaucher la carte — et c'est le
+   prix assumé pour l'axe, qui masque alors ses 58 px de colonnes : perdre le repère temporel
+   pendant tout le réglage des filtres coûtait plus cher, et le débord libre de `clampView()`
+   permet de dégager les colonnes de dessous. Sous 900 px le tiroir couvre presque tout
+   l'écran : rien à décaler, il n'y aurait plus de place. */
+#bar,#legend,#rail,#corner{transition:transform .22s ease}
 @media (min-width:900px){
-  body.fopen #bar,body.fopen #legend{transform:translateX(calc(var(--dw) + 12px - var(--YW) - max(12px,env(safe-area-inset-left,0px))))}
+  /* `#rail` et `#corner` sont en `left:0`, collés au bord : leur décalage est la largeur
+     pleine du tiroir, sans la soustraction que les outils flottants doivent faire pour leur
+     propre marge. */
+  body.fopen #rail,body.fopen #corner{transform:translateX(var(--dw))}
+  /* Les deux outils flottants se posent à droite de l'axe déplacé, et non du tiroir : ils
+     sont en `z-index:20` contre 5, et se poseraient sinon sur les 46 px d'axe qu'ils
+     recouvrent — on aurait déplacé le repère temporel pour le cacher derrière autre chose. */
+  body.fopen #bar,body.fopen #legend{transform:translateX(calc(var(--dw) + 12px - max(12px,env(safe-area-inset-left,0px))))}
 }
 
 .load-error{left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,calc(100vw - 32px));padding:14px 18px;line-height:1.5;z-index:70}

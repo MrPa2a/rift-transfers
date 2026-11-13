@@ -210,6 +210,19 @@ for (const region of teamsData.regions) {
 for (const region of Object.keys(playersData.homeCountries ?? {})) {
   if (!regions.has(region)) warnings.push(`homeCountries.${region} : région absente de "regions"`);
 }
+
+// --- noms de ligue : lus au survol de la pilule de région, à côté de la zone géographique.
+// Le sigle seul ne dit ni ce qu'est la ligue, ni où elle se joue. Le nom vient de
+// `Leagues.League` — § 15 du rapport de `fetch-worlds.mjs` —, jamais de connaissances
+// générales : une région sans nom est une erreur, pas un trou qu'on comble de mémoire.
+const leagueNames = teamsData.leagueNames ?? {};
+for (const region of teamsData.regions) {
+  const nom = leagueNames[region];
+  if (typeof nom !== "string" || !nom.trim()) errors.push(`leagueNames : rien pour la région « ${region} », l'infobulle de sa pilule n'aurait que le sigle`);
+}
+for (const region of Object.keys(leagueNames)) {
+  if (!regions.has(region)) warnings.push(`leagueNames.${region} : région absente de "regions"`);
+}
 for (const [name, code] of Object.entries(playersData.nationality)) {
   if (!/^[A-Z]{2}$/.test(code)) errors.push(`nationalité de ${name} : « ${code} » n'est pas un code ISO à 2 lettres`);
   if (!byLower.has(low(name))) warnings.push(`nationalité de ${name} : joueur absent des lineups`);
@@ -227,6 +240,18 @@ for (const [code, nom] of Object.entries(countryNames)) {
   if (!/^[A-Z]{2}$/.test(code)) errors.push(`countryNames : « ${code} » n'est pas un code ISO à 2 lettres`);
   else if (typeof nom !== "string" || !nom.trim()) errors.push(`countryNames.${code} : nom vide`);
   else if (!codesUtilises.has(code)) warnings.push(`countryNames.${code} : aucun joueur de ce pays`);
+}
+
+// La zone géographique de la même infobulle se dérive de `homeCountries` : au plus trois
+// pays, elle les écrit en français. `ZONE_MAX` est la coupure, tenue en double dans
+// assets/js/app.js, qui porte en plus les trois libellés courts des régions au-delà.
+const ZONE_MAX = 3;
+for (const region of teamsData.regions) {
+  const home = playersData.homeCountries?.[region];
+  if (!Array.isArray(home) || home.length > ZONE_MAX) continue;
+  for (const code of home) {
+    if (!countryNames[code]) errors.push(`countryNames : « ${code} » n'a pas de nom français, la zone de la pilule ${region} afficherait le code brut`);
+  }
 }
 
 // --- étapes de carrière hors Worlds

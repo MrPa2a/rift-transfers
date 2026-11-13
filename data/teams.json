@@ -2,6 +2,23 @@
   "$comment": "Titulaires de chaque équipe suivie, par édition des Worlds. Voir CONTRIBUTING.md pour le format.",
   "years": [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026],
   "regions": ["LCK", "LPL", "LEC", "LCS", "LMS", "LCP", "LJL", "VCS", "GPL", "LCO", "TCL", "LCL", "CBLOL", "LLA"],
+  "$commentLeagueNames": "Nom de la ligue derriere chaque sigle de region, collecte dans Leagues.League (section 15 du rapport de fetch-worlds.mjs). C'est le nom de la ligue aujourd'hui : un sigle est un nom de famille de colonnes, pas la ligue d'une annee donnee. Lu au survol de la pilule de region, avec la zone geographique, qui se derive de homeCountries et non de Leagues.Region.",
+  "leagueNames": {
+    "LCK": "LoL Champions Korea",
+    "LPL": "Tencent LoL Pro League",
+    "LEC": "LoL EMEA Championship",
+    "LCS": "League of Legends Championship Series",
+    "LMS": "LoL Master Series",
+    "LCP": "League of Legends Championship Pacific",
+    "LJL": "LoL Japan League",
+    "VCS": "Vietnam Championship Series",
+    "GPL": "Garena Premier League",
+    "LCO": "LoL Circuit Oceania",
+    "TCL": "Turkish Championship League",
+    "LCL": "LoL Continental League",
+    "CBLOL": "Circuit Brazilian League of Legends",
+    "LLA": "Liga Latinoamerica"
+  },
   "teams": [
     {
       "code": "T1",

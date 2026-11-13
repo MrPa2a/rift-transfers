@@ -18,6 +18,7 @@
 //   active.json             fenêtre d'activité calculée pour chaque colonne
 //   places.json             parcours de chaque équipe, au format data/results.json
 //   regions.json            région calculée pour chaque colonne, édition par édition
+//   leagues.json            nom de ligue de chaque région, au format data/teams.json
 //   report.md               cas à trancher à la main
 //
 // Ce script lit /data mais ne le modifie jamais.
@@ -1102,6 +1103,40 @@ async function fetchRegions(computed, outDir, lineage) {
   return out;
 }
 
+// ------------------------------------------------------- nom de ligue de chaque région
+
+// Le sigle d'une région ne dit ni ce qu'est la ligue, ni où elle se joue. Le **nom** n'est
+// nulle part dans /data et l'écrire de mémoire est exactement ce qu'interdit la règle absolue,
+// même pour un libellé : il vient de `Leagues.League`, interrogé par `League_Short`.
+//
+// `Leagues.Region` arrive dans la même requête et n'est **pas** retenu pour la zone
+// géographique de l'infobulle : il est circulaire sur LMS (« LMS »), approximatif sur LCP
+// (« Asia Pacific »), et surtout faux pour la carte sur LPL (« China »), où `homeCountries`
+// compte Taïwan et Hong Kong domestiques — l'infobulle contredirait le badge « importé »
+// affiché à quelques pixels de là. La zone se dérive donc de `homeCountries`, sans collecte.
+// Il est relevé ici pour trace, et pour que l'écart reste visible s'il change.
+async function fetchLeagues(outDir) {
+  const sigles = [...new Set(Object.values(PLAN_REGIONS))];
+  const rows = await cargoAll({
+    tables: "Leagues=L",
+    fields: "L.League_Short=short,L.League=name,L.Region=region,L.IsOfficial=official",
+    where: `L.League_Short IN (${sqlList(sigles)})`,
+  });
+  const out = new Map();
+  for (const r of rows) {
+    const short = asText(r.short);
+    if (!short || !sigles.includes(short) || out.has(short)) continue;
+    out.set(short, { name: asText(r.name), region: asText(r.region), official: asText(r.official) });
+  }
+  await writeFile(join(outDir, "leagues.json"), `${JSON.stringify({
+    $comment: "Nom de chaque ligue derriere le sigle d'une region, depuis Leagues.League. `leagueNames` est a recopier dans data/teams.json. `region` est Leagues.Region, garde pour trace seulement : la zone geographique de l'infobulle se derive de homeCountries, pas de ce champ. Voir la section 15 du rapport.",
+    leagueNames: Object.fromEntries(sigles.filter((s) => out.get(s)?.name).map((s) => [s, out.get(s).name])),
+    detail: Object.fromEntries(out),
+    manquants: sigles.filter((s) => !out.has(s)),
+  }, null, 1)}\n`);
+  return { sigles, noms: out };
+}
+
 // ------------------------------------------------- étapes de carrière hors Worlds (5-ii)
 
 // Les quatre règles de docs/SOURCES.md décident d'une rangée de Worlds. La **règle 5** décide
@@ -2001,7 +2036,7 @@ function findDiffs(computed, teamsData) {
 
 // ------------------------------------------------------------------------ rapport
 
-function renderReport({ years, computed, pageCheck, census, collisions, nearCollisions, eraCandidates, caseIssues, diffs, activeWindows, places, regions, careers, teamsData, resultsData, careersData, notes, gameCounts }) {
+function renderReport({ years, computed, pageCheck, census, collisions, nearCollisions, eraCandidates, caseIssues, diffs, activeWindows, places, regions, leagues, careers, teamsData, resultsData, careersData, notes, gameCounts }) {
   const L = [];
   const h = (n, t) => L.push("", `${"#".repeat(n)} ${t}`, "");
   const list = (items, empty) => L.push(...(items.length ? items.map((i) => `- ${i}`) : [`_${empty}_`]));
@@ -2103,6 +2138,23 @@ function renderReport({ years, computed, pageCheck, census, collisions, nearColl
     }
   }
 
+  // Noms de ligue : calculé contre saisi. Un sigle sans nom saisi est une valeur à reporter,
+  // pas un écart ; un sigle que `Leagues` ne connaît pas est un écart, le validateur exigeant
+  // un nom pour chaque région.
+  const leagueNew = [];
+  const leagueDiffs = [];
+  const storedNames = teamsData.leagueNames ?? {};
+  for (const short of leagues.sigles) {
+    const calc = leagues.noms.get(short)?.name ?? null;
+    const saisi = storedNames[short] ?? null;
+    if (!calc) { leagueDiffs.push({ short, text: `aucune ligne \`Leagues\` pour ce sigle — nom saisi « ${saisi ?? "—"} » invérifiable` }); continue; }
+    if (!saisi) { leagueNew.push({ short, calc }); continue; }
+    if (saisi !== calc) leagueDiffs.push({ short, text: `teams.json « ${saisi} », calculé « ${calc} »` });
+  }
+  for (const short of Object.keys(storedNames)) {
+    if (!leagues.sigles.includes(short)) leagueDiffs.push({ short, text: "saisi dans teams.json sans région correspondante" });
+  }
+
   const aliasRows = [];
   for (const [year, teamsOfYear] of computed) {
     for (const t of teamsOfYear.values()) {
@@ -2132,6 +2184,7 @@ function renderReport({ years, computed, pageCheck, census, collisions, nearColl
     ["11", "Fenêtres d'activité", activeDiffs.length, `${activeWindows.size} colonnes`],
     ["12", "Parcours des équipes", placeDiffs.length, `${placeNew.length} à reporter`],
     ["13", "Région de chaque rangée", regionDiffs.length, `${regionFlags.length} par dernier recours`],
+    ["15", "Noms de ligue", leagueDiffs.length, `${leagueNew.length} à reporter`],
   ];
   L.push("| § | Sujet | Cas |", "|---|---|---|");
   for (const [n, name, count, note] of sections) L.push(`| ${n} | ${name} | ${count}${note ? ` (${note})` : ""} |`);
@@ -2305,6 +2358,22 @@ function renderReport({ years, computed, pageCheck, census, collisions, nearColl
     list(careers.ecartees.map(([nom, n]) => `${nom} (${n} parties)`), "aucune.");
   }
 
+  h(2, "15. Noms de ligue");
+  L.push("`Leagues.League` interrogé par `League_Short` : le nom qui se lit au survol du sigle d'une région, dans le tiroir de filtres. Le sigle seul ne disait ni ce qu'est la ligue, ni où elle se joue.");
+  L.push("", "C'est le nom de la ligue **aujourd'hui**, alors qu'une famille de colonnes couvre seize ans — la LEC s'est appelée « EU LCS » la moitié de sa vie. Le sigle d'une pilule est un **nom de famille de colonnes**, pas la ligue d'une année donnée : la région d'une rangée, elle, se décide à l'année de son édition (§ 13). D'où un libellé sobre, qui ne s'énonce pas comme une affirmation historique.");
+  L.push("", "**`Leagues.Region` est relevé, jamais employé.** La zone géographique de l'infobulle se dérive de `homeCountries`, qui est le territoire que la carte utilise réellement pour décider qu'un joueur est importé. Ce champ-ci est circulaire sur LMS (« LMS »), approximatif sur LCP, et contredirait la carte sur LPL (« China », quand `homeCountries` compte Taïwan et Hong Kong domestiques) : l'infobulle dirait le contraire du badge affiché à quelques pixels de là.");
+  L.push("");
+  L.push("| Sigle | `Leagues.League` | `Leagues.Region` (pour trace) |", "|---|---|---|");
+  for (const short of leagues.sigles) {
+    const v = leagues.noms.get(short);
+    L.push(`| ${short} | ${v?.name ?? "**aucune ligne**"} | ${v?.region ?? "—"} |`);
+  }
+  h(3, `15.1 Noms à reporter (${leagueNew.length})`);
+  L.push("Valeur à recopier dans la table `leagueNames` de `data/teams.json`, à côté de `regions`.", "");
+  list(leagueNew.map((l) => `**${l.short}** — « ${l.calc} »`), "aucun.");
+  h(3, `15.2 Écarts avec les noms saisis (${leagueDiffs.length})`);
+  list(leagueDiffs.map((l) => `**${l.short}** — ${l.text}`), "aucun écart.");
+
   if (notes.length) {
     h(2, "Notes de collecte");
     list(notes, "aucune.");
@@ -2413,6 +2482,8 @@ async function main() {
   const regions = await fetchRegions(computed, outDir, lineage);
   console.log("Classement de chaque équipe à son édition…");
   const places = await fetchPlaces(years, computed, outDir);
+  console.log("Nom de ligue de chaque région (Leagues.League)…");
+  const leagues = await fetchLeagues(outDir);
   // Les étapes hors Worlds ne se calculent que sur une collecte complète : un trou se mesure
   // entre deux apparitions, et une exécution partielle en invente autant qu'elle en cache.
   const complete = years.length === ALL_YEARS.length;
@@ -2422,7 +2493,7 @@ async function main() {
     : { careers: {}, clubs: {}, sansColonne: [], ecartees: [], horsNiveau: [], creuses: [], partiel: true };
   notes.push(...places.notes);
   const reportPath = join(outDir, "report.md");
-  await writeFile(reportPath, renderReport({ years, computed, pageCheck, census, collisions, nearCollisions, eraCandidates, caseIssues, diffs, activeWindows, places, regions, careers, teamsData, resultsData, careersData, notes, gameCounts }));
+  await writeFile(reportPath, renderReport({ years, computed, pageCheck, census, collisions, nearCollisions, eraCandidates, caseIssues, diffs, activeWindows, places, regions, leagues, careers, teamsData, resultsData, careersData, notes, gameCounts }));
 
   console.log("");
   console.log(`Fragments : ${join(outDir, "fragments")}`);
@@ -2430,6 +2501,7 @@ async function main() {
   console.log(`Activité  : ${join(outDir, "active.json")}`);
   console.log(`Parcours  : ${join(outDir, "places.json")}`);
   console.log(`Régions   : ${join(outDir, "regions.json")}`);
+  console.log(`Ligues    : ${join(outDir, "leagues.json")}`);
   if (complete) console.log(`Carrières : ${join(outDir, "careers.json")}`);
   console.log(`Rapport   : ${reportPath}`);
   console.log(`${collisions.length} collision(s) de pseudo, ${caseIssues.length} divergence(s) de casse, ${diffs.length} écart(s) sur les lineups saisies.`);
