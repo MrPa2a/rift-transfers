@@ -207,6 +207,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .colbg{position:absolute;top:0;border-left:1px solid var(--line)}
 .colbg.other{background:color-mix(in srgb,var(--absent) 70%,transparent);border-left:1px dashed var(--muted)}
 .yrule{position:absolute;left:0;border-top:1px dashed var(--line)}
+/* Le SVG couvre toute la carte : il est hors du hit-test, sans quoi il volerait les clics aux
+   cases. Rendre les tracés eux-mêmes survolables a été essayé et abandonné — voir la note sur
+   le raccourci plus bas. */
 #world svg{position:absolute;inset:0;overflow:visible;pointer-events:none}
 path.l{fill:none;stroke-linecap:round;transition:opacity .15s,stroke-width .15s}
 path.same{stroke-width:1.3;opacity:.22;display:none}
@@ -226,6 +229,11 @@ path.roff{display:none!important}
    l'autre au focus, et jamais les deux ensemble. */
 path.deep{display:none}
 .focus path.deep.hl{display:inline}
+/* Le raccourci s'efface au focus, remplacé par le détail. C'est aussi ce qui interdit de
+   rendre les tracés survolables : le fil qu'on survolerait changerait de forme à cause de ce
+   survol même, sortirait du hit-test, le navigateur émettrait `mouseout`, le focus
+   retomberait, le raccourci reviendrait sous le curseur — une boucle sans fin, qu'on voit sur
+   le fil DRX 2017 → T1 2019 de Khan. La case reste donc la seule prise sur un joueur. */
 .focus path.base.hl{display:none}
 path.duo{stroke-width:1.5;opacity:.5}
 path.cap{stroke-width:2;opacity:0}

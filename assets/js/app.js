@@ -204,9 +204,43 @@ const laneAt=(cx,ri,half)=>cx+14+(2*ri+half)*((chipW-28)/9);
 // sortir de sous le nom voisin. On corrige l'attache — le point de départ et d'arrivée passe
 // au centre de la chip, rejoint par un court coude — et le couloir reste intact.
 const ELBOW=14;
+// Gouttière entre deux blocs d'éditions : la hauteur libre au-dessus d'un bloc, celle que
+// marque déjà le trait d'année. Elle borne le coude ci-dessous — au-delà, il viendrait
+// chercher le bloc voisin.
+const GOUTTIERE=70;
+// Hauteur d'un coude, désormais fonction de l'écart latéral qu'il doit franchir.
+//
+// Elle valait `ELBOW`, 14 px, quel que soit le déport. Pour un fil qui rejoint la demi-case
+// de droite d'un poste partagé, c'est 63 px à franchir en 14 px de hauteur — un rapport de
+// 4,5:1, d'où le S écrasé collé au-dessus de la case. Le poste partagé ne faisait que créer
+// le décalage ; le défaut était que le coude ne s'y adaptait pas, et le correctif n'a donc
+// pas à connaître les demi-cases.
+//
+// Le fil commence maintenant son déport d'autant plus tôt qu'il a plus de chemin à faire, et
+// le S s'étale au lieu de se replier. `ELBOW` reste le plancher : un fil sans déport — le cas
+// général, une case pleine, dont l'attache **est** le couloir — garde exactement son coude
+// d'avant, et sa courbe reste d'ailleurs une verticale droite.
+const PENTE=0.9;
+const coude=(dx,place)=>Math.min(Math.max(ELBOW,Math.abs(dx)*PENTE),Math.max(ELBOW,place));
 // Demi-largeur de la barre qui ferme les deux bouts du fil (#7a). Sa hampe, elle, n'a pas de
 // longueur propre : elle court jusqu'à la jonction entre deux éditions (voir `cap`).
 const CAP=9;
+// Vingt couples ordonnés de postes distincts, donc vingt dégradés, posés une fois pour toute
+// la carte. Un segment prenait la couleur de `B.a.role`, le poste **d'arrivée** : le trajet
+// entier d'un jungler devenu mid était peint en mid, et la couleur disait l'arrivée au lieu
+// de dire le changement.
+//
+// En `objectBoundingBox`, les coordonnées sont relatives à la boîte de chaque tracé : le même
+// dégradé sert tous les segments du même couple, quelle que soit leur longueur, et il n'y a
+// rien à calculer par segment. Deux arrêts francs à 50 % et non un fondu — la couleur doit
+// dire « ici, il change de poste », pas étaler l'incertitude sur tout le trajet.
+//
+// `stop-color` passe par `style` et non par un attribut de présentation, qui ne résout pas
+// `var()` partout ; le tracé, lui, porte son dégradé en attribut `stroke` plutôt qu'en classe,
+// pour que les vingt couples n'aient pas à être redits un à un dans la feuille de style.
+const ROLE_GRADS=ROLES.flatMap(a=>ROLES.filter(b=>b!==a).map(b=>
+  `<linearGradient id="rg-${a}-${b}" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="0" y2="1">`
+  +`<stop offset="50%" style="stop-color:var(--${a})"/><stop offset="50%" style="stop-color:var(--${b})"/></linearGradient>`)).join("");
 const attache=n=>n.lane>=n.x&&n.lane<=n.x+n.w?n.lane:n.x+n.w/2;
 // Fenêtre d'existence de l'organisation, bornée par la plage affichée.
 const activeSpan=t=>[Math.max(YEARS[0],t.active[0]??YEARS[0]),Math.min(YEARS.at(-1),t.active[1]??Infinity)];
@@ -402,10 +436,10 @@ function render(){
     const [from,to]=activeSpan(c.t);
     const ys=YEARS.filter(y=>y>=from&&y<=to);
     if(!ys.length) return;
-    const top=yTop(ys[0])-70, bottom=yTop(ys.at(-1))+ROWH-70;
+    const top=yTop(ys[0])-GOUTTIERE, bottom=yTop(ys.at(-1))+ROWH-GOUTTIERE;
     html+=`<div class="colbg" style="left:${c.x}px;top:${Math.max(0,top)}px;width:${c.w}px;height:${Math.min(H,bottom)-Math.max(0,top)}px"></div>`;
   });
-  YEARS.forEach((y,j)=>{ if(j) html+=`<div class="yrule" style="top:${yTop(y)-70}px;width:${W}px"></div>`; });
+  YEARS.forEach((y,j)=>{ if(j) html+=`<div class="yrule" style="top:${yTop(y)-GOUTTIERE}px;width:${W}px"></div>`; });
   let paths="";
   // Deux fils, et un seul visible à la fois.
   //
@@ -419,16 +453,37 @@ function render(){
   const segment=(A,B,cls,cle)=>{
     const x1=A.lane,y1=A.y+CH/2,x2=B.lane,y2=B.y+CH/2,b0=A.bottom,t1=yTop(B.a.year)-6;
     const ax=attache(A), bx=attache(B);
+    // Changement de poste : le segment porte un dégradé qui bascule net en son milieu, au
+    // lieu de la seule couleur d'arrivée. Le couple est choisi par la position **à l'écran**
+    // et non par la chronologie, le dégradé descendant du haut de la boîte vers le bas : un
+    // segment `duo` qui remonte inverserait sinon ses deux couleurs.
+    const haut=A.y<=B.y?A:B, bas=haut===A?B:A;
+    const meme=A.a.role===B.a.role;
+    const teinte=meme?` ${B.a.role}`:"";
+    const peint=meme?"":` stroke="url(#rg-${haut.a.role}-${bas.a.role})"`;
     if(A.a.year===B.a.year){
-      paths+=`<path class="l ${B.a.role} move duo${cls}" data-p="${A.a.id}" data-k="${cle}" data-r="${B.a.role}" d="M${ax},${y1} L${bx},${y2}"/>`;
+      // Un segment `duo` est une diagonale courte, et on a hésité à lui donner un autre
+      // traitement : non, une règle et une seule. Le milieu du tracé est le milieu du tracé.
+      paths+=`<path class="l${teinte} move duo${cls}"${peint} data-p="${A.a.id}" data-k="${cle}" data-r="${B.a.role}" d="M${ax},${y1} L${bx},${y2}"/>`;
       return;
     }
     const creux=VOIDS.get(A.a.id);
     let vide=false;
     if(creux) for(let y=A.a.year+1;y<B.a.year;y++) if(creux.has(y)) vide=true;
-    const y0=A.y+CH, yd=Math.min(y0+ELBOW,b0), sd=(yd-y0)*.6;
-    const yu=bx===x2?t1:B.y-ELBOW, te=Math.min(t1,yu), su=(B.y-yu)*.6, m=(te-b0)*.55;
-    paths+=`<path class="l ${B.a.role} ${A.a.team===B.a.team?"same":"move"}${vide?" void":""}${cls}" data-p="${A.a.id}" data-k="${cle}" data-r="${B.a.role}" d="M${ax},${y1} L${ax},${y0} C${ax},${y0+sd} ${x1},${yd-sd} ${x1},${yd} L${x1},${b0} C${x1},${b0+m} ${x2},${te-m} ${x2},${te} L${x2},${yu} C${x2},${yu+su} ${bx},${B.y-su} ${bx},${B.y} L${bx},${y2}"/>`;
+    // Les deux coudes prennent leur hauteur de l'écart latéral qu'ils franchissent, et leur
+    // place de la gouttière voisine : sous le bloc de A au départ, au-dessus de celui de B à
+    // l'arrivée. Les corriger tous les deux, sinon le même fil porterait deux coudes de
+    // factures différentes — celui du départ a seulement plus de place sous lui, donc il se
+    // voyait moins.
+    const y0=A.y+CH;
+    const yd=y0+coude(x1-ax,yTop(A.a.year)+ROWH-GOUTTIERE-y0), sd=(yd-y0)*.6;
+    const yu=bx===x2?t1:B.y-coude(bx-x2,B.y-(yTop(B.a.year)-GOUTTIERE));
+    const te=Math.min(t1,yu);
+    // Un coude de départ assez haut déborde sous le bas du bloc, dans la gouttière : c'est là
+    // que commence alors la grande courbe inter-années, et elle ne peut pas descendre sous le
+    // point d'arrivée de celle-ci.
+    const bd=Math.min(Math.max(b0,yd),te), su=(B.y-yu)*.6, m=(te-bd)*.55;
+    paths+=`<path class="l${teinte} ${A.a.team===B.a.team?"same":"move"}${vide?" void":""}${cls}"${peint} data-p="${A.a.id}" data-k="${cle}" data-r="${B.a.role}" d="M${ax},${y1} L${ax},${y0} C${ax},${y0+sd} ${x1},${yd-sd} ${x1},${yd} L${x1},${bd} C${x1},${bd+m} ${x2},${te-m} ${x2},${te} L${x2},${yu} C${x2},${yu+su} ${bx},${B.y-su} ${bx},${B.y} L${bx},${y2}"/>`;
   };
   nodesByPlayer.forEach((ns,id)=>{
     for(let k=1;k<ns.length;k++) segment(ns[k-1],ns[k],(ns[k-1].a.step||ns[k].a.step)?" deep":"",`${id}:${k}`);
@@ -460,7 +515,7 @@ function render(){
     if(ns[0].a===suite[0]) cap(ns[0],false);
     if(ns.at(-1).a===suite.at(-1)) cap(ns.at(-1),true);
   });
-  html+=`<svg width="${W}" height="${H}" aria-hidden="true">${paths}</svg>`;
+  html+=`<svg width="${W}" height="${H}" aria-hidden="true"><defs>${ROLE_GRADS}</defs>${paths}</svg>`;
   vis.forEach(t=>{
     const [from,to]=activeSpan(t);
     YEARS.forEach(y=>{
@@ -620,6 +675,12 @@ vp.addEventListener("keydown",e=>{
 addEventListener("resize",()=>applyView());
 
 // ---------- sélection ----------
+// La case est la seule prise sur un joueur, et le fil n'en est pas une. L'essai a été fait :
+// le fil change de tracé au focus — le raccourci cède la place au détail qui passe par les
+// étapes —, donc le survoler le fait disparaître de sous le curseur, le focus retombe, le
+// raccourci revient, et on boucle sans fin. Rendre le fil survolable demanderait de lui donner
+// une géométrie unique, c'est-à-dire d'afficher au repos les 189 détours par les années sans
+// Worlds, dont 64 traversent jusqu'à « Autres équipes ». Le prix est trop haut pour le gain.
 function tap(target){
   const c=target.closest&&target.closest(".chip");
   if(c){ state.pinnedTeam=null; state.pinned=c.dataset.p; state.hover=null; }
@@ -743,7 +804,7 @@ function apply(){
 
 function renderLegend(lin){
   const L=[];
-  L.push(`<span><svg width="30" height="10"><line x1="2" y1="5" x2="28" y2="5" stroke="currentColor" stroke-width="1.8"/></svg> changement d'équipe, coloré par poste</span>`);
+  L.push(`<span><svg width="30" height="10"><line x1="2" y1="5" x2="28" y2="5" stroke="currentColor" stroke-width="1.8"/></svg> changement d'équipe, coloré par poste — le fil bascule en son milieu quand le joueur change de poste</span>`);
   L.push(`<span><span class="lg-half"><i></i><i></i></span> poste tenu par deux joueurs, chacun ciblable · <b>*</b> rotation ponctuelle (survol pour le nom)${apps.some(a=>a.doubt)?" · <b>?</b> à vérifier":""}</span>`);
   L.push(`<span><span class="lg-res">Quarts · Demi · Finale</span> parcours de l'équipe · <b style="color:var(--bot)">★ Vainqueur</b></span>`);
   // Dire « premier » et « dernier Worlds », et pas « début » ni « fin de carrière » : la
