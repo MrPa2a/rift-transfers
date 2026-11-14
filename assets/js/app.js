@@ -251,10 +251,11 @@ const attache=n=>n.lane>=n.x&&n.lane<=n.x+n.w?n.lane:n.x+n.w/2;
 // Fenêtre d'existence de l'organisation, bornée par la plage affichée.
 const activeSpan=t=>[Math.max(YEARS[0],t.active[0]??YEARS[0]),Math.min(YEARS.at(-1),t.active[1]??Infinity)];
 
-// Année d'ouverture de la carte. Elle n'est **pas** `ALL_YEARS[0]` : les Season 1 et 2
-// n'alignent que trois et six équipes suivies, donc 500 px de rangées quasi vides en haut
-// de la carte. Elles restent à un clic, par le préréglage « Tout ».
-const DEFAULT_FROM=2013;
+// La carte s'ouvre sur la **période entière**, et le préréglage « Tout » est donc celui qui est
+// actif au démarrage. Elle s'ouvrait sur 2013 pour épargner les 500 px de rangées quasi vides
+// des Season 1 et 2 — trois et six équipes suivies — mais cacher deux éditions par défaut
+// coûtait plus que ce qu'elle faisait gagner : être exhaustif est le propos de l'outil, et
+// c'est au filtre de période de resserrer, comme c'est au seuil de présence de dégrossir.
 
 // Nombre d'apparitions aux Worlds de chaque équipe : c'est la mesure du filtre « Présence ».
 const APPS=new Map(teams.map(t=>[t.code,Object.keys(t.years).length]));
@@ -267,7 +268,7 @@ const PRESENCE=[1,2,3,5];
 const DEFAULT_MIN_APPS=1;
 
 const state={roles:new Set(ROLES),regions:new Set(REGIONS),hiddenTeams:new Set(),minApps:DEFAULT_MIN_APPS,showNat:false,showSen:false,teamMode:"players",pinned:null,pinnedTeam:null,hover:null,
-  yearFrom:Math.max(ALL_YEARS[0],DEFAULT_FROM),yearTo:ALL_YEARS.at(-1),
+  yearFrom:ALL_YEARS[0],yearTo:ALL_YEARS.at(-1),
   // Les deux isolements. Ils ne remplacent pas la sélection : le survol et le clic simple
   // gardent exactement le comportement d'avant — surbrillance, aucune remise en page. Ce sont
   // deux gestes de plus, et chacun a son propre contrôle : l'axe des années pour `annee`, un
@@ -672,7 +673,7 @@ function render(){
     // Le `×` masque la colonne ; le reste de l'en-tête épingle l'équipe. Deux cibles
     // distinctes, sans quoi les deux gestes se marcheraient dessus. La liste à cocher du
     // tiroir reste la source de vérité — ce bouton n'en est qu'un raccourci.
-    :`<div class="th" data-team="${c.t.code}" data-x="${c.x}" data-w="${c.w}" title="${c.t.name}"><span class="rg"><b style="background:${regionVar(c.t.region)}"></b>${c.t.region}</span><span class="tn">${shortName(c.t)}</span><button type="button" class="hide" data-hide="${c.t.code}" aria-label="Masquer ${shortName(c.t)}" title="Masquer cette colonne">×</button></div>`).join("");
+    :`<div class="th" data-team="${c.t.code}" data-x="${c.x}" data-w="${c.w}" title="${c.t.name} · cliquer pour épingler l'équipe, recliquer pour relâcher"><span class="rg"><b style="background:${regionVar(c.t.region)}"></b>${c.t.region}</span><span class="tn">${shortName(c.t)}</span><button type="button" class="hide" data-hide="${c.t.code}" aria-label="Masquer ${shortName(c.t)}" title="Masquer cette colonne">×</button></div>`).join("");
   // L'axe des années devient cliquable : une année isole son édition. Cliquer une **voisine**
   // y déplace l'isolement — on avance ainsi d'édition en édition —, cliquer l'édition isolée
   // elle-même en sort. C'est le seul chemin de retour depuis l'axe, puisqu'une fois isolé il ne
@@ -866,7 +867,15 @@ function toutMontrer(){
 function tap(target){
   const c=target.closest&&target.closest(".chip");
   if(c){ state.pinnedTeam=null; state.pinned=c.dataset.p; state.hover=null; }
-  else { state.pinned=null; state.pinnedTeam=null; state.hover=null; }
+  // Un clic dans le vide relâche un **joueur** : on l'a pris dans la carte, la carte est son
+  // contexte, et cliquer ailleurs y vaut « non, pas lui ». Il ne relâche **pas une équipe**,
+  // qui se prend dans l'en-tête, hors de la zone qu'on fait glisser : un clic malheureux ne
+  // doit pas la perdre. Elle se relâche en recliquant son en-tête, ou par le × du panneau —
+  // deux sorties explicites, comme l'édition isolée qui ne se quitte qu'en recliquant son
+  // année. Une fois isolé, le vide a de toute façon presque disparu de l'écran, les colonnes
+  // étant resserrées : ce n'était plus une sortie fiable.
+  else if(state.pinnedTeam) return;
+  else { state.pinned=null; state.hover=null; }
   apresSelection();
 }
 // Pendant un **isolement d'équipe**, survoler un joueur descend d'un cran : la disposition des

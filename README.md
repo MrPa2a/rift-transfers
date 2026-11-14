@@ -7,7 +7,7 @@ Carte interactive des rosters des grandes équipes de League of Legends aux **Wo
 ## Fonctionnalités
 
 - Carte plein écran : déplacement à la souris ou au doigt, zoom à la molette ou au pincement.
-- **Toutes les équipes ayant joué au moins un Worlds** : 120 colonnes, 14 régions, 2011 à 2026. La carte s'ouvre sur 2013 → 2026 et sur la totalité des colonnes ; le filtre « Présence aux Worlds » la dégrossit d'un clic — 54 colonnes à partir de deux apparitions, 33 à partir de trois, 19 à partir de cinq.
+- **Toutes les équipes ayant joué au moins un Worlds** : 120 colonnes, 14 régions, 2011 à 2026. La carte s'ouvre sur la période entière et sur la totalité des colonnes ; le filtre « Présence aux Worlds » la dégrossit d'un clic — 54 colonnes à partir de deux apparitions, 33 à partir de trois, 19 à partir de cinq.
 - Survol ou clic sur un joueur pour isoler toute sa carrière ; clic sur une équipe pour voir ses joueurs, ou seulement ses arrivées et départs — les colonnes sans échange avec elle sont grisées.
 - Filtres par poste, par région, par période et par nombre d'apparitions aux Worlds, et masquage des colonnes une à une (`×` de l'en-tête ou liste à cocher du tiroir). Région ou équipe masquée, ses joueurs passent par la colonne « Autres équipes » pour garder la trace des transferts.
 - Options : nationalité (avec repérage des joueurs importés) et ancienneté dans l'équipe.
