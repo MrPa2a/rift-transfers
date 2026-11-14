@@ -201,12 +201,25 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .th .hide{position:absolute;top:2px;right:2px;width:18px;height:18px;padding:0;border:none;border-radius:4px;background:none;color:var(--muted);font:600 14px/1 var(--f-body);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .15s}
 .th:hover .hide,.th .hide:focus-visible{opacity:1;pointer-events:auto}
 .th .hide:hover{background:var(--line);color:var(--fg)}
-.ylab{position:absolute;left:0;right:0;text-align:center;font:500 13px var(--f-mono);color:var(--muted);transform:translateY(-50%)}
+/* L'axe des années est cliquable : une année isole son édition. Le bouton garde l'aspect de
+   l'étiquette d'avant — c'est un repère avant d'être un contrôle — et ne se signale qu'au
+   survol et quand il est pressé. */
+.ylab{position:absolute;left:0;right:0;text-align:center;font:500 13px var(--f-mono);color:var(--muted);transform:translateY(-50%);
+  background:none;border:none;padding:4px 0;cursor:pointer;border-radius:6px}
+.ylab:hover{color:var(--fg);background:var(--absent)}
+.ylab[aria-disabled="true"]{opacity:.35;cursor:default}
+.ylab[aria-disabled="true"]:hover{color:var(--muted);background:none}
+.ylab.iso{color:var(--panel);background:var(--fg);font-weight:700}
 .ylab small{display:block;font:600 9px var(--f-body);letter-spacing:.1em;margin-top:2px}
 
 .colbg{position:absolute;top:0;border-left:1px solid var(--line)}
 .colbg.other{background:color-mix(in srgb,var(--absent) 70%,transparent);border-left:1px dashed var(--muted)}
 .yrule{position:absolute;left:0;border-top:1px dashed var(--line)}
+/* Rangée voisine d'une édition isolée : un voile par-dessus, et non une opacité sur chaque
+   case — l'estompe du focus se joue déjà sur l'opacité des cases, et les deux se seraient
+   disputé la même propriété. Il ne capture pas le pointeur : ce qu'il recouvre reste
+   survolable et cliquable. */
+.voile{position:absolute;left:0;background:color-mix(in srgb,var(--bg) 62%,transparent);pointer-events:none}
 /* Le SVG couvre toute la carte : il est hors du hit-test, sans quoi il volerait les clics aux
    cases. Rendre les tracés eux-mêmes survolables a été essayé et abandonné — voir la note sur
    le raccourci plus bas. */
@@ -331,6 +344,17 @@ path.cap{stroke-width:2;opacity:0}
 #sel .hint{color:var(--muted)}
 #selClose{position:absolute;top:6px;right:6px;width:28px;height:28px;border:none;background:none;cursor:pointer;color:var(--muted);font-size:18px;border-radius:6px}
 #selClose:hover{background:var(--absent)}
+/* « Isoler » se pose à gauche du ×, et le texte du panneau lui laisse la place par le padding
+   droit de #sel. Pressé, il s'inverse : c'est une bascule qui reste enfoncée. */
+#selIso{position:absolute;top:6px;right:38px;height:28px;min-width:104px;padding:0 10px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font:600 12px var(--f-body);border-radius:6px;white-space:nowrap}
+#selIso:hover{border-color:var(--muted)}
+#selIso[aria-disabled="true"]{opacity:.45;cursor:default}
+#selIso[aria-disabled="true"]:hover{border-color:var(--line)}
+#selIso[aria-pressed="true"]{background:var(--fg);color:var(--panel);border-color:var(--fg)}
+/* Le texte du panneau laisse la place au bouton quand il est là, et la reprend sinon : une
+   sélection par simple survol n'affiche pas le bouton et garde toute la largeur.
+   `min-width` fige la boîte pour que « Isoler » et « Tout afficher » ne la fassent pas sauter. */
+#sel.avec-iso{padding-right:152px}
 
 /* ---------- tiroirs ---------- */
 .drawer{position:fixed;top:0;bottom:0;z-index:40;width:var(--dw);background:var(--panel);box-shadow:var(--shadow);display:flex;flex-direction:column;transition:transform .22s ease;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -437,6 +461,9 @@ table.fl td.na{color:var(--muted);background:transparent}
   .ibtn{padding:0 9px}
   .ylab{font-size:11px}
   #sel{width:calc(100vw - var(--YW) - 24px);bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+  /* Étroit, le panneau ne peut pas réserver 152 px : le bouton se resserre sur son texte. */
+  #selIso{min-width:0;right:34px;padding:0 8px;font-size:11.5px}
+  #sel.avec-iso{padding-right:124px}
   #legend{max-width:calc(100vw - var(--YW) - 80px)}
 }
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}

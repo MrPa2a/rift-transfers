@@ -225,6 +225,12 @@ const coude=(dx,place)=>Math.min(Math.max(ELBOW,Math.abs(dx)*PENTE),Math.max(ELB
 // Demi-largeur de la barre qui ferme les deux bouts du fil (#7a). Sa hampe, elle, n'a pas de
 // longueur propre : elle court jusqu'à la jonction entre deux éditions (voir `cap`).
 const CAP=9;
+// La barre s'arrête **avant** la ligne de séparation plutôt que dessus. Une fin de carrière et
+// un début à l'édition suivante tombent sinon au même endroit, dans le même couloir si c'est
+// le même poste, et les deux marques se confondent en une seule — Dyrus s'arrêtant chez TSM en
+// 2015, Hauntzer y arrivant en 2016. De part et d'autre de la ligne, elles se lisent comme
+// deux faits distincts, et la ligne garde son rôle de frontière.
+const CAP_MARGE=8;
 // Vingt couples ordonnés de postes distincts, donc vingt dégradés, posés une fois pour toute
 // la carte. Un segment prenait la couleur de `B.a.role`, le poste **d'arrivée** : le trajet
 // entier d'un jungler devenu mid était peint en mid, et la couleur disait l'arrivée au lieu
@@ -261,7 +267,12 @@ const PRESENCE=[1,2,3,5];
 const DEFAULT_MIN_APPS=1;
 
 const state={roles:new Set(ROLES),regions:new Set(REGIONS),hiddenTeams:new Set(),minApps:DEFAULT_MIN_APPS,showNat:false,showSen:false,teamMode:"players",pinned:null,pinnedTeam:null,hover:null,
-  yearFrom:Math.max(ALL_YEARS[0],DEFAULT_FROM),yearTo:ALL_YEARS.at(-1)};
+  yearFrom:Math.max(ALL_YEARS[0],DEFAULT_FROM),yearTo:ALL_YEARS.at(-1),
+  // Les deux isolements. Ils ne remplacent pas la sélection : le survol et le clic simple
+  // gardent exactement le comportement d'avant — surbrillance, aucune remise en page. Ce sont
+  // deux gestes de plus, et chacun a son propre contrôle : l'axe des années pour `annee`, un
+  // bouton du panneau de détail pour `isole`.
+  annee:null, isole:false};
 // Une colonne est affichée si sa région l'est, **et** si elle atteint le seuil de présence,
 // **et** si l'équipe n'est pas masquée une à une : les trois filtres se cumulent, chacun
 // agissant à l'intérieur du sous-ensemble déjà retenu par les précédents. Une équipe écartée
@@ -270,25 +281,113 @@ const state={roles:new Set(ROLES),regions:new Set(REGIONS),hiddenTeams:new Set()
 const visible=t=>state.regions.has(t.region)&&APPS.get(t.code)>=state.minApps&&!state.hiddenTeams.has(t.code);
 // Et une colonne n'est dessinée que si l'équipe a au moins une édition dans la période : c'est
 // ce compte-là, et non `visible` seul, qui dit s'il reste quelque chose à l'écran.
-const colonne=t=>visible(t)&&YEARS.some(y=>t.years[y]);
+// Isolement d'une édition (#5) : les participants de l'année, **plus** les équipes d'où
+// viennent ses joueurs et où ils vont l'année d'avant et l'année d'après. Une édition sans ses
+// deux voisines n'énumère que des rosters — la carte parle de transferts, et c'est le voisinage
+// qui porte le mouvement. Mesuré : de 9 à 40 colonnes sur 120 selon l'édition, 40 en 2019.
+const colonnesDeLEdition=N=>{
+  const codes=new Set(teams.filter(t=>t.years[N]).map(t=>t.code));
+  const surN=new Set(apps.filter(a=>a.year===N).map(a=>a.id));
+  for(const a of apps) if(Math.abs(a.year-N)===1&&surN.has(a.id)) codes.add(a.team.code);
+  return codes;
+};
+// Isolement de la sélection (#9) : les colonnes par lesquelles elle est passée. Pour un
+// joueur, ses clubs, étapes hors Worlds comprises — 1 à 7 colonnes, médiane 1. Pour une
+// équipe, les colonnes avec lesquelles elle a échangé des joueurs, selon le mode de clic
+// choisi dans les filtres : 27 colonnes au pire en « carrières complètes » (TL), 16 en
+// « arrivées et départs ». Ce n'est pas au raccourci de décider du mode.
+const colonnesIsolees=()=>{
+  if(state.pinned){
+    const p=players.get(state.pinned);
+    return new Set(p?p.apps.map(a=>a.team.code):[]);
+  }
+  if(!state.pinnedTeam) return null;
+  const code=state.pinnedTeam, codes=new Set([code]), lin=state.teamMode==="lineage";
+  players.forEach(p=>p.apps.forEach((a,k)=>{
+    if(a.team.code!==code) return;
+    if(lin){ if(p.apps[k-1]) codes.add(p.apps[k-1].team.code); if(p.apps[k+1]) codes.add(p.apps[k+1].team.code); }
+    else p.apps.forEach(b=>codes.add(b.team.code));
+  }));
+  return codes;
+};
+// Les deux isolements **se cumulent**, comme les trois filtres se cumulent déjà entre eux :
+// chacun agit à l'intérieur du sous-ensemble retenu par les précédents, donc l'intersection.
+// `null` quand aucun n'est posé, et c'est ce qui garde `colonne()` à son coût d'avant.
+let reduction=null;
+// La seule part de l'édition isolée, tenue à part : un clic simple sort de l'isolement de
+// sélection mais **pas** de celui-là, qui a son propre contrôle. Les refus qui se jugent sur
+// la carte d'après — un raccourci du tiroir de statistiques — s'y réfèrent.
+let reductionAnnee=null;
+const croiser=jeux=>jeux.length?jeux.reduce((a,b)=>new Set([...a].filter(c=>b.has(c)))):null;
+const reduire=()=>{
+  reductionAnnee=state.annee!=null?colonnesDeLEdition(state.annee):null;
+  const jeux=[];
+  if(reductionAnnee) jeux.push(reductionAnnee);
+  if(state.isole){ const s=colonnesIsolees(); if(s) jeux.push(s); }
+  return croiser(jeux);
+};
+// Les colonnes que **laisserait** un isolement, sans toucher à l'état. Deux réductions qui se
+// cumulent peuvent ne rien laisser — mesuré, plus de la moitié des couples joueur × édition —
+// et c'est ce qui permet de le dire avant le clic, en grisant le contrôle, plutôt que de
+// laisser un bouton qui ne fait rien ou de vider la carte.
+function colonnesSi({annee=state.annee,isole=state.isole}={}){
+  const ys=ALL_YEARS.filter(y=>y>=state.yearFrom&&y<=state.yearTo&&(annee==null||Math.abs(y-annee)<=1));
+  const jeux=[];
+  if(annee!=null) jeux.push(colonnesDeLEdition(annee));
+  if(isole){ const s=colonnesIsolees(); if(s) jeux.push(s); }
+  const r=croiser(jeux);
+  return teams.filter(t=>visible(t)&&(!r||r.has(t.code))&&ys.some(y=>t.years[y]));
+}
+// Les rangées affichées : la période, puis l'édition isolée et ses deux voisines. L'isolement
+// **ne réécrit pas** la période — les deux réductions restent lisibles séparément, et sortir de
+// l'isolement rend la période telle qu'elle était. Une édition de bout — 2011, 2026 — n'a
+// qu'une voisine, et l'intersection avec la période s'en charge sans cas particulier.
+const majYears=()=>{
+  YEARS=ALL_YEARS.filter(y=>y>=state.yearFrom&&y<=state.yearTo);
+  // Resserrer la période sur une édition isolée lui retirerait sa rangée : l'isolement tombe
+  // alors avec elle, plutôt que de laisser la carte sans aucune rangée à dessiner.
+  if(state.annee!=null&&!YEARS.includes(state.annee)) state.annee=null;
+  if(state.annee!=null) YEARS=YEARS.filter(y=>Math.abs(y-state.annee)<=1);
+};
+const colonne=t=>visible(t)&&(!reduction||reduction.has(t.code))&&YEARS.some(y=>t.years[y]);
 // Pourquoi l'équipe n'a **pas** de colonne à cet instant, ou `null` si elle en a une : la
 // négation de `colonne()`, détaillée cause par cause. Un raccourci de lecture qui viserait une
 // colonne absente doit dire laquelle des quatre l'écarte, et le vocabulaire est celui de la
 // liste à cocher du tiroir — les deux refus énoncent la même règle, à deux endroits.
-const sansColonne=t=>
-  !YEARS.some(y=>t.years[y]) ? "aucune édition dans la période affichée"
-  : APPS.get(t.code)<state.minApps ? `${APPS.get(t.code)} apparition${APPS.get(t.code)>1?"s":""}, sous le seuil de présence`
-  : !state.regions.has(t.region) ? `région ${t.region} décochée`
-  : state.hiddenTeams.has(t.code) ? "colonne masquée"
-  : null;
+// `ignorerSelection` : juger sur la carte **d'après** le geste. Un raccourci de lecture change
+// la sélection, donc sort de l'isolement de sélection — une équipe que celui-ci écartait
+// redevient atteignable, et la refuser serait refuser pour une raison qui n'existera plus.
+const sansColonne=(t,ignorerSelection=false)=>{
+  const red=ignorerSelection?reductionAnnee:reduction;
+  if(!YEARS.some(y=>t.years[y])) return "aucune édition dans la période affichée";
+  if(APPS.get(t.code)<state.minApps) return `${APPS.get(t.code)} apparition${APPS.get(t.code)>1?"s":""}, sous le seuil de présence`;
+  if(!state.regions.has(t.region)) return `région ${t.region} décochée`;
+  if(state.hiddenTeams.has(t.code)) return "colonne masquée";
+  if(red&&!red.has(t.code)) return ignorerSelection?`aucune rangée sur l'édition ${state.annee} isolée ni ses voisines`:"hors de l'isolement en cours";
+  return null;
+};
 const view={x:0,y:0,k:1};
 let nodesByPlayer=new Map(), hasOther=false, W=0, cols=[];
 
 // ---------- rendu de la carte ----------
 function render(){
-  YEARS=ALL_YEARS.filter(y=>y>=state.yearFrom&&y<=state.yearTo);
+  // Une sélection d'équipe que les filtres viennent d'écarter tombe, et l'isolement qui la
+  // suivait tombe avec elle. **Avant** de calculer la réduction : sinon la carte se dessinerait
+  // une fois sur une sélection qui n'existe plus, et l'isolement garderait ses colonnes.
+  if(state.pinnedTeam){
+    const t=byCode.get(state.pinnedTeam);
+    if(!t||!visible(t)||!ALL_YEARS.some(y=>y>=state.yearFrom&&y<=state.yearTo&&t.years[y])) state.pinnedTeam=null;
+  }
+  if(state.isole&&!state.pinned&&!state.pinnedTeam) state.isole=false;
+  majYears(); reduction=reduire();
   H=YEARS.length*ROWH+20;
-  const inRange=a=>a.year>=state.yearFrom&&a.year<=state.yearTo;
+  const vues=new Set(YEARS);
+  const inRange=a=>vues.has(a.year);
+  // Sur une édition isolée, les deux rangées voisines ne montrent que les **arrivées et les
+  // sorties** : les joueurs qui sont aussi sur l'édition. Le reste de leur roster n'apprend
+  // rien sur le mouvement qu'on est venu lire, et le ferait disparaître dans la masse.
+  const surEdition=state.annee==null?null:new Set(apps.filter(a=>a.year===state.annee).map(a=>a.id));
+  const garde=a=>!surEdition||a.year===state.annee||surEdition.has(a.id);
 
   // « Autres équipes » n'accueille que ce qui est masqué — région ou équipe. Une équipe
   // écartée par la période ne doit pas y tomber : les deux tests restent séparés.
@@ -298,7 +397,7 @@ function render(){
   // colonne visible **et** dans une équipe masquée, sur la plage affichée. Sans ce test, masquer
   // la LMS sur 2020–2026 ouvrirait une colonne vide, la région n'y ayant aucune rangée.
   hasOther=[...players.values()].some(p=>{
-    const dans=p.apps.filter(inRange);
+    const dans=p.apps.filter(a=>inRange(a)&&garde(a));
     return dans.some(a=>visSet.has(a.team))&&dans.some(a=>!visible(a.team));
   });
   const colX=new Map(); let x=0;
@@ -385,7 +484,7 @@ function render(){
   nodesByPlayer=new Map();
   const otherByYear={};
   players.forEach(p=>{
-    const dans=retenues(p.apps.filter(inRange));
+    const dans=retenues(p.apps.filter(a=>inRange(a)&&garde(a)));
     if(!dans.some(a=>colX.has(a.team))) return;
     nodesByPlayer.set(p.id,dans.map(a=>{
       if(colX.has(a.team)){
@@ -450,7 +549,7 @@ function render(){
   //  - le **détail** (`deep`) passe par les étapes, et ne paraît qu'au focus, avec elles.
   //
   // Un segment qui ne touche aucune étape est commun aux deux : il n'est tracé qu'une fois.
-  const segment=(A,B,cls,cle)=>{
+  const segment=(A,B,cls)=>{
     const x1=A.lane,y1=A.y+CH/2,x2=B.lane,y2=B.y+CH/2,b0=A.bottom,t1=yTop(B.a.year)-6;
     const ax=attache(A), bx=attache(B);
     // Changement de poste : le segment porte un dégradé qui bascule net en son milieu, au
@@ -464,7 +563,7 @@ function render(){
     if(A.a.year===B.a.year){
       // Un segment `duo` est une diagonale courte, et on a hésité à lui donner un autre
       // traitement : non, une règle et une seule. Le milieu du tracé est le milieu du tracé.
-      paths+=`<path class="l${teinte} move duo${cls}"${peint} data-p="${A.a.id}" data-k="${cle}" data-r="${B.a.role}" d="M${ax},${y1} L${bx},${y2}"/>`;
+      paths+=`<path class="l${teinte} move duo${cls}"${peint} data-p="${A.a.id}" data-de="${A.a.id}:${A.a.year}" data-vers="${B.a.id}:${B.a.year}" data-r="${B.a.role}" d="M${ax},${y1} L${bx},${y2}"/>`;
       return;
     }
     const creux=VOIDS.get(A.a.id);
@@ -483,14 +582,14 @@ function render(){
     // que commence alors la grande courbe inter-années, et elle ne peut pas descendre sous le
     // point d'arrivée de celle-ci.
     const bd=Math.min(Math.max(b0,yd),te), su=(B.y-yu)*.6, m=(te-bd)*.55;
-    paths+=`<path class="l${teinte} ${A.a.team===B.a.team?"same":"move"}${vide?" void":""}${cls}"${peint} data-p="${A.a.id}" data-k="${cle}" data-r="${B.a.role}" d="M${ax},${y1} L${ax},${y0} C${ax},${y0+sd} ${x1},${yd-sd} ${x1},${yd} L${x1},${bd} C${x1},${bd+m} ${x2},${te-m} ${x2},${te} L${x2},${yu} C${x2},${yu+su} ${bx},${B.y-su} ${bx},${B.y} L${bx},${y2}"/>`;
+    paths+=`<path class="l${teinte} ${A.a.team===B.a.team?"same":"move"}${vide?" void":""}${cls}"${peint} data-p="${A.a.id}" data-de="${A.a.id}:${A.a.year}" data-vers="${B.a.id}:${B.a.year}" data-r="${B.a.role}" d="M${ax},${y1} L${ax},${y0} C${ax},${y0+sd} ${x1},${yd-sd} ${x1},${yd} L${x1},${bd} C${x1},${bd+m} ${x2},${te-m} ${x2},${te} L${x2},${yu} C${x2},${yu+su} ${bx},${B.y-su} ${bx},${B.y} L${bx},${y2}"/>`;
   };
   nodesByPlayer.forEach((ns,id)=>{
-    for(let k=1;k<ns.length;k++) segment(ns[k-1],ns[k],(ns[k-1].a.step||ns[k].a.step)?" deep":"",`${id}:${k}`);
+    for(let k=1;k<ns.length;k++) segment(ns[k-1],ns[k],(ns[k-1].a.step||ns[k].a.step)?" deep":"");
     // Raccourci : seulement là où le détail s'en écarte, c'est-à-dire par-dessus une étape.
     const mondiaux=ns.map((n,i)=>({n,i})).filter(x=>!x.n.a.step);
     for(let j=1;j<mondiaux.length;j++){
-      if(mondiaux[j].i-mondiaux[j-1].i>1) segment(mondiaux[j-1].n,mondiaux[j].n," base",`${id}:raccourci:${j}`);
+      if(mondiaux[j].i-mondiaux[j-1].i>1) segment(mondiaux[j-1].n,mondiaux[j].n," base");
     }
     // Amorce et terminaison du fil. Les deux bouts ne sont posés que si la chip dessinée
     // **est** la première ou la dernière apparition du joueur : la plage d'années comme les
@@ -501,16 +600,22 @@ function render(){
     // recense au-delà est une autre chose, et c'est `seen` qui la porte, dans le panneau de
     // détail : 567 joueurs ont une partie après leur dernier Worlds.
     const suite=players.get(id).apps;
-    // La barre se posait à 9 px du bord de la chip, c'est-à-dire **dans la rangée du poste
-    // voisin** : au focus, où les autres cases tombent à .28 d'opacité, elle se lisait comme
-    // la marque du joueur du dessus. Elle se pose désormais sur la jonction entre deux
-    // éditions, dans la gouttière où aucune case ne vit — exactement les deux points où les
-    // segments attachent leur trajet vertical, `yTop(année)-6` en haut et `n.bottom` en bas.
-    // La hampe s'allonge pour l'y rejoindre et croise les rangées intermédiaires de la
-    // colonne, comme le fait déjà toute ligne : les chips sont peintes par-dessus le SVG.
+    // La barre se pose sur la **ligne de séparation entre deux éditions** — le trait d'année
+    // lui-même — et la hampe court jusqu'à elle depuis la case. Elle a d'abord été posée à
+    // 9 px du bord de la chip, donc dans la rangée du poste voisin, où elle se lisait comme la
+    // marque du joueur du dessus ; puis au bord du bloc de cinq rangées, ce qui la laissait
+    // encore flotter dans la gouttière. Sur la ligne, elle dit sans ambiguïté possible que le
+    // fil commence ou s'arrête **entre ces deux années-là**.
+    //
+    // La hampe croise les rangées intermédiaires de la colonne, comme le fait déjà toute
+    // ligne : les chips sont peintes par-dessus le SVG. Au-dessus de la première rangée
+    // affichée il n'y a pas de ligne — on s'arrête alors au bord du monde, comme le fait déjà
+    // le fond de colonne.
     const cap=(n,fin)=>{
-      const x=attache(n), y=fin?n.y+CH:n.y, b=fin?n.bottom:yTop(n.a.year)-6;
-      paths+=`<path class="l cap ${n.a.role}" data-p="${id}" data-r="${n.a.role}" d="M${x},${y} L${x},${b} M${x-CAP/2},${b} L${x+CAP/2},${b}"/>`;
+      const x=attache(n), y=fin?n.y+CH:n.y;
+      const ligne=fin?yTop(n.a.year)+ROWH-GOUTTIERE:Math.max(0,yTop(n.a.year)-GOUTTIERE);
+      const b=ligne+(fin?-CAP_MARGE:CAP_MARGE);
+      paths+=`<path class="l cap ${n.a.role}" data-p="${id}" data-c="${n.a.id}:${n.a.year}" data-r="${n.a.role}" d="M${x},${y} L${x},${b} M${x-CAP/2},${b} L${x+CAP/2},${b}"/>`;
     };
     if(ns[0].a===suite[0]) cap(ns[0],false);
     if(ns.at(-1).a===suite.at(-1)) cap(ns.at(-1),true);
@@ -547,6 +652,14 @@ function render(){
     const mark=n.other?(tag?`<span class="t">${tag}</span>`:""):(!a.step&&(a.alt||a.doubt)?`<span class="q">${a.doubt?"?":"*"}</span>`:"");
     html+=`<div class="chip${demi?" half":""}${droite?" right":""}${a.step?" step":""}" data-p="${a.id}" data-c="${a.id}:${a.year}" data-r="${a.role}" data-w="${n.w}"${a.step&&!n.other?` data-cell="${a.team.code}:${a.year}"`:""}${n.voisin?` data-voisin="${n.voisin}"`:""} style="left:${n.x}px;top:${n.y}px;width:${n.w}px;--s:${Math.min(a.sen-1,5)*11}%" title="${tip}"><span class="r ${a.role}"></span>${nat?`<span class="nat${isImport(a)?" imp":""}">${nat}</span>`:""}<span class="n">${a.shown}</span>${a.sen>1?`<span class="sen">${a.sen}e</span>`:""}${mark}</div>`;
   }));
+  // Les deux rangées voisines de l'édition isolée passent sous un voile, écrit **après** les
+  // cases pour les recouvrir. Un voile plutôt qu'une opacité sur chaque case : l'estompe du
+  // focus se joue déjà sur l'opacité des cases, et les deux se seraient disputé la même
+  // propriété. Il ne capture rien, donc les cases qu'il recouvre restent survolables.
+  if(state.annee!=null) for(const y of YEARS){
+    if(y===state.annee) continue;
+    html+=`<div class="voile" style="top:${yTop(y)-GOUTTIERE}px;height:${ROWH}px;width:${W}px"></div>`;
+  }
   world.style.width=W+"px"; world.style.height=H+"px";
   world.innerHTML=html;
 
@@ -560,8 +673,30 @@ function render(){
     // distinctes, sans quoi les deux gestes se marcheraient dessus. La liste à cocher du
     // tiroir reste la source de vérité — ce bouton n'en est qu'un raccourci.
     :`<div class="th" data-team="${c.t.code}" data-x="${c.x}" data-w="${c.w}" title="${c.t.name}"><span class="rg"><b style="background:${regionVar(c.t.region)}"></b>${c.t.region}</span><span class="tn">${shortName(c.t)}</span><button type="button" class="hide" data-hide="${c.t.code}" aria-label="Masquer ${shortName(c.t)}" title="Masquer cette colonne">×</button></div>`).join("");
-  rail.innerHTML=YEARS.map(y=>`<div class="ylab" data-y="${yTop(y)+2.5*STEP}">${y}${y===ONGOING_YEAR?"<small>EN COURS</small>":""}</div>`).join("");
-  if(state.pinnedTeam&&!vis.some(t=>t.code===state.pinnedTeam)) state.pinnedTeam=null;
+  // L'axe des années devient cliquable : une année isole son édition. Cliquer une **voisine**
+  // y déplace l'isolement — on avance ainsi d'édition en édition —, cliquer l'édition isolée
+  // elle-même en sort. C'est le seul chemin de retour depuis l'axe, puisqu'une fois isolé il ne
+  // porte plus que trois années.
+  rail.innerHTML=YEARS.map(y=>{
+    const on=y===state.annee;
+    // Une année qui ne laisserait aucune colonne avec l'isolement de sélection en cours est
+    // grisée et inerte, la raison dans son `title` : même règle que les noms d'équipe du
+    // tiroir de statistiques — on refuse, on dit pourquoi, et on ne défait pas l'autre
+    // isolement en douce. Le test ne coûte que quand une sélection est isolée.
+    const mort=!on&&state.isole&&!colonnesSi({annee:y}).length;
+    const aide=on?"Édition isolée · cliquer pour revenir à la carte entière"
+      :mort?`La sélection isolée n'a aucune colonne sur ${y} ni ses voisines`
+      :state.annee!=null?`Déplacer l'isolement sur ${y}`
+      :`N'afficher que les équipes de ${y}, et celles d'où viennent ses joueurs et où ils vont`;
+    return `<button type="button" class="ylab${on?" iso":""}" data-y="${yTop(y)+2.5*STEP}" data-year="${y}" aria-pressed="${on}" aria-disabled="${mort}" title="${aide}">${y}${y===ONGOING_YEAR?"<small>EN COURS</small>":""}</button>`;
+  }).join("");
+  // Reste le cas que le contrôle d'entrée ne voit pas : l'édition isolée a retiré sa colonne
+  // à l'équipe épinglée. La sélection tombe, et si un isolement la suivait, la réduction qu'on
+  // vient d'appliquer n'est plus la bonne — on refait la page, une fois et pas deux.
+  if(state.pinnedTeam&&!vis.some(t=>t.code===state.pinnedTeam)){
+    state.pinnedTeam=null;
+    if(state.isole){ state.isole=false; return void render(); }
+  }
   if(typeof majRegionPills==="function") majRegionPills();
   majStatsTeams();
   renderTeamList();
@@ -675,6 +810,53 @@ vp.addEventListener("keydown",e=>{
 addEventListener("resize",()=>applyView());
 
 // ---------- sélection ----------
+// ---------- isolement : deux réductions, deux gestes ----------
+// Jusqu'ici la sélection ne passait que par `apply()` : on restylait des éléments déjà en
+// place, sans jamais remettre la carte en page. L'isolement casse cette séparation, parce que
+// « ne garder que les colonnes qui comptent » est une décision de mise en page, donc de
+// `render()`. C'est le seul endroit du fichier où une sélection déclenche un rendu.
+//
+// La règle qui borne le dégât : **le mode d'avant est conservé tel quel.** Un survol et un
+// clic simple surlignent, et rien ne bouge. L'isolement est un geste distinct, visible, et il
+// se défait d'un geste évident.
+//
+// Deux réductions qui se cumulent peuvent ne rien laisser — un joueur isolé qui n'a joué
+// aucune édition de l'année isolée. On refuse alors le **second** geste au lieu de vider la
+// carte : c'est déjà la règle de `setHidden()`, qui ne masque jamais la dernière colonne.
+function essayer(modif){
+  if(!colonnesSi(modif).length) return false;
+  Object.assign(state,modif);
+  return true;
+}
+// Recentrer après coup n'est pas une finition : les colonnes se sont resserrées, donc tout a
+// bougé, et la chip qu'on vient de cliquer peut être à des milliers de pixels de là où la main
+// l'a laissée. On revient sur la sélection — et au retour aussi, plutôt que sur la vue d'avant
+// l'isolement : si la sélection a changé entre-temps, y revenir serait faux.
+function recadrer(){
+  if(state.pinned&&nodesByPlayer.has(state.pinned)) return void cadrerJoueur(state.pinned);
+  if(state.pinnedTeam){ const c=cols.find(c=>c.t&&c.t.code===state.pinnedTeam); if(c) return void cadrerColonne(c.t,c); }
+  if(state.annee!=null) return void centerOn(W/2,yTop(state.annee)+2.5*STEP,Math.min(1,Math.max(.2,(vp.clientWidth-80)/W)));
+  fitAll();
+}
+function isolerAnnee(y){
+  if(!essayer({annee:y})) return false;
+  render(); recadrer(); return true;
+}
+function basculerIsolement(){
+  // Le bouton est une bascule, et il **garde la sélection** en sortant : revoir la carte
+  // entière sans perdre le joueur qu'on lisait n'est pas la même chose que tout relâcher.
+  // C'est le `×` qui relâche, et c'est tout l'intérêt de les séparer.
+  if(!essayer({isole:!state.isole})) return false;
+  render(); recadrer(); return true;
+}
+// Tout relâcher d'un geste. Le clic dans le vide ne suffit plus une fois isolé : les colonnes
+// sont resserrées et le vide a presque disparu de l'écran.
+function toutMontrer(){
+  if(!state.isole&&state.annee==null) return false;
+  state.isole=false; state.annee=null;
+  render(); recadrer(); return true;
+}
+
 // La case est la seule prise sur un joueur, et le fil n'en est pas une. L'essai a été fait :
 // le fil change de tracé au focus — le raccourci cède la place au détail qui passe par les
 // étapes —, donc le survoler le fait disparaître de sous le curseur, le focus retombe, le
@@ -685,30 +867,54 @@ function tap(target){
   const c=target.closest&&target.closest(".chip");
   if(c){ state.pinnedTeam=null; state.pinned=c.dataset.p; state.hover=null; }
   else { state.pinned=null; state.pinnedTeam=null; state.hover=null; }
-  apply();
+  apresSelection();
 }
-world.addEventListener("mouseover",e=>{const c=e.target.closest(".chip"); if(c&&!drag&&!state.pinned&&!state.pinnedTeam&&matchMedia("(hover:hover)").matches){state.hover=c.dataset.p;apply();}});
+// Pendant un **isolement d'équipe**, survoler un joueur descend d'un cran : la disposition des
+// colonnes reste celle de l'équipe, et seule la ligne du joueur s'allume dedans. C'est un
+// sous-contexte, pas une sélection — il tient au curseur et se défait en le retirant, sans
+// jamais remettre la carte en page. Le clic, lui, garde son sens : il reporte la sélection et
+// l'isolement sur le joueur, et là les colonnes bougent.
+//
+// Hors isolement la règle d'avant tient, et c'est délibéré : une équipe épinglée ignore le
+// survol, sans quoi promener la souris sur 120 colonnes ferait battre la surbrillance en
+// permanence. Isolé, il en reste une poignée, et le geste est maîtrisable.
+const survolPossible=()=>!state.pinned&&(!state.pinnedTeam||state.isole);
+world.addEventListener("mouseover",e=>{const c=e.target.closest(".chip"); if(c&&!drag&&survolPossible()&&matchMedia("(hover:hover)").matches){state.hover=c.dataset.p;apply();}});
 world.addEventListener("mouseout",e=>{if(e.target.closest(".chip")&&state.hover){state.hover=null;apply();}});
 hdr.addEventListener("click",e=>{
   const x=e.target.closest(".hide");
   if(x) return void setHidden([x.dataset.hide],true);
   const th=e.target.closest(".th[data-team]"); if(!th) return;
-  state.pinned=null; state.hover=null; state.pinnedTeam=state.pinnedTeam===th.dataset.team?null:th.dataset.team; apply();
+  state.pinned=null; state.hover=null; state.pinnedTeam=state.pinnedTeam===th.dataset.team?null:th.dataset.team; apresSelection();
 });
-$("selClose").onclick=()=>{state.pinned=null; state.pinnedTeam=null; state.hover=null; $("q").value=""; apply();};
+// Le `×` relâche tout, isolement de la sélection compris. L'édition isolée, elle, a son propre
+// contrôle — l'axe des années — et ne part pas avec la sélection.
+$("selClose").onclick=()=>{state.pinned=null; state.pinnedTeam=null; state.hover=null; $("q").value=""; apresSelection();};
+$("selIso").onclick=basculerIsolement;
+// `aria-disabled` grise sans bloquer le clic : le refus se redit donc ici, pour la souris
+// comme pour le clavier.
+rail.addEventListener("click",e=>{
+  const l=e.target.closest(".ylab[data-year]"); if(!l) return;
+  isolerAnnee(state.annee===+l.dataset.year?null:+l.dataset.year);
+});
 
+// Les **cases** que le mode « arrivées et départs » garde : celles de l'équipe, plus le club
+// juste avant l'arrivée et le club juste après le départ. Le mode ne liste plus ses segments :
+// un segment est gardé si ses deux cases le sont, et c'est le seul moyen d'être d'accord avec
+// la carte. Les lister par index de carrière les faisait rater dès qu'une apparition était
+// écartée du rendu — par la période, par `retenues`, ou par un isolement — et Maple arrivait
+// chez PSG en 2021 sans le moindre fil, alors que c'est de là qu'il rejoint TSM.
 function lineage(code){
-  const paths=new Set(), chips=new Set(), from={}, to={}; let debut=0;
+  const chips=new Set(), from={}, to={}; let debut=0;
   players.forEach(p=>p.apps.forEach((a,k)=>{
     if(a.team.code!==code) return;
     chips.add(`${p.id}:${a.year}`);
     const prev=p.apps[k-1], next=p.apps[k+1];
     if(!prev) debut++;
-    else if(prev.team.code!==code){ paths.add(`${p.id}:${k}`); chips.add(`${p.id}:${prev.year}`); (from[shortName(prev.team)]??=[]).push(p.name); }
-    if(next&&next.team.code!==code){ paths.add(`${p.id}:${k+1}`); chips.add(`${p.id}:${next.year}`); (to[shortName(next.team)]??=[]).push(p.name); }
-    if(next&&next.team.code===code) paths.add(`${p.id}:${k+1}`);
+    else if(prev.team.code!==code){ chips.add(`${p.id}:${prev.year}`); (from[shortName(prev.team)]??=[]).push(p.name); }
+    if(next&&next.team.code!==code){ chips.add(`${p.id}:${next.year}`); (to[shortName(next.team)]??=[]).push(p.name); }
   }));
-  return {paths,chips,from,to,debut};
+  return {chips,from,to,debut};
 }
 const fmtFlow=o=>Object.entries(o).sort((a,b)=>b[1].length-a[1].length).map(([t,l])=>`<span title="${l.join(", ")}">${t} <span class="hint">×${l.length}</span></span>`).join(", ")||`<span class="hint">aucun</span>`;
 
@@ -725,7 +931,19 @@ function apply(){
   world.querySelectorAll("[data-p]").forEach(el=>{
     const isPath=el.tagName==="path";
     if(!isPath&&el.dataset.c) parCase.set(el.dataset.c,el);
-    el.classList.toggle("hl",lin?(isPath?lin.paths.has(el.dataset.k):lin.chips.has(el.dataset.c)):(!!ids&&ids.has(el.dataset.p)));
+    // Un bout de fil se surligne **avec sa case**, et jamais seul : il n'a pas de `data-k`,
+    // mais il porte le `data-c` de la case à laquelle il est accroché. Le surligner par joueur
+    // laissait des marques orphelines en « arrivées et départs », là où ce mode ne garde que
+    // certaines cases du joueur — Zven en portait une à ORI 2015, sa case étant éteinte.
+    // Tout se surligne par les **cases** : un segment quand ses deux extrémités le sont, un
+    // bout de fil quand la case à laquelle il tient l'est. Rien ne peut donc rester allumé
+    // sans de quoi s'accrocher, et l'ensemble reste d'accord avec ce que la carte dessine.
+    const bout=isPath&&el.classList.contains("cap");
+    el.classList.toggle("hl",lin
+      ?(isPath&&!bout
+        ?lin.chips.has(el.dataset.de)&&lin.chips.has(el.dataset.vers)
+        :lin.chips.has(el.dataset.c))
+      :(!!ids&&ids.has(el.dataset.p)));
     el.classList.toggle(isPath?"roff":"off",!state.roles.has(el.dataset.r));
   });
   // Trois états d'en-tête au clic sur une équipe : épinglée, en lien, sans rapport. L'ensemble
@@ -798,7 +1016,25 @@ function apply(){
     out.innerHTML=`<b class="nm">${t.name}</b><span class="hint">${n} joueurs titulaires aux Worlds depuis ${ALL_YEARS[0]}, carrières complètes surlignées.</span>`;
   }
   sel.hidden=!(show||pinnedTeam);
-  $("selClose").hidden=!!hover&&!pinned;
+  // Le × se cache sur un simple survol, qui n'a rien à relâcher — mais pas quand une équipe
+  // est épinglée dessous : le survol n'est alors qu'un sous-contexte, et le contrôle qui
+  // relâche la sélection ne doit pas s'évanouir sous le curseur.
+  $("selClose").hidden=!!hover&&!pinned&&!pinnedTeam;
+  // Le bouton n'a de sens que sur une sélection **posée** : isoler au survol réorganiserait la
+  // carte en passant la souris. C'est une bascule, donc `aria-pressed` et non une action.
+  const iso=$("selIso"), pose=!!pinned||!!pinnedTeam;
+  iso.hidden=!pose;
+  sel.classList.toggle("avec-iso",pose);
+  iso.setAttribute("aria-pressed",String(state.isole));
+  iso.textContent=state.isole?"Tout afficher":"Isoler";
+  // Grisé quand l'isolement ne laisserait rien — 35 joueurs sur 749 n'ont aucune colonne dans
+  // la période ouverte par défaut, et l'édition isolée resserre encore. Dire pourquoi vaut
+  // mieux qu'un bouton qui ne fait rien.
+  const mort=pose&&!state.isole&&!colonnesSi({isole:true}).length;
+  iso.setAttribute("aria-disabled",String(mort));
+  iso.title=state.isole?"Revoir toutes les colonnes, sans perdre la sélection"
+    :mort?(state.annee!=null?`Aucune colonne de la sélection sur l'édition ${state.annee} isolée ni ses voisines`:"Aucune colonne de la sélection dans la période affichée")
+    :"N'afficher que les colonnes par lesquelles la sélection est passée";
   renderLegend(!!lin);
 }
 
@@ -809,22 +1045,57 @@ function renderLegend(lin){
   L.push(`<span><span class="lg-res">Quarts · Demi · Finale</span> parcours de l'équipe · <b style="color:var(--bot)">★ Vainqueur</b></span>`);
   // Dire « premier » et « dernier Worlds », et pas « début » ni « fin de carrière » : la
   // carte ne voit que les éditions, et un joueur encore actif n'a peut-être pas requalifié.
-  L.push(`<span><svg width="30" height="12"><line x1="10" y1="2" x2="20" y2="2" stroke="currentColor" stroke-width="2"/><line x1="15" y1="2" x2="15" y2="10" stroke="currentColor" stroke-width="2"/></svg> au survol, les deux bouts du fil : premier et dernier Worlds du joueur</span>`);
+  L.push(`<span><svg width="30" height="12"><line x1="10" y1="2" x2="20" y2="2" stroke="currentColor" stroke-width="2"/><line x1="15" y1="2" x2="15" y2="10" stroke="currentColor" stroke-width="2"/></svg> au survol d'un joueur ou au clic sur une équipe, les deux bouts du fil, posés sur la ligne entre deux éditions : premier et dernier Worlds du joueur</span>`);
   if(state.showNat) L.push(`<span><span class="lg-nat">KR</span> nationalité · <span class="lg-nat" style="color:var(--accent);border-color:var(--accent)">KR</span> joueur importé</span>`);
   if(state.showSen) L.push(`<span><span class="senbar"></span> 1er → 6e Worlds avec l'équipe</span>`);
   L.push(`<span><span class="lg-step">Club</span> au survol d'un joueur ou au clic sur une équipe : où il était les années sans Worlds, et le fil passe par là</span>`);
   L.push(`<span><svg width="30" height="10"><line x1="2" y1="5" x2="28" y2="5" stroke="currentColor" stroke-width="1.8" stroke-dasharray="3 4"/></svg> au survol, fil en pointillé : aucune partie professionnelle recensée sur l'intervalle</span>`);
   if(hasOther) L.push(`<span>Autres équipes : joueurs des régions et des équipes masquées, et les clubs traversés qui n'ont pas de colonne</span>`);
   if(lin) L.push(`<span>Arrivées et départs : club d'avant et club d'après</span>`);
+  if(state.annee!=null) L.push(`<span><b>Édition ${state.annee} isolée</b> : ses équipes, plus celles d'où viennent ses joueurs et où ils vont. Les deux rangées voisines sont estompées et ne montrent que ces arrivées et ces sorties. Cliquer une voisine y déplace l'isolement, cliquer ${state.annee} en sort.</span>`);
+  if(state.isole) L.push(`<span><b>Sélection isolée</b> : seules les colonnes par lesquelles elle est passée. « Tout afficher » revient à la carte entière en gardant la sélection ; le × la relâche ; Échap fait les deux. Sélectionner quelqu'un d'autre reporte l'isolement sur lui.${state.pinnedTeam?" Survoler un joueur n'allume que sa ligne, sans toucher aux colonnes.":""}</span>`);
   L.push(`<span>Glisser pour se déplacer · molette ou pincer pour zoomer</span>`);
   $("legendBody").innerHTML=L.join("");
 }
 
 // ---------- recherche ----------
+// Cadrages, extraits de `selectPlayer` et `selectTeam` parce que l'isolement doit recadrer
+// après un rendu, sans repasser par la sélection qui n'a pas changé.
+function cadrerJoueur(id){
+  const ns=nodesByPlayer.get(id);
+  if(!ns?.length) return;
+  const n=ns[0], bas=ns.at(-1).y;
+  centerOn(n.x+chipW/2,n.y+(bas-n.y)/2,Math.min(1,Math.max(.45,vp.clientHeight/((bas-n.y)+300))));
+}
+function cadrerColonne(t,c){
+  // Cadrer sur les seules éditions que l'équipe a jouées dans la période affichée : une
+  // colonne de deux rangées sur seize se centrerait sinon sur du vide.
+  const ys=YEARS.filter(y=>t.years[y]);
+  if(!ys.length) return;
+  const haut=yTop(ys[0]), bas=yTop(ys.at(-1))+5*STEP;
+  centerOn(c.x+c.w/2,(haut+bas)/2,Math.min(1,Math.max(.45,vp.clientHeight/((bas-haut)+300))));
+}
+// Suite d'un changement de sélection, et aussi de mode de clic : les deux changent l'ensemble
+// des colonnes que garde l'isolement, sans que l'isolement lui-même soit remis en cause. Une
+// sélection nouvelle **le reporte sur elle** plutôt que d'en sortir — on reste dans le même
+// geste de lecture, sur quelqu'un d'autre.
+//
+// Tant que rien n'est isolé, c'est `apply()` et rien d'autre, le comportement d'avant intact.
+// Isolé, il faut remettre en page, mais seulement si cet ensemble a réellement changé : sinon
+// on paierait un rendu complet à chaque survol.
+function apresSelection(){
+  if(!state.pinned&&!state.pinnedTeam) state.isole=false;
+  const avant=reduction;
+  majYears(); reduction=reduire();
+  if(state.isole&&!teams.some(colonne)){ state.isole=false; majYears(); reduction=reduire(); }
+  const cle=s=>s?[...s].sort().join(","):"";
+  if(cle(avant)===cle(reduction)) return void apply();
+  render(); recadrer();
+}
 function selectPlayer(id){
-  state.pinned=id; state.pinnedTeam=null; state.hover=null; apply();
-  const n=nodesByPlayer.get(id)?.[0];
-  if(n) centerOn(n.x+chipW/2,n.y+(nodesByPlayer.get(id).at(-1).y-n.y)/2,Math.min(1,Math.max(.45,vp.clientHeight/((nodesByPlayer.get(id).at(-1).y-n.y)+300))));
+  state.pinned=id; state.pinnedTeam=null; state.hover=null;
+  apresSelection();
+  cadrerJoueur(id);
 }
 // Le pendant de `selectPlayer` pour une équipe : poser la sélection, puis recentrer sur la
 // colonne. Le mode de clic — « carrières complètes » ou « arrivées et départs » — reste celui
@@ -837,15 +1108,11 @@ function selectPlayer(id){
 // le nettoyage de `state.pinnedTeam` par `render()` quand la colonne disparaît.
 function selectTeam(code){
   const t=byCode.get(code);
-  if(!t||sansColonne(t)) return false;
-  state.pinned=null; state.hover=null; state.pinnedTeam=code; apply();
+  if(!t||sansColonne(t,true)) return false;
+  state.pinned=null; state.hover=null; state.pinnedTeam=code;
+  apresSelection();
   const c=cols.find(c=>c.t===t);
-  if(c){
-    // Cadrer sur les seules éditions que l'équipe a jouées dans la période affichée : une
-    // colonne de deux rangées sur seize se centrerait sinon sur du vide.
-    const ys=YEARS.filter(y=>t.years[y]), haut=yTop(ys[0]), bas=yTop(ys.at(-1))+5*STEP;
-    centerOn(c.x+c.w/2,(haut+bas)/2,Math.min(1,Math.max(.45,vp.clientHeight/((bas-haut)+300))));
-  }
+  if(c) cadrerColonne(t,c);
   return true;
 }
 // Les noms d'équipe de « Rosters inchangés » sont des raccourcis dont l'état dépend des
@@ -853,7 +1120,7 @@ function selectTeam(code){
 // région, au lieu d'être figé à la construction.
 function majStatsTeams(){
   document.querySelectorAll("#stats button[data-team]").forEach(b=>{
-    const t=byCode.get(b.dataset.team), pourquoi=t?sansColonne(t):"équipe absente du jeu de données";
+    const t=byCode.get(b.dataset.team), pourquoi=t?sansColonne(t,true):"équipe absente du jeu de données";
     // `aria-disabled` plutôt que l'attribut `disabled` : un bouton désactivé ne reçoit aucun
     // événement de souris dans plusieurs navigateurs, et n'afficherait donc pas le `title` qui
     // porte la raison du refus — tout l'intérêt du grisé. `selectTeam` refuse de son côté.
@@ -888,7 +1155,15 @@ function setDrawer(id,open){
 $("openFilters").onclick=()=>{const o=!$("filters").classList.contains("open"); if(o&&innerWidth<900) setDrawer("statsDrawer",false); setDrawer("filters",o);};
 $("openStats").onclick=()=>{const o=!$("statsDrawer").classList.contains("open"); if(o&&innerWidth<900) setDrawer("filters",false); setDrawer("statsDrawer",o);};
 document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>setDrawer(b.dataset.close,false));
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){ if(!$("modeTip").hidden) closeTip(); else {setDrawer("filters",false); setDrawer("statsDrawer",false);} }});
+// Échap, en tête de la cascade existante : l'isolement d'abord, puis l'infobulle, puis les
+// tiroirs. Une seule pression rend la carte entière — deux niveaux pour deux isolements
+// seraient à deviner, alors que « Échap annule ce que je viens de faire » ne l'est pas.
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape") return;
+  if(toutMontrer()) return;
+  if(!$("modeTip").hidden) return void closeTip();
+  setDrawer("filters",false); setDrawer("statsDrawer",false);
+});
 
 function pill(container,label,color,on,onToggle,cls="pill"){
   const b=document.createElement("button"); b.type="button"; b.className=cls; b.setAttribute("aria-pressed",on);
@@ -1023,8 +1298,12 @@ teamsList.addEventListener("click",e=>{
 });
 
 const MODE_TIP={players:"Surligne tous les joueurs passés par l'équipe, avec toute leur carrière",lineage:"Ne garde que le club juste avant l'arrivée et le club juste après le départ"};
+// Le mode ne décide pas que de la surbrillance : isolement posé, il décide aussi des colonnes
+// gardées — toutes celles qu'ont traversées les joueurs de l'équipe, ou seulement les clubs
+// d'avant et d'après, 27 colonnes au pire contre 16. D'où `apresSelection()` et non `apply()` :
+// changer de mode change l'ensemble des colonnes, donc demande une remise en page.
 const modeBtns=[["players","Carrières complètes"],["lineage","Arrivées et départs"]].map(([m,l])=>{
-  const b=pill($("teamMode"),l,null,m==="players",()=>{state.teamMode=m; modeBtns.forEach(x=>x.setAttribute("aria-pressed",x===b)); apply(); return true;},"pill mode");
+  const b=pill($("teamMode"),l,null,m==="players",()=>{state.teamMode=m; modeBtns.forEach(x=>x.setAttribute("aria-pressed",x===b)); apresSelection(); return true;},"pill mode");
   b.title=MODE_TIP[m]; return b;
 });
 [["optNat","showNat"],["optSen","showSen"]].forEach(([id,k])=>$(id).addEventListener("change",e=>{state[k]=e.target.checked; apply();}));
