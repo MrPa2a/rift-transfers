@@ -1129,19 +1129,140 @@ function majStatsTeams(){
   });
 }
 
-const q=$("q");
-// Un joueur renommé se cherche aussi sous le pseudo qu'il portait à l'époque.
-const searchIndex=new Map();
+// ---------- recherche : joueurs et équipes ----------
+// Le `<datalist>` natif a rendu trois lignes de service, mais il ne sait ni présenter deux
+// catégories, ni afficher autre chose que du texte, ni être stylé. La barre cherchant
+// désormais des équipes autant que des joueurs, c'est une combobox écrite à la main.
+const q=$("q"), qlist=$("qlist");
+// Forme de comparaison : minuscules, diacritiques retirés, pour que « pain » trouve
+// `paiN Gaming` et « kabum » `KaBuM! e-Sports`. Seule la **recherche** est tolérante — la
+// graphie d'un pseudo reste une clé de données, et rien ici ne la touche.
+const pli=s=>String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+// Une entrée **par graphie** de joueur : un joueur renommé se cherche sous les deux, et c'est
+// une règle de données, pas une commodité — la ligne du pseudo d'époque porte alors la graphie
+// canonique en appui, pour que le lien entre les deux se voie. Une entrée par équipe, trouvable
+// sous son code, son nom complet et son libellé court.
+const ENTREES=[];
 players.forEach(p=>{
-  searchIndex.set(p.name.toLowerCase(),p.id);
-  p.apps.forEach(a=>{ if(a.shown!==a.name) searchIndex.set(a.shown.toLowerCase(),p.id); });
+  ENTREES.push({kind:"j",id:p.id,nom:p.name,note:null,cles:[pli(p.name)]});
+  const vus=new Set();
+  p.apps.forEach(a=>{
+    if(a.shown===a.name||vus.has(a.shown)) return;
+    vus.add(a.shown);
+    ENTREES.push({kind:"j",id:p.id,nom:a.shown,note:p.name,cles:[pli(a.shown)]});
+  });
 });
-$("plist").innerHTML=[...searchIndex.keys()].map(k=>{
-  const p=players.get(searchIndex.get(k));
-  const nom=p.name.toLowerCase()===k?p.name:p.apps.find(a=>a.shown.toLowerCase()===k).shown;
-  return [nom,p];
-}).sort((a,b)=>a[0].localeCompare(b[0])).map(([nom,p])=>`<option value="${nom}">${nom===p.name?"":p.name}</option>`).join("");
-q.addEventListener("input",()=>{const id=searchIndex.get(q.value.trim().toLowerCase()); if(id){ selectPlayer(id); q.blur(); }});
+teams.forEach(t=>{
+  const court=shortName(t);
+  ENTREES.push({kind:"e",code:t.code,region:t.region,nom:court,
+    note:court===t.name?t.region:`${t.name} · ${t.region}`,
+    cles:[...new Set([pli(t.code),pli(t.name),pli(court)])]});
+});
+// Huit par groupe : au-delà, la liste cesse d'aider et le compte restant dit qu'il faut
+// préciser. Un début de mot passe avant un milieu de mot, et une correspondance entière avant
+// tout le reste — taper « t1 » doit donner T1 en tête, pas les douze codes qui contiennent 1.
+const MAX_GROUPE=8;
+function chercher(texte){
+  const k=pli(texte.trim());
+  if(!k) return [];
+  const rang=e=>{
+    let best=-1;
+    for(const c of e.cles){
+      const i=c.indexOf(k);
+      if(i<0) continue;
+      const r=i>0?2:(c.length===k.length?0:1);
+      if(best<0||r<best) best=r;
+    }
+    return best;
+  };
+  return ENTREES.map(e=>({e,r:rang(e)})).filter(x=>x.r>=0)
+    .sort((a,b)=>a.r-b.r||a.e.nom.length-b.e.nom.length||a.e.nom.localeCompare(b.e.nom,"fr"))
+    .map(x=>x.e);
+}
+
+let options=[], actif=-1;
+const fermerListe=()=>{
+  qlist.hidden=true; qlist.innerHTML=""; options=[]; actif=-1;
+  q.setAttribute("aria-expanded","false"); q.removeAttribute("aria-activedescendant");
+};
+function majListe(){
+  if(!q.value.trim()) return fermerListe();
+  const res=chercher(q.value);
+  let h="";
+  options=[];
+  // Deux groupes nommés plutôt qu'une liste plate : un `listbox` n'accepte que des `option`
+  // et des `group`, et les deux catégories ne se lisent pas de la même façon — un pseudo se
+  // reconnaît, un code d'équipe se devine.
+  for(const [kind,titre] of [["j","Joueurs"],["e","Équipes"]]){
+    const tout=res.filter(e=>e.kind===kind);
+    if(!tout.length) continue;
+    h+=`<div role="group" aria-label="${titre}"><div class="lbl" aria-hidden="true">${titre}</div>`;
+    for(const e of tout.slice(0,MAX_GROUPE)){
+      // Une équipe sans colonne à cet instant reste listée : la trouver est déjà une réponse.
+      // Elle est inerte, avec sa raison — on ne modifie pas les filtres sans le dire.
+      const t=kind==="e"?byCode.get(e.code):null;
+      const pourquoi=t?sansColonne(t,true):null;
+      const i=options.length;
+      options.push({...e,mort:!!pourquoi});
+      h+=`<div class="opt" id="qo${i}" role="option" data-i="${i}" aria-selected="false"${pourquoi?` aria-disabled="true" title="${pourquoi}"`:""}>`
+        +(kind==="e"?`<i style="background:${regionVar(e.region)}"></i>`:"")
+        +`<b>${e.nom}</b>${e.note?`<span class="hint">${e.note}</span>`:""}`
+        +(pourquoi?`<span class="hint">· ${pourquoi}</span>`:"")+`</div>`;
+    }
+    const reste=tout.length-MAX_GROUPE;
+    if(reste>0) h+=`<div class="reste" role="presentation">+ ${reste} autre${reste>1?"s":""} — précisez la recherche</div>`;
+    h+=`</div>`;
+  }
+  if(!options.length) h=`<div class="vide" role="presentation">Aucun joueur ni aucune équipe de ce nom.</div>`;
+  qlist.innerHTML=h;
+  qlist.hidden=false;
+  q.setAttribute("aria-expanded","true");
+  // Le premier choix possible est actif d'emblée : Entrée doit marcher sans flèche.
+  actif=options.findIndex(o=>!o.mort);
+  majActif();
+}
+function majActif(){
+  qlist.querySelectorAll(".opt").forEach((el,i)=>el.setAttribute("aria-selected",String(i===actif)));
+  if(actif<0) return void q.removeAttribute("aria-activedescendant");
+  q.setAttribute("aria-activedescendant",`qo${actif}`);
+  qlist.querySelector(`#qo${actif}`)?.scrollIntoView({block:"nearest"});
+}
+// Les entrées inertes sont sautées : s'arrêter sur une ligne dont Entrée ne fera rien
+// donnerait l'impression que le clavier est cassé.
+function bouger(pas){
+  if(!options.length) return;
+  let i=actif;
+  for(let n=0;n<options.length;n++){
+    i=(i+pas+options.length)%options.length;
+    if(!options[i].mort){ actif=i; majActif(); return; }
+  }
+}
+function choisir(i){
+  const o=options[i];
+  if(!o||o.mort) return;
+  q.value=o.nom;
+  fermerListe();
+  q.blur();
+  if(o.kind==="j") selectPlayer(o.id); else selectTeam(o.code);
+}
+q.addEventListener("input",majListe);
+q.addEventListener("focus",()=>{ if(q.value.trim()) majListe(); });
+q.addEventListener("keydown",e=>{
+  if(e.key==="ArrowDown"){ e.preventDefault(); qlist.hidden?majListe():bouger(1); }
+  else if(e.key==="ArrowUp"){ e.preventDefault(); bouger(-1); }
+  else if(e.key==="Enter"){ if(actif>=0){ e.preventDefault(); choisir(actif); } }
+  // Échap ferme la liste **et s'arrête là** : la cascade du document défait l'isolement et
+  // les tiroirs, ce qui n'a rien à voir avec une liste ouverte sous le curseur.
+  else if(e.key==="Escape"&&!qlist.hidden){ e.preventDefault(); e.stopPropagation(); fermerListe(); }
+});
+// `mousedown` plutôt que le clic pour garder le focus : sans ça le champ perd le focus avant
+// que le clic n'arrive, et la liste se referme sous le doigt.
+qlist.addEventListener("mousedown",e=>e.preventDefault());
+qlist.addEventListener("click",e=>{
+  const el=e.target.closest(".opt[data-i]");
+  if(el) choisir(+el.dataset.i);
+});
+document.addEventListener("click",e=>{ if(!(e.target.closest&&e.target.closest(".combo"))) fermerListe(); });
 
 // ---------- tiroirs ----------
 function setDrawer(id,open){
