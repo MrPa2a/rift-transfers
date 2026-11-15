@@ -1,5 +1,27 @@
 # Sources et méthode
 
+> **This document is in French** — the only one in this repository. It is the working
+> reference for how the data is selected and verified, and a nuance lost in translation
+> would cost more here than anywhere else. An English summary follows; everything else in
+> the repository is in English.
+
+**English summary.** Every lineup on the map comes from a single source: Leaguepedia's
+`ScoreboardPlayers` table, fetched through `Special:CargoExport`. A row shows the players who
+*actually played* a Worlds game for that team — not the registered roster — and four written
+rules turn the raw game log into a lineup: **(1)** a player holds a position if he played at
+least 20 % of the team's games there *and* that position is where he played most;
+**(2)** at most two players per position, the cell splitting in half when both clear the
+threshold; **(3)** a pseudonym shared by two real people gets a Leaguepedia discriminator, so
+two careers never merge; **(4)** one spelling per person, since that spelling is the key
+linking a player's appearances across teams and years. A fifth rule, separate from these,
+decides the off-Worlds career steps. Player identity, nationality (`NationalityPrimary`, not
+birth country), organisation lineage, activity windows, tournament runs, the region of each
+row and league names all come from the same export. Nothing is typed from memory.
+`scripts/fetch-worlds.mjs` recomputes all of it on every run and reports every divergence
+from `data/` without ever writing to it, which is what makes the dataset reproducible.
+Sources are listed year by year, machine-readable, in
+[`data/sources.json`](../data/sources.json).
+
 Ce document explique comment les données de Rift Transfers ont été vérifiées, et comment les étendre. La liste exhaustive des sources, année par année, est aussi disponible au format machine dans [`data/sources.json`](../data/sources.json).
 
 ## Ce que représente une rangée
@@ -14,7 +36,7 @@ Quatre règles, appliquées aux **16 éditions** sans exception. Les arbitrages 
 
 **2. Deux joueurs au maximum par poste.** Quand deux joueurs franchissent le seuil au même poste, la case est divisée en deux demi-cases, le plus titularisé à gauche. Chacune est ciblable et relie sa propre carrière. Dans les données, `lineup` porte celui de gauche, `shared` le second, et `split` liste les postes concernés. Un joueur resté **sous** le seuil n'occupe pas de demi-case : il figure dans `shared` sans être dans `split`, et la case du titulaire porte la marque `*`. À égalité stricte, le joueur de gauche est celui qui est allé au tour le plus avancé ; quand même ce critère ne départage pas — SKT 2016 et Cloud9 2019 en jungle, les deux joueurs étant allés au même tour — le choix est inscrit dans `EGALITES_ARBITREES`.
 
-**3. Homonymes.** Le modèle identifie un joueur par son pseudo en minuscules : deux personnes au même pseudo fusionneraient en une seule carrière, sans alerte. En cas de collision réelle, et seulement dans ce cas, le pseudo reçoit un discriminant repris de Leaguepedia. Un seul cas sur les 16 éditions : deux personnes portent `Violet` et sont toutes deux affichées depuis l'extension aux régions mineures — Ngô Mạnh Quyền (Saigon Jokers 2012) et Vincent Chun Him Wong (PEACE 2021). Leurs identités s'écrivent donc `Violet (Ngô Mạnh Quyền)` et `Violet (Vincent Wong)`. **Le discriminant est une identité, pas une étiquette** : leurs cases affichent `Violet`, le pseudo qu'ils ont tous deux porté, via `PSEUDOS_EPOQUE`. Ce n'est pas une garantie de construction : `npm run validate` signale tout pseudo dont les apparitions sont séparées par plus de quatre éditions, et `fetch-worlds.mjs` recoupe les 749 personnes du recensement à chaque exécution. Dix carrières à trou ont été vérifiées nominativement et inscrites dans `HOMONYMES_VERIFIES`.
+**3. Homonymes.** Le modèle identifie un joueur par son pseudo en minuscules : deux personnes au même pseudo fusionneraient en une seule carrière, sans alerte. En cas de collision réelle, et seulement dans ce cas, le pseudo reçoit un discriminant repris de Leaguepedia. Un seul cas sur les 16 éditions : deux personnes portent `Violet` et sont toutes deux affichées — Ngô Mạnh Quyền (Saigon Jokers 2012) et Vincent Chun Him Wong (PEACE 2021). Leurs identités s'écrivent donc `Violet (Ngô Mạnh Quyền)` et `Violet (Vincent Wong)`. **Le discriminant est une identité, pas une étiquette** : leurs cases affichent `Violet`, le pseudo qu'ils ont tous deux porté, via `PSEUDOS_EPOQUE`. Ce n'est pas une garantie de construction : `npm run validate` signale tout pseudo dont les apparitions sont séparées par plus de quatre éditions, et `fetch-worlds.mjs` recoupe les 749 personnes du recensement à chaque exécution. Dix carrières à trou ont été vérifiées nominativement et inscrites dans `HOMONYMES_VERIFIES`.
 
 **4. Une graphie par personne.** `bengi` et `Bengi` désignent la même personne et doivent être unifiés. L'arbitrage suit trois critères, dans cet ordre : la graphie déjà employée dans `/data` si le joueur y figure, sinon la casse du titre de page canonique de Leaguepedia, sinon la graphie la plus fréquente dans les scoreboards — sur l'ensemble des éditions, jamais édition par édition, sans quoi `caPs` (une édition) l'emporterait sur `Caps` (huit). Les exceptions aux deux premiers critères sont dans `GRAPHIES_ARBITREES`.
 
@@ -189,40 +211,11 @@ rien qui soit de niveau `Primary` — dix cas, marqués `offLevel` dans les donn
 lui convient pas, puisqu'il a joué ; aucun autre non plus, puisqu'on ne retient pas ces
 parties. La carte n'en dit donc rien, et c'est la bonne réponse.
 
-## Corrections apportées lors de l'audit du 11/11/2026
-
-| Équipe | Avant | Après | Raison |
-|---|---|---|---|
-| KT 2018 | Kiin (top) | Smeb | Kiin jouait chez Afreeca |
-| Fnatic 2020 | Upset (bot) | Rekkles | Upset arrive chez Fnatic en 2021 |
-| Fnatic 2021 | Upset (bot) | Bean | Upset rentré avant le tournoi (DNP) |
-| RNG 2021 | Breathe (top) | Xiaohu | Breathe titulaire à partir de 2022 |
-| DK 2024 | Kellin (support) | Moham | 9 matchs sur 9 |
-| SKT 2019 | Mata (support) | Effort, rotation Mata | 12 matchs contre 2 |
-| BLG 2025 | Beichuan (jungle) | Shad0w, rotation Beichuan | Shad0w titulaire à partir du 2e tour |
-| MAD Lions 2020, 2022 | absent | ajouté | Éliminé en play-in |
-
-T1 2025 : **Doran** était bien le top laner (Zeus était chez Hanwha Life).
-
-## Corrections apportées par l'extension à 2013–2026
-
-Les règles de sélection ayant été unifiées sur les 14 éditions, les rangées de 2017 à 2026 ont été recalculées à partir de Leaguepedia. Elles étaient justes, à une exception près, mais incomplètes.
-
-| Équipe | Avant | Après | Raison |
-|---|---|---|---|
-| FlyQuest 2020 | V1per (top) | **Solo** | Solo a joué les 6 parties sur 6 ; V1per n'est pas même inscrit au roster de l'événement |
-| `Haro` (nationalité) | KR | **CN** | Chen Wen-Lin, chinois. Aucun joueur coréen ne porte ce pseudo sur Leaguepedia |
-| `LokeN` (nationalité) | CN | **KR** | Lee Dong-wook, coréen |
-
-Neuf rangées manquaient, toutes des organisations que la carte ne suivait pas encore : **TSM** 2017 et 2020, **ahq** 2017 et 2019, **Flash Wolves** 2017 et 2018, **Splyce** 2019 (quarts de finale), **J Team** 2019 et **LGD** 2020.
-
-Six rotations manquaient également, parce que l'ancienne méthode ne relevait que celles qu'elle croisait : Haru (Samsung Galaxy 2017), Rascal (Longzhu 2017), Ambition (Gen.G 2018), Duke (Invictus Gaming 2018), Deftly (Cloud9 2019) et Burdol (Gen.G 2021).
-
 ## Périmètre : la région d'une rangée est celle de l'édition
 
-La carte suit **cinq ligues** — LCK, LPL, LEC, LCS, LMS. Savoir si une organisation en relève
-est la décision qui définit le périmètre, et elle ne se lit pas dans `Teams.Region` :
-ce champ donne la région de l'organisation **aujourd'hui**. Il range 100 Thieves et KaBuM!
+La carte suit **toutes** les équipes des seize éditions, rangées en quatorze familles de
+région. Ce qui se décide rangée par rangée, c'est la région, et elle ne se lit pas dans
+`Teams.Region` : ce champ donne la région de l'organisation **aujourd'hui**. Il range 100 Thieves et KaBuM!
 sous la même étiquette « Americas », Hong Kong Attitude et PSG Talon sous « Asia Pacific »,
 Moscow Five sous « Europe » mais Gambit Esports sous « CIS », et il fait avaler par l'EMEA
 d'aujourd'hui la Turquie, qui a toujours eu sa propre ligue.
@@ -254,7 +247,9 @@ organisation, et un libellé de région est toujours un **nom de ligue**.
 rapport confronte le résultat à `PLAN_REGIONS`, qui porte la décision : les **300 rangées**
 sont reproduites, et quatre seulement reposent sur le dernier recours.
 
-Trois niveaux de preuve, dans cet ordre, tous tirés de la même source :
+Cinq niveaux de preuve, dans cet ordre, tous tirés de la même source. Les trois premiers
+tranchent 296 des 300 rangées ; les deux derniers n'existent que pour les rangées dont la
+source ne dit rien de régional.
 
 1. **la qualification régionale des Worlds de l'année** — un tournoi de ligue
    `World Championship` dont la `Region` est régionale, ou une page de `Regional Finals`.
@@ -267,33 +262,36 @@ Trois niveaux de preuve, dans cet ordre, tous tirés de la même source :
    Les éditions de 2011 et 2012 précèdent toutes les ligues : Team WE y relève de `LPL` parce
    que son calendrier 2012 est chinois, Dignitas de `LCS` parce que le sien est
    nord-américain. Le niveau `Primary` est indispensable : sans lui, les deux coupes
-   européennes jouées par Dark Passage en 2014 l'emporteraient sur ses cinq journées de TCL.
+   européennes jouées par Dark Passage en 2014 l'emporteraient sur ses cinq journées de TCL ;
+4. **le territoire dominant tous niveaux confondus**, et seulement si `Teams.Region`
+   **confirme** le même territoire. Ce palier ne s'ouvre que lorsque aucune ligue de niveau
+   `Primary` ne porte de région, et la confirmation est ce qui l'empêche de dire n'importe
+   quoi : sans elle, les dix coupes européennes de GamingGear.eu en 2013 l'emporteraient sur
+   sa région CIS, alors qu'elle s'est qualifiée par le wildcard et n'a jamais joué l'EU LCS ;
+5. **`Teams.Region` seule** — la région d'aujourd'hui, donc le dernier recours.
 
-Deux garde-fous :
+Un garde-fou s'ajoute aux niveaux 2 et 3 : **une participation invitée dans une ligue
+étrangère ne vaut pas appartenance.** CLG Prime, CLG EU et Team WE ont tous trois joué les
+*Champions* coréens de 2012 en invités. Quand le territoire dominant de l'année contredit la
+ligue et pèse plus du double en tournois, c'est le territoire qui l'emporte.
 
-- **une participation invitée dans une ligue étrangère ne vaut pas appartenance.** CLG Prime,
-  CLG EU et Team WE ont tous trois joué les *Champions* coréens de 2012 en invités. Quand le
-  territoire dominant de l'année contredit la ligue et pèse plus du double en tournois, c'est
-  le territoire qui l'emporte ;
-- **le dernier recours est `Teams.Region`**, et il est signalé comme tel. Un seul cas sur les
-  300 rangées des 16 éditions : `Samsung Ozone` 2013, dont Leaguepedia ne garde aucun tournoi
-  domestique — ses résultats 2013 vivent sur la page `MVP Ozone`, que `TeamRedirects` ne relie
-  pas à `Samsung White`.
-
-**Contrôle.** La règle reproduit les **300 rangées** du jeu de données, sans exception, et
-quatre seulement reposent sur son dernier recours. C'est ce qui permet de s'y fier.
+**Contrôle.** La règle reproduit les **300 rangées** du jeu de données, sans exception.
+Quatre reposent sur le dernier recours, et le rapport les signale nommément en § 13.2 pour
+qu'elles soient confirmées à la main : `PCFC` et `XAN` en 2011, `GGEU` et `GEN` en 2013 —
+cette dernière est `Samsung Ozone`, dont Leaguepedia ne garde aucun tournoi domestique, ses
+résultats 2013 vivant sur la page `MVP Ozone` que `TeamRedirects` ne relie pas à
+`Samsung White`. C'est ce qui permet de s'y fier.
 
 ### La frontière LMS / PCS
 
 C'est le cas limite le plus net, et la règle le tranche sans arbitrage : **Hong Kong Attitude
-(2017, 2019) est dans le périmètre, PSG Talon (2020-2026) non.** Ce qui les sépare n'est ni le
+(2017, 2019) est en `LMS`, PSG Talon (2020-2026) en `LCP`.** Ce qui les sépare n'est ni le
 territoire — HKA est hongkongaise, PSG Talon taïwanaise, et la LMS couvrait Taïwan, Hong Kong
 et Macao — ni l'organisation, mais **la ligue de l'année** : HKA a joué la `LoL Master Series`,
 PSG Talon la `Pacific Championship Series` puis la `League of Legends Championship Pacific`.
 
 La LMS s'arrête donc en **2019**, et c'est déjà un invariant des données : aucune rangée `LMS`
-ne porte une année postérieure. La PCS et la LCP sont des familles de région nouvelles, du
-ressort de #8c.
+ne porte une année postérieure. La PCS et la LCP forment la famille `LCP`, à part.
 
 Pourquoi la LCS, elle, se prolonge dans la `LTA North` de 2025 alors que la LMS ne se prolonge
 pas dans la PCS ? **Parce que le territoire doit être conservé.** La `LTA North` est
@@ -328,14 +326,16 @@ alors aucun territoire, et c'est la `Teams.Location` de l'organisation qui déci
   en `CBLOL`. Le pendant nord, `LTA North`, ne pose pas le problème : il couvre l'Amérique du
   Nord seule et prolonge donc la `LCS`.
 
-### La voie du wildcard n'est jamais une région suivie
+### La voie du wildcard ne dit pas la région
 
-Une équipe sortie d'un *International Wildcard* ne s'est qualifiée par aucune des cinq ligues,
-et n'entre donc pas dans le périmètre quel que soit son calendrier par ailleurs.
-**GamingGear.eu** (2013) est le cas qui le montre : son calendrier est européen à dix
-tournois sur douze, mais ses seuls tournois de niveau `Primary` sont le wildcard de la
-Gamescom 2013 et les Worlds, et sa `Teams.Region` est `CIS`. Dark Passage (2014), KaBuM!
-(2014), Bangkok Titans et paiN (2015), INTZ et Albus NoX Luna (2016) sont dans le même cas.
+Une équipe sortie d'un *International Wildcard* ne s'est qualifiée par aucune ligue
+domestique : le premier niveau de preuve est muet pour elle, et c'est aux suivants de décider
+sa région. **GamingGear.eu** (2013) est le cas qui le montre : son calendrier est européen à
+dix tournois sur douze, mais ses seuls tournois de niveau `Primary` sont le wildcard de la
+Gamescom 2013 et les Worlds, et sa `Teams.Region` est `CIS` — sa rangée est l'une des quatre
+que le dernier recours tranche. Dark Passage (2014), KaBuM! (2014), Bangkok Titans et paiN
+(2015), INTZ et Albus NoX Luna (2016) sont passées par la même voie, et chacune est rangée
+sur le territoire que sa saison dit.
 
 ### Les organisations à cheval sur deux régions
 
@@ -344,14 +344,14 @@ familles de région. Trois formes, et une seule qui pose vraiment question :
 
 - **deux pages d'organisation distinctes**, et le problème n'existe pas : `Moscow Five` (2012,
   Europe) et `Gambit Gaming` (2013, EU LCS) ont chacune la sienne, `Gambit Esports` (2017,
-  2018, LCL) une troisième. Deux colonnes dans le périmètre, une hors. Même mécanique que
-  CLG / CLG EU : une page d'organisation, une colonne ;
+  2018, LCL) une troisième. Trois pages, trois colonnes — `M5` et `GMB` en `LEC`, `GMBE` en
+  `LCL`. Même mécanique que CLG / CLG EU : une page d'organisation, une colonne ;
 - **une organisation qui change de ligue sans changer de territoire** : aucun cas ;
 - **une organisation qui change de région** : un seul cas, `LYON`. `TeamRedirects` ramène
   `Six Karma` et `Movistar R7` à la page `LYON (2024 American Team)` — une seule organisation,
   latino-américaine de 2018 à 2024 (rangées 2020, 2023 et 2024, région `Latin America`), puis
-  nord-américaine en 2026 (rangée `LCS`). **L'extension aux régions mineures l'a tranché sans
-  qu'il faille en décider** : `Movistar R7` a sa propre page d'organisation, donc sa propre
+  nord-américaine en 2026 (rangée `LCS`). **La source le tranche sans qu'il faille en
+  décider** : `Movistar R7` a sa propre page d'organisation, donc sa propre
   colonne, en `LLA` — et une page qui est elle-même une colonne n'est jamais absorbée dans la
   lignée d'une autre. La colonne `LYON` ne porte donc que la rangée 2026, et sa fenêtre
   `active` part de `Six Karma` en 2021. C'est le même critère que pour CLG / CLG EU et pour
@@ -423,59 +423,93 @@ Plusieurs organisations ont aligné **deux équipes à la même édition**. Ce s
 
 Sa fenêtre `active` suit la règle commune, première et dernière partie sur Leaguepedia toutes compétitions confondues : du 17/06/2012 au 15/12/2012, soit `[2012, 2012]`. La borne de fin est posée parce que l'organisation est dissoute. La colonne est rangée en `LEC`, l'équipe étant européenne — libellé anachronique, comme partout avant 2019.
 
-## Corrections et arbitrages apportés par l'extension à 2011–2012
+## Corrections et arbitrages
 
-Les deux premières éditions sont nées directement de l'unification : aucune rangée n'y a été corrigée, puisqu'aucune n'existait. Le pipeline a tourné **sans modification** — seuil de 20 %, poste majoritaire, deux joueurs par poste. Quatre points ont demandé un arbitrage.
+Les seize éditions sortent du même pipeline, sans modification des règles de sélection —
+seuil de 20 %, poste majoritaire, deux joueurs par poste. Les cas ci-dessous sont les seuls
+à avoir demandé une correction ou un arbitrage, et chacun est figé dans une table en tête de
+`scripts/fetch-worlds.mjs`.
+
+### Rangées corrigées
+
+Rangées dont la saisie ne résistait pas à la vérification. Toutes les lineups sont
+recalculées depuis Leaguepedia à chaque collecte, et la § 7 du rapport confronte le calcul à
+ce qui est saisi : ce tableau est la liste des divergences tranchées en faveur du calcul.
+
+| Équipe | Avant | Après | Raison |
+|---|---|---|---|
+| KT 2018 | Kiin (top) | Smeb | Kiin jouait chez Afreeca |
+| Fnatic 2020 | Upset (bot) | Rekkles | Upset arrive chez Fnatic en 2021 |
+| Fnatic 2021 | Upset (bot) | Bean | Upset rentré avant le tournoi (DNP) |
+| RNG 2021 | Breathe (top) | Xiaohu | Breathe titulaire à partir de 2022 |
+| DK 2024 | Kellin (support) | Moham | 9 matchs sur 9 |
+| SKT 2019 | Mata (support) | Effort, rotation Mata | 12 matchs contre 2 |
+| BLG 2025 | Beichuan (jungle) | Shad0w, rotation Beichuan | Shad0w titulaire à partir du 2e tour |
+| FlyQuest 2020 | V1per (top) | **Solo** | Solo a joué les 6 parties sur 6 ; V1per n'est pas même inscrit au roster de l'événement |
+| MAD Lions 2020, 2022 | absente | ajoutée | Éliminée en play-in |
+| `Haro` (nationalité) | KR | **CN** | Chen Wen-Lin, chinois. Aucun joueur coréen ne porte ce pseudo sur Leaguepedia |
+| `LokeN` (nationalité) | CN | **KR** | Lee Dong-wook, coréen |
+
+Six rotations manquaient également, une vérification faite à la main ne relevant que celles
+qu'elle croise : Haru (Samsung Galaxy 2017), Rascal (Longzhu 2017), Ambition (Gen.G 2018),
+Duke (Invictus Gaming 2018), Deftly (Cloud9 2019) et Burdol (Gen.G 2021).
+
+T1 2025 : **Doran** était bien le top laner (Zeus était chez Hanwha Life).
+
+### Graphies, pseudos d'époque et homonymes
+
+Ces sept cas sont les seuls où la règle 3 ou la règle 4 a demandé une décision écrite.
 
 | Cas | Décision | Raison |
 |---|---|---|
 | `BeBe` (TPA 2012 et 2014) | **BeBe** | La fréquence seule basculerait sur `bebe` (9 lignes en 2012 contre 6 en 2014), mais les deux premiers critères de la règle 4 disent tous deux `BeBe` : c'est la graphie de `/data` et celle du titre de page canonique. Dans `GRAPHIES_ARBITREES` |
 | `Cyanide FI` (FNC 2011) | **Cyanide**, pas d'`aliases` | Les 11 lignes de 2011 l'écrivent ainsi, mais `FI` est le suffixe de désambiguïsation de Leaguepedia — qui garde aussi `CyanideFI` en redirection — et non un pseudo porté : sa page et son `Players.ID` disent l'un et l'autre `Cyanide`. Dans `COQUILLES_ECARTEES` |
-| Chauster (CLG 2011) | **top** | Son poste majoritaire est indécidable, 3 parties en top et 3 en bot. `top` est retenu parce que `bot` revient à bigfatlp (3 sur 6, et bot *est* son poste majoritaire) : déplacer Chauster en bot laisserait le top sans aucun candidat qualifié. Le rapport continue de le signaler en § 4 |
-| Classements 2011 | place → libellé | La Season 1 nomme ses tours « Round 1 » à « Round 3 », et non « Quarterfinals » : c'est `MatchSchedule` qui dit où chaque équipe s'est arrêtée, et le classement de `TournamentResults` qui se traduit ensuite comme aux autres éditions (1 → `W`, 2 → `F`, 3-4 → `SF`, 5-8 → `QF`, au-delà → `G`) |
-
-**Un effet de la règle 1 mérite d'être connu** : en 2011 les postes n'étaient pas fixes. Fnatic a fait jouer Shushei 5 fois en top et 6 fois en mid, xPeke 3 et 5 — leur poste majoritaire étant mid, la règle 1 les écarte tous deux du top, qui revient à `wewillfailer` (3 parties sur 11, son poste majoritaire). Ce n'est pas une anomalie mais la règle appliquée telle qu'elle est écrite, sur un roster réellement tournant. Le rapport liste ces onze écartés en § 9.
-
-## Corrections et arbitrages apportés par l'extension aux cinq régions majeures
-
-Le lot a porté la carte de 33 à **66 colonnes** et de 170 à **215 rangées**, sans toucher aux
-cinq régions ni à la palette : les 33 organisations ajoutées relevaient déjà d'une des cinq
-ligues suivies à l'année où elles ont joué. Elles sortent du § 10 du rapport — les équipes
-rencontrées hors périmètre — passé à la règle de la section « Périmètre » ci-dessus : des 89
-organisations hors périmètre, 33 entrent, 56 non.
-
-Le pipeline a tourné **sans modification des règles de sélection**. Six points ont demandé un
-arbitrage ou une correction.
-
-| Cas | Décision | Raison |
-|---|---|---|
-| Epik Gamer 2011, bot | **Dyrus** | Roster entièrement tournant sur 7 parties : le bot a été joué par Westrice (3), Dyrus (2) et Doublelift (2), sans être le poste majoritaire d'aucun. La règle 1 n'y qualifie personne et le script y place Westrice par défaut, alors qu'il tient déjà le top (4/7, son poste majoritaire) ; Doublelift tient le support (5/7, le sien). **Cinq joueurs pour cinq postes** : seul le déplacement de Dyrus ne laisse aucun poste vide, et l'affectation est donc forcée, pas choisie. Le top perd sa demi-case. Dans `POSTES_ARBITRES` |
 | `Kev1n` (GDE 2011, SK 2012) | **Kev1n**, alias 2011 `Kevin` | La fréquence seule donnerait `Kevin` (5 lignes en 2011 contre 3 en 2012), mais ce n'est pas une différence de casse : c'est un renommage, et l'identité d'un joueur renommé est la graphie de sa page canonique — comme `Jensen` contre `Incarnati0n`. Dans `GRAPHIES_ARBITREES` et `PSEUDOS_EPOQUE` |
-| `GoSu Pepper` (M5 2012), `CndyPnda` (GDE 2011), `ackerman` (LMQ 2014) | **pseudos d'époque** | Tous trois survivent en redirection dans `PlayerRedirects`, aux côtés du pseudo retenu. Dans `PSEUDOS_EPOQUE` |
-| `homeCountries.LEC` | **+ `RU`, `AM`, `EE`** | Les rosters de Moscow Five (2012) et de Gambit Gaming (2013) sont russes, arméniens et estoniens. La CIS n'avait pas encore de ligue — la LCL n'ouvre qu'en 2015 — et ses joueurs comptaient comme résidents européens : sans ces trois codes, `isImport` les donnerait tous importés |
-| `Haro`, `LokeN` et les 360 autres nationalités | **confirmées** | Le script ne relevait que `Players.Country`, le pays de **naissance**, alors que c'est `NationalityPrimary` qui fait foi. Corrigé : les 362 nationalités déjà saisies sont toutes confirmées, et les 119 nouvelles reposent sur le bon champ — ce qui change `Dan Dinh` (né aux Philippines, américain), `nuc` (né au Maroc, français) et `Dhokla` (né en Inde, américain) |
-| `active` de `KT`, `TES`, `KC`, `TL` | **élargies** | La règle écrite — première et dernière partie sur Leaguepedia, toutes compétitions confondues — n'avait jamais été appliquée que de mémoire. Calculée, elle reproduit 29 des 33 fenêtres saisies et corrige les quatre autres : `KT` à 2012 (`KT Rolster Bullets`), `TES` à 2017 (`Topsports Gaming`), `KC` à 2020 (`Kameto Corp`), `TL` à 2012 (`Team Curse`) |
+| `GoSu Pepper` (M5 2012), `CndyPnda` (GDE 2011) | **pseudos d'époque** | Tous deux survivent en redirection dans `PlayerRedirects`, aux côtés du pseudo retenu. Dans `PSEUDOS_EPOQUE` |
+| `M1ssion` (2020, 2022) | **`Mission`** en pseudo d'époque | Chen Hsiao-Hsien s'écrit `M1ssion` de 2017 à 2019 — la graphie que `/data` porte déjà, premier critère de la règle 4 — puis `Mission` sur ses six lignes de 2020 comme sur ses six de 2022. Un `1` contre un `i` est un renommage, pas une différence de casse |
+| `ackerman` (LMQ 2014) | **écarté**, la rangée affiche `GoDlike` | Le pseudo était réel et `PlayerRedirects` le garde sous `Ackerman (Xiao Wang)`, mais **une autre personne le porte dans les données** : Gabriel Agustin Aparicio, chez LØS en 2026. Un pseudo d'époque ne doit jamais usurper celui d'un joueur affiché, et `npm run validate` le refuse. Dans `COQUILLES_ECARTEES` |
+| `Violet` | **`Violet (Ngô Mạnh Quyền)`** et **`Violet (Vincent Wong)`** | **Seule collision réelle de pseudo du jeu de données.** Deux personnes portent `Violet` et sont toutes deux affichées — Saigon Jokers 2012 et PEACE 2021. La règle 3 veut alors un discriminant repris de Leaguepedia, et ce sont les titres de leurs pages canoniques qui le portent. Sans cela, leurs deux carrières fusionneraient sans alerte. Le discriminant est une **identité**, pas une étiquette : leurs cases affichent `Violet`, via `PSEUDOS_EPOQUE` |
 
-Deux effets de la règle 1 méritent d'être connus sur ces éditions anciennes, et le rapport
-continue de les signaler en § 4 : **Reyk** (Team gamed!de 2011) a joué autant en mid qu'en top,
-son poste majoritaire est indécidable et `mid` est retenu par défaut ; **Chauster** (CLG 2011)
-est le cas symétrique, déjà documenté plus haut.
+Dix carrières à trou sont par ailleurs vérifiées nominativement — une seule page Leaguepedia
+et un seul nom civil chacune — et inscrites dans `HOMONYMES_VERIFIES` : `Cuzz`, `TheShy`,
+`Rookie`, `Contractz`, `Josedeodo`, `Isles`, `Betty`, `HolyPhoenix`, `dyNquedo` et `Tinowns`
+réapparaissent après trois à sept éditions d'absence.
 
-## Corrections et arbitrages apportés par l'extension aux régions mineures
+### Postes arbitrés
 
-Le lot a porté la carte de 66 à **120 colonnes** et de 215 à **300 rangées** : toutes les
-équipes des seize éditions ont désormais une colonne, et le § 10 du rapport — les équipes
-rencontrées hors périmètre — est vide. Neuf familles de région sont nées, toutes nommées
-d'après une ligue : `LCP`, `LJL`, `VCS`, `GPL`, `LCO`, `TCL`, `LCL`, `CBLOL`, `LLA`. Le
-pipeline a de nouveau tourné **sans modification des règles de sélection**.
+Deux cas où la règle 1 ne qualifie personne, sur des rosters de 2011 réellement tournants.
 
 | Cas | Décision | Raison |
 |---|---|---|
-| `Violet` | **`Violet (Ngô Mạnh Quyền)`** et **`Violet (Vincent Wong)`** | **Première collision réelle de pseudo du jeu de données.** Deux personnes portent `Violet` et sont désormais toutes deux affichées — Saigon Jokers 2012 et PEACE 2021. La règle 3 veut alors un discriminant repris de Leaguepedia, et ce sont les titres de leurs pages canoniques qui le portent. Sans cela, leurs deux carrières fusionneraient sans alerte. Le discriminant est une **identité**, pas une étiquette : leurs cases affichent `Violet`, via `PSEUDOS_EPOQUE` |
-| `M1ssion` (2020, 2022) | **`Mission`** en pseudo d'époque | Chen Hsiao-Hsien s'écrit `M1ssion` de 2017 à 2019 — la graphie que `/data` porte déjà, premier critère de la règle 4 — puis `Mission` sur ses six lignes de 2020 comme sur ses six de 2022. Un `1` contre un `i` est un renommage, pas une différence de casse |
-| `ackerman` (LMQ 2014) | **écarté**, la rangée affiche `GoDlike` | Le pseudo était réel et `PlayerRedirects` le garde sous `Ackerman (Xiao Wang)`, mais **une autre personne le porte dans les données** depuis ce lot : Gabriel Agustin Aparicio, chez LØS en 2026. Un pseudo d'époque ne doit jamais usurper celui d'un joueur affiché, et `npm run validate` le refuse. Dans `COQUILLES_ECARTEES` |
-| `active` de `LYON` | **[2021]** au lieu de [2018] | `Movistar R7` devient une colonne à part entière, et une page qui est elle-même une colonne n'est jamais absorbée dans la lignée d'une autre. La fenêtre de LYON part donc de `Six Karma`, en 2021 |
-| Six carrières à trou | **vérifiées** | `Josedeodo`, `Isles`, `Betty`, `HolyPhoenix`, `dyNquedo` et `tinowns` réapparaissent après cinq à sept éditions d'absence. Une seule page Leaguepedia et un seul nom civil chacun : inscrits dans `HOMONYMES_VERIFIES` |
+| Chauster (CLG 2011) | **top** | Son poste majoritaire est indécidable, 3 parties en top et 3 en bot. `top` est retenu parce que `bot` revient à bigfatlp (3 sur 6, et bot *est* son poste majoritaire) : déplacer Chauster en bot laisserait le top sans aucun candidat qualifié. Le rapport continue de le signaler en § 4 |
+| Epik Gamer 2011, bot | **Dyrus** | Roster entièrement tournant sur 7 parties : le bot a été joué par Westrice (3), Dyrus (2) et Doublelift (2), sans être le poste majoritaire d'aucun. La règle 1 n'y qualifie personne et le script y place Westrice par défaut, alors qu'il tient déjà le top (4/7, son poste majoritaire) ; Doublelift tient le support (5/7, le sien). **Cinq joueurs pour cinq postes** : seul le déplacement de Dyrus ne laisse aucun poste vide, et l'affectation est donc forcée, pas choisie. Le top perd sa demi-case. Dans `POSTES_ARBITRES` |
+
+**Deux effets de la règle 1 méritent d'être connus**, et le rapport continue de les signaler
+en § 4. En 2011 les postes n'étaient pas fixes : Fnatic a fait jouer Shushei 5 fois en top et
+6 fois en mid, xPeke 3 et 5 — leur poste majoritaire étant mid, la règle 1 les écarte tous
+deux du top, qui revient à `wewillfailer` (3 parties sur 11, son poste majoritaire). **Reyk**
+(Team gamed!de 2011) a joué autant en mid qu'en top, son poste majoritaire est indécidable et
+`mid` est retenu par défaut. Ce ne sont pas des anomalies mais la règle appliquée telle
+qu'elle est écrite, sur des rosters réellement tournants. Le rapport liste ces onze écartés
+en § 9.
+
+### Fenêtres d'activité arbitrées
+
+La règle — première et dernière partie sur Leaguepedia, toutes compétitions confondues —
+reproduit les 120 fenêtres saisies. Cinq colonnes ont demandé une décision.
+
+| Cas | Décision | Raison |
+|---|---|---|
+| `active` de `KT`, `TES`, `KC`, `TL` | **élargies** | La règle, une fois calculée, les fait commencer plus tôt que la saisie d'origine : `KT` à 2012 (`KT Rolster Bullets`), `TES` à 2017 (`Topsports Gaming`), `KC` à 2020 (`Kameto Corp`), `TL` à 2012 (`Team Curse`) |
+| `active` de `LYON` | **[2021]** au lieu de [2018] | `Movistar R7` est une colonne à part entière, et une page qui est elle-même une colonne n'est jamais absorbée dans la lignée d'une autre. La fenêtre de LYON part donc de `Six Karma`, en 2021 |
+
+### Autres arbitrages
+
+| Cas | Décision | Raison |
+|---|---|---|
+| Classements 2011 | place → libellé | La Season 1 nomme ses tours « Round 1 » à « Round 3 », et non « Quarterfinals » : c'est `MatchSchedule` qui dit où chaque équipe s'est arrêtée, et le classement de `TournamentResults` qui se traduit ensuite comme aux autres éditions (1 → `W`, 2 → `F`, 3-4 → `SF`, 5-8 → `QF`, au-delà → `G`) |
+| `homeCountries.LEC` | **+ `RU`, `AM`, `EE`** | Les rosters de Moscow Five (2012) et de Gambit Gaming (2013) sont russes, arméniens et estoniens. La CIS n'avait pas encore de ligue — la LCL n'ouvre qu'en 2015 — et ses joueurs comptaient comme résidents européens : sans ces trois codes, `isImport` les donnerait tous importés |
+| Nationalités | **`NationalityPrimary`** | `Players.Country` est le pays de **naissance**, et c'est `NationalityPrimary` qui fait foi. Le champ change `Dan Dinh` (né aux Philippines, américain), `nuc` (né au Maroc, français) et `Dhokla` (né en Inde, américain) |
 
 Trois organisations changent de nom **vers une autre colonne du jeu de données** —
 `Young Generation` → `Phong Vũ Buffalo`, `Team Whales` → `Team Secret Whales`,
@@ -507,15 +541,15 @@ Deux pièges de l'API, vérifiés :
 Points d'attention pour ces années :
 
 - Les noms d'équipe changent souvent : utiliser le champ `name` de chaque édition (comme `SKT T1 K` dans la colonne T1). Leaguepedia normalise les siens — il écrit `TSM` pour Team SoloMid et `SK Telecom T1` pour SKT T1 K — donc ils ne font pas foi : c'est la table `PLAN_ALIASES` de `fetch-worlds.mjs` qui tranche, et la section « Noms de colonne et doubles équipes » ci-dessous qui la justifie.
-- La fenêtre `active` de chaque organisation vient de sa première et de sa dernière partie sur Leaguepedia, toutes compétitions confondues. La borne de fin n'est posée que pour les orgs dissoutes. **`fetch-worlds.mjs` la calcule** depuis `ScoreboardGames` et `Teams.IsDisbanded`, et la § 11 du rapport la confronte à ce qui est saisi : appliquée aux 33 colonnes d'avant le lot 4, elle en reproduit 29 à l'identique, et elle couvre aujourd'hui les 120 sans divergence. Le script ne l'écrit pas dans `/data`. La borne de début est un **minorant** — une page de lignée qu'aucun des trois chemins de résolution n'atteint la fait commencer trop tard — d'où `LIGNEES_ARBITREES`, qui rattache `KT Rolster Bullets`, `KT Rolster Arrows` et `NaJin e-mFire` à leurs colonnes.
-- **Les libellés de région sont anachroniques sur les éditions anciennes**, et les extensions à 2011–2012 puis aux 33 colonnes du lot 4 l'accentuent : aucune des cinq ligues n'existait encore. La carte range les équipes dans cinq régions au nom d'aujourd'hui, mais `LMS` n'a existé que de 2015 à 2019 — les colonnes `TPA` et `GAB` portent pourtant des rangées 2012, 2013 et 2014, quand Taïwan relevait encore de la GPL — `LCK` s'appelait OGN Champions en 2013 et `LoL The Champions` en 2012, année de la rangée `AZF`, `LEC` était l'EU LCS jusqu'en 2019 et y sont rangées `CLGEU`, `AAA`, `GDE` et `M5` pour des équipes de 2011 et 2012 qualifiées par un simple tournoi régional, `LCS` n'a démarré qu'en 2013 alors que `TSM`, `CLG`, `EPIK` et `DIG` portent des rangées 2011 ou 2012, et `LPL` n'a démarré qu'en 2013 alors qu'`IG` et `WE` portent des rangées 2012. Trois libellés désignent par ailleurs une ligue plus large que leur nom : `LEC` couvre l'EMEA depuis 2019, `LCS` la conférence nord de la LTA en 2025, et `LMS` le territoire taïwanais avant la création de la ligue. Ces libellés servent à regrouper les colonnes, pas à nommer la ligue de l'époque — la règle qui décide de l'appartenance est celle de la section « Périmètre », et elle se fonde sur la ligue réellement jouée.
+- La fenêtre `active` de chaque organisation vient de sa première et de sa dernière partie sur Leaguepedia, toutes compétitions confondues. La borne de fin n'est posée que pour les orgs dissoutes. **`fetch-worlds.mjs` la calcule** depuis `ScoreboardGames` et `Teams.IsDisbanded`, et la § 11 du rapport la confronte à ce qui est saisi : elle couvre les 120 colonnes sans divergence. Le script ne l'écrit pas dans `/data`. La borne de début est un **minorant** — une page de lignée qu'aucun des trois chemins de résolution n'atteint la fait commencer trop tard — d'où `LIGNEES_ARBITREES`, qui rattache `KT Rolster Bullets`, `KT Rolster Arrows` et `NaJin e-mFire` à leurs colonnes.
+- **Les libellés de région sont anachroniques sur les éditions anciennes** : aucune des cinq ligues majeures n'existait encore. La carte range les équipes dans des régions au nom d'aujourd'hui, mais `LMS` n'a existé que de 2015 à 2019 — les colonnes `TPA` et `GAB` portent pourtant des rangées 2012, 2013 et 2014, quand Taïwan relevait encore de la GPL — `LCK` s'appelait OGN Champions en 2013 et `LoL The Champions` en 2012, année de la rangée `AZF`, `LEC` était l'EU LCS jusqu'en 2019 et y sont rangées `CLGEU`, `AAA`, `GDE` et `M5` pour des équipes de 2011 et 2012 qualifiées par un simple tournoi régional, `LCS` n'a démarré qu'en 2013 alors que `TSM`, `CLG`, `EPIK` et `DIG` portent des rangées 2011 ou 2012, et `LPL` n'a démarré qu'en 2013 alors qu'`IG` et `WE` portent des rangées 2012. Trois libellés désignent par ailleurs une ligue plus large que leur nom : `LEC` couvre l'EMEA depuis 2019, `LCS` la conférence nord de la LTA en 2025, et `LMS` le territoire taïwanais avant la création de la ligue. Ces libellés servent à regrouper les colonnes, pas à nommer la ligue de l'époque — la règle qui décide de l'appartenance est celle de la section « Périmètre », et elle se fonde sur la ligue réellement jouée.
 - Ajouter les nouvelles années à `years` dans `data/teams.json`, les résultats dans `data/results.json` et les sources dans `data/sources.json`, puis lancer `npm run validate`.
 
 ## Nationalités
 
 Table `Players` de Leaguepedia. Attention : `Country` est le pays de **naissance**, et c'est `NationalityPrimary` qui donne la nationalité quand les deux diffèrent — Biofrost est canadien né en Chine, Huhi américain né en France. C'est la **nationalité** qui est retenue dans `data/players.json`, puisque c'est elle qui détermine si un joueur est importé dans sa région.
 
-Sur les 198 nationalités déjà saisies avant l'extension à 2013–2026, cette règle en confirme 196 ; les deux dernières étaient fausses et ont été corrigées — `Haro` et `LokeN`, dans le tableau ci-dessus. Le script ne relevait pourtant que `Country` jusqu'au lot des cinq régions majeures : la règle était écrite, pas outillée. Depuis, il relève les deux champs, et `NationalityPrimary` confirme les **362** nationalités saisies sans exception. Les **481** d'aujourd'hui en viennent toutes.
+La règle est outillée : `fetch-worlds.mjs` relève les deux champs et confronte `NationalityPrimary` à ce qui est saisi, sans exception. Les **481** nationalités du jeu de données en viennent toutes. Deux saisies antérieures à ce contrôle étaient fausses — `Haro` et `LokeN`, dans la section « Corrections et arbitrages ».
 
 Un cas limite mérite d'être connu : `Spica` (TSM 2020) est noté **CN**. Il est né en Chine, de citoyenneté chinoise, mais résidait en Amérique du Nord et comptait comme joueur local pour la LCS. Le projet enregistre la **nationalité**, pas la résidence sportive — c'est déjà le cas d'`Impact` et de `CoreJJ`, notés `KR` alors qu'ils jouaient en Amérique du Nord. Il apparaît donc comme joueur importé.
 

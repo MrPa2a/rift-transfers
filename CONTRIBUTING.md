@@ -110,7 +110,7 @@ Sources par année, avec ce que chacune a permis de vérifier. Voir aussi [docs/
 
 ## Code
 
-Le site est en HTML, CSS et JavaScript sans framework ni étape de build : `index.html`, `assets/css/styles.css`, `assets/js/app.js`. Gardez cette simplicité tant que possible.
+Le site est en HTML, CSS et JavaScript sans framework ni étape de build : `map/index.html`, `assets/css/styles.css`, `assets/js/app.js`. Gardez cette simplicité tant que possible.
 
 ## Messages de commit
 

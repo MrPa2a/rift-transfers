@@ -1,5 +1,5 @@
 /*
- * Rift Transfers — carte des rosters des grandes équipes aux Worlds de League of Legends.
+ * Rift Transfers — carte des rosters des équipes venues aux Worlds de League of Legends.
  * Les données viennent de /data (format décrit dans CONTRIBUTING.md) ; ce fichier ne contient que le rendu.
  */
 
@@ -54,7 +54,7 @@ const LEAGUE_NAMES = TEAMS_DATA.leagueNames || {};
 const ZONE_MAX = 3; // au-delà, la liste des pays est illisible dans une infobulle
 // Les trois régions que `ZONE_MAX` écarte — LEC (25 pays), LCL (8), LLA (7) — reçoivent un
 // libellé court, et ce sont les **seuls** textes nouveaux de l'entrée : le projet les écrit
-// déjà ailleurs (« espace post-soviétique » est dans index.html et dans docs/SOURCES.md).
+// déjà ailleurs (« espace post-soviétique » est dans map/index.html et dans docs/SOURCES.md).
 // Table arbitrée : on n'invente pas le nom d'un territoire, pas plus qu'on n'abrège un nom
 // d'équipe de soi-même. Une région trop large qui n'y figure pas n'affiche **pas** de zone.
 const ZONES_ARBITREES = {
@@ -208,21 +208,21 @@ const ELBOW=14;
 // marque déjà le trait d'année. Elle borne le coude ci-dessous — au-delà, il viendrait
 // chercher le bloc voisin.
 const GOUTTIERE=70;
-// Hauteur d'un coude, désormais fonction de l'écart latéral qu'il doit franchir.
+// Hauteur d'un coude : fonction de l'écart latéral qu'il doit franchir, et non une
+// constante.
 //
-// Elle valait `ELBOW`, 14 px, quel que soit le déport. Pour un fil qui rejoint la demi-case
-// de droite d'un poste partagé, c'est 63 px à franchir en 14 px de hauteur — un rapport de
-// 4,5:1, d'où le S écrasé collé au-dessus de la case. Le poste partagé ne faisait que créer
-// le décalage ; le défaut était que le coude ne s'y adaptait pas, et le correctif n'a donc
-// pas à connaître les demi-cases.
+// Une hauteur fixe de 14 px conviendrait à un fil sans déport, mais un fil qui rejoint la
+// demi-case de droite d'un poste partagé a 63 px à franchir — un rapport de 4,5:1, soit un S
+// écrasé collé au-dessus de la case. Le poste partagé ne fait que créer le décalage : ce qui
+// compte est que le coude s'y adapte, et ce calcul n'a donc pas à connaître les demi-cases.
 //
-// Le fil commence maintenant son déport d'autant plus tôt qu'il a plus de chemin à faire, et
-// le S s'étale au lieu de se replier. `ELBOW` reste le plancher : un fil sans déport — le cas
-// général, une case pleine, dont l'attache **est** le couloir — garde exactement son coude
-// d'avant, et sa courbe reste d'ailleurs une verticale droite.
+// Le fil commence donc son déport d'autant plus tôt qu'il a plus de chemin à faire, et le S
+// s'étale au lieu de se replier. `ELBOW` reste le plancher : un fil sans déport — le cas
+// général, une case pleine, dont l'attache **est** le couloir — garde ce coude minimal, et sa
+// courbe reste d'ailleurs une verticale droite.
 const PENTE=0.9;
 const coude=(dx,place)=>Math.min(Math.max(ELBOW,Math.abs(dx)*PENTE),Math.max(ELBOW,place));
-// Demi-largeur de la barre qui ferme les deux bouts du fil (#7a). Sa hampe, elle, n'a pas de
+// Demi-largeur de la barre qui ferme les deux bouts du fil. Sa hampe, elle, n'a pas de
 // longueur propre : elle court jusqu'à la jonction entre deux éditions (voir `cap`).
 const CAP=9;
 // La barre s'arrête **avant** la ligne de séparation plutôt que dessus. Une fin de carrière et
@@ -282,7 +282,7 @@ const state={roles:new Set(ROLES),regions:new Set(REGIONS),hiddenTeams:new Set()
 const visible=t=>state.regions.has(t.region)&&APPS.get(t.code)>=state.minApps&&!state.hiddenTeams.has(t.code);
 // Et une colonne n'est dessinée que si l'équipe a au moins une édition dans la période : c'est
 // ce compte-là, et non `visible` seul, qui dit s'il reste quelque chose à l'écran.
-// Isolement d'une édition (#5) : les participants de l'année, **plus** les équipes d'où
+// Isolement d'une édition : les participants de l'année, **plus** les équipes d'où
 // viennent ses joueurs et où ils vont l'année d'avant et l'année d'après. Une édition sans ses
 // deux voisines n'énumère que des rosters — la carte parle de transferts, et c'est le voisinage
 // qui porte le mouvement. Mesuré : de 9 à 40 colonnes sur 120 selon l'édition, 40 en 2019.
@@ -292,7 +292,7 @@ const colonnesDeLEdition=N=>{
   for(const a of apps) if(Math.abs(a.year-N)===1&&surN.has(a.id)) codes.add(a.team.code);
   return codes;
 };
-// Isolement de la sélection (#9) : les colonnes par lesquelles elle est passée. Pour un
+// Isolement de la sélection : les colonnes par lesquelles elle est passée. Pour un
 // joueur, ses clubs, étapes hors Worlds comprises — 1 à 7 colonnes, médiane 1. Pour une
 // équipe, les colonnes avec lesquelles elle a échangé des joueurs, selon le mode de clic
 // choisi dans les filtres : 27 colonnes au pire en « carrières complètes » (TL), 16 en
@@ -504,7 +504,7 @@ function render(){
     }));
   });
   // Largeur de « Autres » : une sous-colonne par chip simultanée d'un même poste, jamais
-  // moins de deux. Les cinq rangées étant désormais indexées par le poste, c'est ce cumul —
+  // moins de deux. Les cinq rangées étant indexées par le poste, c'est ce cumul —
   // et non le total de l'année — qui décide de la largeur.
   const parPoste=l=>{const c={}; l.forEach(n=>c[n.a.ri]=(c[n.a.ri]||0)+1); return Math.max(0,...Object.values(c));};
   const otherCols=Math.max(2,...Object.values(otherByYear).map(parPoste));
@@ -1139,9 +1139,9 @@ function majStatsTeams(){
 }
 
 // ---------- recherche : joueurs et équipes ----------
-// Le `<datalist>` natif a rendu trois lignes de service, mais il ne sait ni présenter deux
-// catégories, ni afficher autre chose que du texte, ni être stylé. La barre cherchant
-// désormais des équipes autant que des joueurs, c'est une combobox écrite à la main.
+// Combobox écrite à la main : le `<datalist>` natif tiendrait en trois lignes, mais il ne
+// sait ni présenter deux catégories — la barre cherche des équipes autant que des joueurs —,
+// ni afficher autre chose que du texte, ni être stylé.
 const q=$("q"), qlist=$("qlist");
 // Forme de comparaison : minuscules, diacritiques retirés, pour que « pain » trouve
 // `paiN Gaming` et « kabum » `KaBuM! e-Sports`. Seule la **recherche** est tolérante — la

@@ -20,7 +20,7 @@ const HOMONYM_GAP = 4;
 // finirait par être ignoré. N'y ajouter un pseudo qu'après vérification nominative.
 const HOMONYMES_VERIFIES = new Map([
   ["cuzz", "Moon Woo-chan, page Cuzz — Longzhu 2017, KT 2023 et 2025"],
-  ["theshy", "Kang Seung-lok, page TheShy — IG 2018-2019, Weibo 2023 hors périmètre, IG 2025-2026"],
+  ["theshy", "Kang Seung-lok, page TheShy — IG 2018-2019, Weibo 2023, IG 2025-2026"],
   ["rookie", "Song Eui-jin, page Rookie — IG 2015, 2018-2019, 2025-2026"],
   ["contractz", "Juan Arturo Garcia, page Contractz — Cloud9 2017, NRG 2023"],
   ["josedeodo", "Brandon Joel Villegas, page Josedeodo — Movistar R7 2020, Team Liquid 2026"],

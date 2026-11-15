@@ -1,6 +1,8 @@
 # Rift Transfers
 
-Carte interactive des rosters des grandes équipes de League of Legends aux **Worlds 2011 → 2026**. Chaque équipe est une colonne, chaque édition des Worlds une rangée, et chaque joueur un fil coloré par poste : on suit sa carrière d'une équipe à l'autre, ou la vie d'une équipe en descendant sa colonne.
+Carte interactive des rosters de **toutes** les équipes venues aux **Worlds 2011 → 2026** de League of Legends. Chaque équipe est une colonne, chaque édition des Worlds une rangée, et chaque joueur un fil coloré par poste : on suit sa carrière d'une équipe à l'autre, ou la vie d'une équipe en descendant sa colonne.
+
+**[Ouvrir la carte](https://mrpa2a.github.io/rift-transfers/map/)**
 
 ![Aperçu de Rift Transfers, la carte filtrée sur une partie des éditions](docs/screenshot.png)
 
@@ -34,16 +36,17 @@ La méthode de vérification (nombre de matchs joués par joueur, matchs joués 
 Prérequis : Node.js 18 ou plus. Aucune dépendance à installer.
 
 ```bash
-npm run dev        # http://localhost:5173
+npm run dev        # http://localhost:5173 — la racine redirige vers /map/
 npm run validate   # vérifie la cohérence des données
 ```
 
-Le site doit être servi par un serveur web : ouvrir `index.html` directement depuis le disque ne permet pas de charger les fichiers JSON.
+Le site doit être servi par un serveur web : ouvrir `map/index.html` directement depuis le disque ne permet pas de charger les fichiers JSON.
 
 ## Structure
 
 ```
-index.html              # page unique
+index.html              # racine : redirige vers /map/
+map/index.html          # la carte
 assets/css/styles.css   # styles (thème clair et sombre)
 assets/js/app.js        # chargement des données et rendu de la carte
 data/                   # données JSON et sources

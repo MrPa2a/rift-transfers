@@ -69,8 +69,9 @@ const ALL_YEARS = Object.keys(PAGES).map(Number).sort((a, b) => a - b);
 // Une équipe absente de cette table est hors périmètre : le rapport la liste plutôt que
 // de l'écarter en silence.
 //
-// Le périmètre est **les cinq ligues suivies, prises à l'année de l'édition** : la règle,
-// ses trois niveaux de preuve et ses deux cas limites sont dans docs/SOURCES.md, section
+// Toutes les équipes des seize éditions ont une colonne ; ce qui se décide rangée par
+// rangée, c'est sa **région**, prise sur la ligue jouée l'année de l'édition. La règle, ses
+// cinq niveaux de preuve et ses cas limites sont dans docs/SOURCES.md, section
 // « Périmètre : la région d'une rangée est celle de l'édition ». `Teams.Region` ne fait pas
 // foi — elle donne la région de l'organisation *aujourd'hui*, qui avale la Turquie dans
 // l'EMEA et range 100 Thieves et KaBuM! sous la même étiquette « Americas ».
@@ -121,7 +122,7 @@ const TEAM_CODE = {
   "Flash Wolves": "FW",
   "Taipei Assassins": "TPA", "J Team": "TPA",
 
-  // --- lot 4 (#8b) : les membres des cinq mêmes ligues que la carte ratait encore.
+  // --- Les autres équipes des cinq mêmes ligues.
   // LCK
   "Azubu Frost": "AZF",
   "Griffin (Korean Team)": "GRF",
@@ -161,8 +162,8 @@ const TEAM_CODE = {
   "MAD Team": "MAD",
   "Gamania Bears": "GAB",
 
-  // --- lot 5 (#8c) : les régions mineures. Plus aucune équipe des 16 éditions n'est hors
-  // périmètre — le § 10 du rapport est désormais vide.
+  // --- Les régions mineures. Plus aucune équipe des 16 éditions n'est hors périmètre —
+  // le § 10 du rapport est vide.
   // LCP
   "PSG Talon": "PSG",
   "CTBC Flying Oyster": "CFO",
@@ -234,9 +235,8 @@ const TEAM_CODE = {
   "Lyon Gaming (2013 Latin American Team)": "LYN",
 };
 
-// Ordre de colonnes du plan, pour que les fragments sortent dans l'ordre de teams.json.
-// Par région, puis par nombre d'éditions jouées décroissant et parties décroissantes : les
-// colonnes du lot 4 viennent donc après celles qu'elles complètent, sans déplacer aucune.
+// Ordre de colonnes, pour que les fragments sortent dans l'ordre de teams.json : par
+// région, puis par nombre d'éditions jouées décroissant et parties décroissantes.
 const COLUMN_ORDER = [
   "T1", "GEN", "HLE", "DK", "KT", "DRX", "NJN", "SSB", "AZF", "GRF", "DNS",
   "EDG", "RNG", "IG", "FPX", "TES", "JDG", "BLG", "AL", "OMG", "LGD", "LNG", "WBG", "WE", "SN", "IM",
@@ -275,20 +275,19 @@ const GRAPHIES_ARBITREES = {
   "san (guo jun-liang)": "San",
   dandy: "DanDy",
   huhi: "Huhi",
-  // Arbitrage du 12/11/2026, à l'extension à 2011–2012. La fréquence seule basculerait sur
+  // Arbitrage du 12/11/2026. La fréquence seule basculerait sur
   // `bebe` (9 lignes en 2012 contre 6 en 2014), mais les deux premiers critères de la règle 4
   // disent tous deux `BeBe` : c'est la graphie de `/data` et celle du titre de page canonique.
   "bebe (chang bo-wei)": "BeBe",
-  // Arbitrage du 12/11/2026, à l'extension du lot 4. `Kevin` (5 lignes en 2011) l'emporterait
+  // Arbitrage du 12/11/2026. `Kevin` (5 lignes en 2011) l'emporterait
   // sur `Kev1n` (3 lignes en 2012) par la seule fréquence, mais ce n'est pas une différence de
   // casse : c'est un renommage, et l'identité d'un joueur renommé est la graphie de sa page
   // canonique — comme `Jensen` contre `Incarnati0n`. `Kevin` devient donc le pseudo d'époque
   // de 2011, dans `PSEUDOS_EPOQUE`.
   kev1n: "Kev1n",
-  // Arbitrage du 12/11/2026, à l'extension aux régions mineures. **Première collision réelle
-  // de pseudo du jeu de données** : deux personnes portent `Violet` et sont désormais toutes
-  // deux affichées — Ngô Mạnh Quyền (Saigon Jokers 2012) et Vincent Chun Him Wong (PEACE
-  // 2021). La règle 3 veut alors un discriminant repris de Leaguepedia, et ce sont les titres
+  // Arbitrage du 12/11/2026. **Seule collision réelle de pseudo du jeu de données** : deux
+  // personnes portent `Violet` et sont toutes deux affichées — Ngô Mạnh Quyền (Saigon
+  // Jokers 2012) et Vincent Chun Him Wong (PEACE 2021). La règle 3 veut alors un discriminant repris de Leaguepedia, et ce sont les titres
   // de leurs pages canoniques qui le portent. Sans cela les deux carrières fusionneraient en
   // une seule, sans alerte.
   "violet (ngô mạnh quyền)": "Violet (Ngô Mạnh Quyền)",
@@ -339,8 +338,8 @@ const PSEUDOS_EPOQUE = {
   da7: { 2013: "comA" },
   clearlove: { 2017: "Clearlove7" }, // le 7 ajouté le temps de la saison 2017
   loveling: { 2013: "LoveLin" },
-  // Lot 4. Quatre cas, tous tranchés sur `PlayerRedirects` : un vrai pseudo d'époque y
-  // survit en redirection, une coquille de scoreboard non.
+  // Quatre cas tranchés sur `PlayerRedirects` : un vrai pseudo d'époque y survit en
+  // redirection, une coquille de scoreboard non.
   // `GoSu Pepper`, `GosuPepper` et `GoZu` y sont tous trois des alias d'`Edward`.
   edward: { 2012: "GoSu Pepper" },
   // `CndyPnda` y est un alias de `CandyPanda`, aux côtés de `Candy Panda` ; les 5 lignes de
@@ -349,7 +348,7 @@ const PSEUDOS_EPOQUE = {
   // Revers de l'arbitrage `kev1n` de `GRAPHIES_ARBITREES` : `Kevin (Kevin Rubiszewski)` est
   // un alias de `Kev1n`, et c'est le pseudo des 5 lignes de 2011.
   kev1n: { 2011: "Kevin" },
-  // Lot 5. Chen Hsiao-Hsien s'écrit `M1ssion` de 2017 à 2019 — la graphie que `/data` porte
+  // Chen Hsiao-Hsien s'écrit `M1ssion` de 2017 à 2019 — la graphie que `/data` porte
   // déjà, et c'est le premier critère de la règle 4 — puis `Mission` à partir de 2020, sur ses
   // six lignes de 2020 comme sur ses six de 2022. Un `1` contre un `i` n'est pas une
   // différence de casse : c'est un renommage, et sa page canonique dit `Mission`.
@@ -371,14 +370,14 @@ const COQUILLES_ECARTEES = {
   // et son `Players.ID` disent l'un et l'autre `Cyanide` (arbitrage du 12/11/2026).
   "cyanide 2011": "Cyanide FI",
   // `Ackerman` était bien le pseudo de Xiao Wang en 2014, et `PlayerRedirects` le garde sous
-  // `Ackerman (Xiao Wang)`. Il est pourtant écarté depuis le lot 5 : **une autre personne
+  // `Ackerman (Xiao Wang)`. Il est pourtant écarté : **une autre personne
   // porte ce pseudo dans les données**, Gabriel Agustin Aparicio (LØS 2026), et un pseudo
   // d'époque ne doit jamais usurper celui d'un joueur affiché — `npm run validate` le refuse.
   // La rangée de 2014 affiche donc `GoDlike`, comme celle de 2013 (arbitrage du 12/11/2026).
   "godlike 2014": "ackerman",
 };
 
-// Noms de colonne arrêtés par le plan. Le `name` d'une rangée n'est écrit que s'il en diffère.
+// Noms de colonne arrêtés. Le `name` d'une rangée n'est écrit que s'il en diffère.
 const PLAN_TEAM_NAMES = {
   T1: "T1", GEN: "Gen.G", HLE: "Hanwha Life", DK: "Dplus KIA", KT: "KT Rolster", DRX: "DRX",
   NJN: "NaJin e-mFire", SSB: "Samsung Blue",
@@ -388,7 +387,7 @@ const PLAN_TEAM_NAMES = {
   CLGEU: "CLG EU",
   C9: "Cloud9", TL: "Team Liquid", FLY: "FlyQuest", TSM: "TSM", CLG: "Counter Logic Gaming",
   AHQ: "ahq e-Sports Club", FW: "Flash Wolves", TPA: "Taipei Assassins",
-  // Lot 4. Le nom est celui de la page d'organisation Leaguepedia, **privé du discriminant
+  // Le nom est celui de la page d'organisation Leaguepedia, **privé du discriminant
   // de désambiguïsation** : `Griffin (Korean Team)` → Griffin, `Evil Geniuses.NA` → Evil
   // Geniuses, `Rogue (European Team)` → Rogue, `LYON (2024 American Team)` → LYON. Le
   // discriminant distingue des pages homonymes sur le wiki, il ne fait pas partie du nom.
@@ -400,8 +399,8 @@ const PLAN_TEAM_NAMES = {
   "100T": "100 Thieves", EG: "Evil Geniuses", CG: "Clutch Gaming", LYON: "LYON", NRG: "NRG",
   VUL: "Team Vulcun", IMT: "Immortals", EPIK: "Epik Gamer", LMQ: "LMQ", DIG: "Dignitas",
   HKA: "Hong Kong Attitude", GRX: "G-Rex", MAD: "MAD Team", GAB: "Gamania Bears",
-  // Lot 5. Le discriminant de désambiguïsation s'enlève comme au lot précédent, à ceci près
-  // que Leaguepedia l'écrit **en majuscules** : `Unicorns of Love.CIS` → Unicorns of Love,
+  // Pour les régions mineures, le discriminant s'enlève de même, à ceci près
+  // que Leaguepedia l'écrit parfois **en majuscules** : `Unicorns of Love.CIS` → Unicorns of Love,
   // `Lowkey Esports.Vietnam` → Lowkey Esports, `PEACE (Oceanic Team)` → PEACE. C'est la casse
   // qui porte la distinction — `GamingGear.eu` garde son `.eu`, qui fait partie de la marque.
   PSG: "PSG Talon", CFO: "CTBC Flying Oyster", BYG: "Beyond Gaming", TSW: "Team Secret Whales",
@@ -450,11 +449,10 @@ const PLAN_ALIASES = {
   OMG: { 2013: "Oh My God", 2014: "Oh My God" },
   // Rebrand de Taipei Assassins, rattaché à la colonne TPA (arbitrage du 11/11/2026).
   TPA: { 2019: "J Team" },
-  // Lot 4 : un seul des 33 noms d'organisation d'aujourd'hui diffère du nom porté à
-  // l'édition. `TeamRedirects` ramène `Afreeca Freecs` à la page `DN SOOPers`.
+  // `TeamRedirects` ramène `Afreeca Freecs` à la page `DN SOOPers`.
   DNS: { 2018: "Afreeca Freecs" },
-  // Lot 5 : cinq noms d'époque réels. Les autres écarts entre nom de page et nom de rangée
-  // ne sont que le discriminant du wiki, qui n'est pas un nom porté.
+  // Noms d'époque réels. Les autres écarts entre nom de page et nom de rangée ne sont que
+  // le discriminant du wiki, qui n'est pas un nom porté.
   GAM: { 2017: "GIGABYTE Marines" },
   MVKE: { 2024: "Vikings Esports" },
   PCFC: { 2011: "Team Pacific" },
@@ -462,7 +460,7 @@ const PLAN_ALIASES = {
   R7: { 2020: "Rainbow7" },
 };
 
-// Région de chaque colonne, arrêtée par le plan. `fetchRegions()` la recalcule depuis la
+// Région de chaque colonne, arrêtée. `fetchRegions()` la recalcule depuis la
 // source à chaque exécution et le rapport confronte les deux (§ 13) : cette table est la
 // décision, le calcul en est le contrôle.
 //
@@ -491,7 +489,7 @@ const PLAN_REGIONS = {
 // `Teams.RenamedTo` ne les y relie pas non plus : sans cette table, la fenêtre calculée
 // commencerait trop tard. Pages vérifiées dans `Teams` (arbitrage du 12/11/2026).
 const LIGNEES_ARBITREES = {
-  // Lot 5. `SK Telecom T1 K` est la page d'organisation de la branche qui a joué — et gagné —
+  // `SK Telecom T1 K` est la page d'organisation de la branche qui a joué — et gagné —
   // les Worlds 2013 : c'est exactement la rangée `T1 2013`, que `PLAN_ALIASES` nomme déjà
   // « SKT T1 K ». Ni `TeamRedirects` ni `Teams.RenamedTo` ne la relient à `T1`, seule
   // `Teams.OrganizationPage` le fait — et celle-ci est écartée par principe, parce qu'elle
@@ -1159,7 +1157,7 @@ async function fetchLeagues(outDir) {
 //
 // Le périmètre d'affichage est l'**année-trou** : une année sans rangée de Worlds, située
 // entre deux apparitions du joueur. Avant la première et après la dernière, le fil n'a rien à
-// relier — ce sont les deux bouts de #7a, et `seen` porte ce qu'on en sait.
+// relier — ce sont les deux bouts du fil, et `seen` porte ce qu'on en sait.
 const SEUIL_ETAPE = 0.2;
 const NIVEAU_ETAPE = "Primary";
 
@@ -1782,8 +1780,7 @@ function fragmentFor(year, teamsOfYear, census) {
     if (Object.keys(shared).length) entry.shared = shared;
     // `split` liste les postes réellement coupés en deux demi-cases, c'est-à-dire ceux dont
     // le second joueur franchit le seuil. Un second resté sous le seuil reste dans `shared`
-    // sans entrer ici : sa case porte la marque `*`. Sans ce champ les fragments du lot 4
-    // auraient dû être complétés à la main sur 33 colonnes.
+    // sans entrer ici : sa case porte la marque `*`.
     if (split.length) entry.split = split;
     if (Object.keys(aliases).length) entry.aliases = aliases;
     frag[code] = entry;
@@ -2337,7 +2334,7 @@ function renderReport({ years, computed, pageCheck, census, collisions, nearColl
     L.push("_Exécution partielle : les étapes ne sont pas calculées. Un trou se mesure entre deux apparitions, et une collecte sur une partie des éditions en inventerait autant qu'elle en cacherait._");
   } else {
     L.push("La **règle 5** de `docs/SOURCES.md`, distincte des quatre règles des Worlds : club majoritaire en parties sur l'année, plus tout autre club à 20 % des parties ou plus. Deux tests de la source écartent ce qui n'est pas une étape de carrière — `Tournaments.TournamentLevel = 'Primary'`, puis l'existence d'une fiche `Teams`. Une entité déjà reliée à une colonne n'est jamais écartée par le second.");
-    L.push("", "Seules les **années-trous** sont écrites : une année sans rangée de Worlds située entre deux apparitions du joueur. Avant la première et après la dernière, le fil n'a rien à relier — c'est `seen` qui porte ce qu'on en sait, et les deux bouts de #7a qui l'affichent.");
+    L.push("", "Seules les **années-trous** sont écrites : une année sans rangée de Worlds située entre deux apparitions du joueur. Avant la première et après la dernière, le fil n'a rien à relier — c'est `seen` qui porte ce qu'on en sait, et les deux bouts du fil qui l'affichent.");
     L.push("", `**${Object.keys(careers.careers).length} joueurs, ${careerYears} années-trous, ${careerSteps} étapes.**`);
     h(3, `14.1 Carrières à reporter (${careerNew.length})`);
     L.push("Valeur à recopier depuis `careers.json` dans `data/careers.json`.", "");
@@ -2402,8 +2399,8 @@ async function main() {
   const [teamsData, playersData, resultsData] = await Promise.all(
     ["teams", "players", "results"].map((n) => readFile(join(ROOT, "data", `${n}.json`), "utf8").then(JSON.parse)),
   );
-  // `data/careers.json` n'existe pas encore avant la première collecte du lot 5 : son absence
-  // n'est pas une erreur, elle met simplement tout le § 14 en « à reporter ».
+  // `data/careers.json` peut ne pas exister : son absence n'est pas une erreur, elle met
+  // simplement tout le § 14 en « à reporter ».
   const careersData = await readFile(join(ROOT, "data", "careers.json"), "utf8").then(JSON.parse).catch(() => ({ careers: {} }));
 
   console.log("Contrôle de la table année → OverviewPage…");

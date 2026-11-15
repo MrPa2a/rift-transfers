@@ -11,6 +11,9 @@ node_modules/
 .env
 .env.*
 
+# Outils locaux
+.claude/
+
 # Systèmes et éditeurs
 .DS_Store
 Thumbs.db
