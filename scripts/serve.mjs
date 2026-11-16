@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Petit serveur statique sans dépendance pour le développement local.
-// Usage : node scripts/serve.mjs [port]   (port par défaut : 5173)
+// Small dependency-free static server for local development.
+// Usage: node scripts/serve.mjs [port]   (default port: 5173)
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize, resolve } from "node:path";

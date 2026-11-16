@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Vérifie la cohérence des fichiers de /data avant un commit ou dans la CI.
-// Usage : node scripts/validate-data.mjs
+// Checks the consistency of the files in /data before a commit or in CI.
+// Usage: node scripts/validate-data.mjs
 import { readFile } from "node:fs/promises";
 
 const read = async (name) => JSON.parse(await readFile(new URL(`../data/${name}.json`, import.meta.url), "utf8"));
@@ -11,66 +11,66 @@ const [teamsData, resultsData, playersData, sourcesData, careersData] = await Pr
 const errors = [];
 const warnings = [];
 const ROLES = ["top", "jungle", "mid", "bot", "support"];
-// Au-delà de cette coupure, deux apparitions d'un même pseudo sont probablement
-// deux personnes différentes : une carrière ne reprend pas après cinq Worlds sans trace.
+// Beyond this cut-off, two appearances of the same handle are probably two different people:
+// a career does not resume after five Worlds without a trace.
 const HOMONYM_GAP = 4;
 
-// Carrières à trou déjà vérifiées : une seule personne, confirmée par sa page Leaguepedia
-// et son nom civil. Sans cette liste, le contrôle crierait au loup à chaque exécution et
-// finirait par être ignoré. N'y ajouter un pseudo qu'après vérification nominative.
+// Careers with a gap already verified: one single person, confirmed by their Leaguepedia page
+// and their legal name. Without this list the check would cry wolf on every run and end up being
+// ignored. Only add a handle to it after verifying the person by name.
 const HOMONYMES_VERIFIES = new Map([
-  ["cuzz", "Moon Woo-chan, page Cuzz — Longzhu 2017, KT 2023 et 2025"],
-  ["theshy", "Kang Seung-lok, page TheShy — IG 2018-2019, Weibo 2023, IG 2025-2026"],
-  ["rookie", "Song Eui-jin, page Rookie — IG 2015, 2018-2019, 2025-2026"],
-  ["contractz", "Juan Arturo Garcia, page Contractz — Cloud9 2017, NRG 2023"],
-  ["josedeodo", "Brandon Joel Villegas, page Josedeodo — Movistar R7 2020, Team Liquid 2026"],
-  ["isles", "Jonah Rosario, page Isles — Legacy Esports 2020, LYON 2026"],
-  ["betty", "Lu Yu-Hung, page Betty — Flash Wolves 2017-2018, PSG Talon 2024-2025"],
-  ["holyphoenix", "Anıl Işık, page HolyPhoenix — Dark Passage 2014, Istanbul Wildcats 2022"],
-  ["dynquedo", "Matheus Rossini Miranda, page DyNquedo — KaBuM! 2018, paiN Gaming 2024"],
-  ["tinowns", "Thiago Sartori, page Tinowns — KaBuM! 2014, LOUD 2022-2023"],
+  ["cuzz", "Moon Woo-chan, Cuzz page — Longzhu 2017, KT 2023 and 2025"],
+  ["theshy", "Kang Seung-lok, TheShy page — IG 2018-2019, Weibo 2023, IG 2025-2026"],
+  ["rookie", "Song Eui-jin, Rookie page — IG 2015, 2018-2019, 2025-2026"],
+  ["contractz", "Juan Arturo Garcia, Contractz page — Cloud9 2017, NRG 2023"],
+  ["josedeodo", "Brandon Joel Villegas, Josedeodo page — Movistar R7 2020, Team Liquid 2026"],
+  ["isles", "Jonah Rosario, Isles page — Legacy Esports 2020, LYON 2026"],
+  ["betty", "Lu Yu-Hung, Betty page — Flash Wolves 2017-2018, PSG Talon 2024-2025"],
+  ["holyphoenix", "Anıl Işık, HolyPhoenix page — Dark Passage 2014, Istanbul Wildcats 2022"],
+  ["dynquedo", "Matheus Rossini Miranda, DyNquedo page — KaBuM! 2018, paiN Gaming 2024"],
+  ["tinowns", "Thiago Sartori, Tinowns page — KaBuM! 2014, LOUD 2022-2023"],
 ]);
 const years = new Set(teamsData.years);
 const regions = new Set(teamsData.regions);
 const low = (s) => String(s ?? "").toLowerCase();
 
-// Les libellés que l'interface tire des données sont bilingues : l'interface anglaise ne doit
-// pas écrire « Corée du Sud » à côté de textes traduits. Le contrôle exige donc les **deux**
-// langues, et non plus un nom unique — une seule des deux laisserait le trou passer en silence,
-// puisque la carte se replie sur le code brut ou sur l'autre langue sans rien signaler.
+// The labels the interface draws from the data are bilingual: the English interface must not
+// write "Corée du Sud" next to translated text. The check therefore demands **both** languages,
+// and no longer a single name — only one of the two would let the hole pass in silence, since
+// the map falls back on the raw code or on the other language without flagging anything.
 const LANGS = ["fr", "en"];
 const manqueLangue = (valeur) => {
-  if (typeof valeur !== "object" || valeur === null || Array.isArray(valeur)) return "doit porter { \"fr\": …, \"en\": … }";
+  if (typeof valeur !== "object" || valeur === null || Array.isArray(valeur)) return "must carry { \"fr\": …, \"en\": … }";
   const vides = LANGS.filter((l) => typeof valeur[l] !== "string" || !valeur[l].trim());
-  if (vides.length) return `langue${vides.length > 1 ? "s" : ""} manquante${vides.length > 1 ? "s" : ""} : ${vides.join(", ")}`;
+  if (vides.length) return `missing language${vides.length > 1 ? "s" : ""}: ${vides.join(", ")}`;
   const extra = Object.keys(valeur).filter((l) => !LANGS.includes(l));
-  return extra.length ? `langue${extra.length > 1 ? "s" : ""} inconnue${extra.length > 1 ? "s" : ""} : ${extra.join(", ")}` : null;
+  return extra.length ? `unknown language${extra.length > 1 ? "s" : ""}: ${extra.join(", ")}` : null;
 };
 
-// --- équipes et lineups
+// --- teams and lineups
 const teamCodes = new Set();
 const present = new Map(); // "2024:T1" -> true
 const seenThisYear = new Map(); // "2024:faker" -> "T1"
-const allPlayers = new Set(); // titulaires et rotations : tous sont affichés sur la carte
-const appearances = new Map(); // "faker" -> Set d'années
+const allPlayers = new Set(); // starters and rotations: all of them are shown on the map
+const appearances = new Map(); // "faker" -> Set of years
 
 for (const team of teamsData.teams) {
-  const where = `équipe ${team.code}`;
-  if (!/^[A-Z0-9]{2,5}$/.test(team.code)) errors.push(`${where} : code invalide`);
-  if (teamCodes.has(team.code)) errors.push(`${where} : code en double`);
+  const where = `team ${team.code}`;
+  if (!/^[A-Z0-9]{2,5}$/.test(team.code)) errors.push(`${where}: invalid code`);
+  if (teamCodes.has(team.code)) errors.push(`${where}: duplicate code`);
   teamCodes.add(team.code);
-  if (!regions.has(team.region)) errors.push(`${where} : région inconnue « ${team.region} »`);
+  if (!regions.has(team.region)) errors.push(`${where}: unknown region "${team.region}"`);
 
-  // --- fenêtre d'activité, quand elle est déclarée
+  // --- activity window, when it is declared
   let active = null;
   if (team.active !== undefined) {
     const ok = Array.isArray(team.active)
       && team.active.length >= 1 && team.active.length <= 2
       && team.active.every((y) => Number.isInteger(y));
-    if (!ok) errors.push(`${where} : "active" doit être [début] ou [début, fin], en années entières`);
+    if (!ok) errors.push(`${where}: "active" must be [from] or [from, to], in whole years`);
     else {
       const [from, to = Infinity] = team.active;
-      if (from > to) errors.push(`${where} : fenêtre d'activité inversée (${from} après ${to})`);
+      if (from > to) errors.push(`${where}: activity window reversed (${from} after ${to})`);
       else active = { from, to };
     }
   }
@@ -78,43 +78,43 @@ for (const team of teamsData.teams) {
   for (const [year, entry] of Object.entries(team.worlds)) {
     const at = `${team.code} ${year}`;
     const y = Number(year);
-    if (!years.has(y)) errors.push(`${at} : année hors de la liste "years"`);
+    if (!years.has(y)) errors.push(`${at}: year outside the "years" list`);
     present.set(`${year}:${team.code}`, true);
     if (active && (y < active.from || y > active.to)) {
-      errors.push(`${at} : lineup hors de la fenêtre d'activité [${team.active.join(", ")}]`);
+      errors.push(`${at}: lineup outside the activity window [${team.active.join(", ")}]`);
     }
 
     const keys = Object.keys(entry.lineup || {});
     if (keys.length !== 5 || !ROLES.every((r) => keys.includes(r))) {
-      errors.push(`${at} : le lineup doit contenir exactement ${ROLES.join(", ")}`);
+      errors.push(`${at}: the lineup must contain exactly ${ROLES.join(", ")}`);
       continue;
     }
 
-    // Un joueur affiché = un titulaire ou une rotation. Les deux comptent partout : ils
-    // occupent chacun une demi-case ciblable, donc une erreur sur l'un se voit autant.
-    const shown = []; // [nom, rôle]
+    // A displayed player = a starter or a rotation. Both count everywhere: each occupies a
+    // targetable half-chip, so an error on either is just as visible.
+    const shown = []; // [name, role]
     for (const role of ROLES) {
       const name = entry.lineup[role];
-      if (typeof name !== "string" || !name.trim()) { errors.push(`${at} : ${role} vide`); continue; }
+      if (typeof name !== "string" || !name.trim()) { errors.push(`${at}: ${role} empty`); continue; }
       shown.push([name, role]);
     }
     for (const [role, alt] of Object.entries(entry.shared || {})) {
-      if (!ROLES.includes(role)) { errors.push(`${at} : rôle partagé inconnu « ${role} »`); continue; }
-      if (typeof alt !== "string" || !alt.trim()) { errors.push(`${at} : rotation ${role} vide`); continue; }
-      if (alt === entry.lineup[role]) errors.push(`${at} : ${alt} est à la fois titulaire et rotation`);
+      if (!ROLES.includes(role)) { errors.push(`${at}: unknown shared role "${role}"`); continue; }
+      if (typeof alt !== "string" || !alt.trim()) { errors.push(`${at}: ${role} rotation empty`); continue; }
+      if (alt === entry.lineup[role]) errors.push(`${at}: ${alt} is both starter and rotation`);
       shown.push([alt, role]);
     }
 
-    const inRow = new Map(); // minuscules -> rôle déjà occupé dans cette rangée
+    const inRow = new Map(); // lower case -> role already taken in this row
     for (const [name, role] of shown) {
       const id = low(name);
       if (inRow.has(id)) {
-        errors.push(`${at} : ${name} occupe deux postes de la même rangée (${inRow.get(id)} et ${role})`);
+        errors.push(`${at}: ${name} holds two roles in the same row (${inRow.get(id)} and ${role})`);
       } else inRow.set(id, role);
 
       const key = `${year}:${id}`;
       const other = seenThisYear.get(key);
-      if (other && other !== team.code) errors.push(`${at} : ${name} joue déjà pour ${other} la même année`);
+      if (other && other !== team.code) errors.push(`${at}: ${name} already plays for ${other} that same year`);
       seenThisYear.set(key, team.code);
 
       allPlayers.add(name);
@@ -122,67 +122,67 @@ for (const team of teamsData.teams) {
       appearances.get(id).add(y);
     }
 
-    // --- postes affichés en deux demi-cases : le second joueur franchit le seuil de 20 %
+    // --- roles displayed as two half-chips: the second player crosses the 20 % threshold
     const split = entry.split ?? [];
-    if (!Array.isArray(split)) errors.push(`${at} : "split" doit être une liste de rôles`);
+    if (!Array.isArray(split)) errors.push(`${at}: "split" must be a list of roles`);
     else {
       const vus = new Set();
       for (const role of split) {
-        if (!ROLES.includes(role)) { errors.push(`${at} : rôle partagé inconnu dans "split" « ${role} »`); continue; }
-        if (vus.has(role)) errors.push(`${at} : ${role} apparaît deux fois dans "split"`);
+        if (!ROLES.includes(role)) { errors.push(`${at}: unknown shared role in "split" "${role}"`); continue; }
+        if (vus.has(role)) errors.push(`${at}: ${role} appears twice in "split"`);
         vus.add(role);
-        // Une demi-case suppose deux joueurs : sans `shared`, il n'y a rien à partager.
-        if (!entry.shared?.[role]) errors.push(`${at} : ${role} est dans "split" mais n'a pas de rotation dans "shared"`);
+        // A half-chip presupposes two players: without `shared`, there is nothing to share.
+        if (!entry.shared?.[role]) errors.push(`${at}: ${role} is in "split" but has no rotation in "shared"`);
       }
     }
 
-    // --- pseudo porté à cette édition, quand il diffère de la graphie canonique
+    // --- handle borne at that edition, when it differs from the canonical spelling
     for (const [canonical, era] of Object.entries(entry.aliases || {})) {
       if (!inRow.has(low(canonical))) {
-        errors.push(`${at} : alias déclaré pour « ${canonical} », qui ne figure pas dans cette rangée`);
+        errors.push(`${at}: alias declared for "${canonical}", who is not in this row`);
         continue;
       }
-      if (typeof era !== "string" || !era.trim()) { errors.push(`${at} : alias vide pour ${canonical}`); continue; }
-      if (low(era) === low(canonical)) errors.push(`${at} : alias « ${era} » identique à ${canonical}, inutile`);
+      if (typeof era !== "string" || !era.trim()) { errors.push(`${at}: empty alias for ${canonical}`); continue; }
+      if (low(era) === low(canonical)) errors.push(`${at}: alias "${era}" identical to ${canonical}, pointless`);
     }
 
     for (const role of entry.unverified || []) {
-      if (!ROLES.includes(role)) errors.push(`${at} : rôle à vérifier inconnu « ${role} »`);
-      else warnings.push(`${at} : ${role} encore à vérifier`);
+      if (!ROLES.includes(role)) errors.push(`${at}: unknown role to verify "${role}"`);
+      else warnings.push(`${at}: ${role} still to be verified`);
     }
   }
 }
 
-// Une fenêtre déclarée sur une partie seulement des équipes est le signe d'une migration
-// inachevée : le validateur réclame alors les suivantes.
+// A window declared on only some of the teams is the sign of an unfinished migration: the
+// validator then asks for the rest.
 const withActive = teamsData.teams.filter((t) => t.active !== undefined);
 if (withActive.length && withActive.length !== teamsData.teams.length) {
   for (const t of teamsData.teams) {
-    if (t.active === undefined) warnings.push(`équipe ${t.code} : pas de fenêtre "active", alors que ${withActive.length} équipe(s) en ont une`);
+    if (t.active === undefined) warnings.push(`team ${t.code}: no "active" window, while ${withActive.length} team(s) have one`);
   }
 }
 
-// --- même joueur, casse différente
+// --- same player, different case
 const byLower = new Map();
 for (const name of allPlayers) {
   const k = low(name);
-  if (byLower.has(k) && byLower.get(k) !== name) errors.push(`joueur écrit de deux façons : ${byLower.get(k)} / ${name}`);
+  if (byLower.has(k) && byLower.get(k) !== name) errors.push(`player spelled two ways: ${byLower.get(k)} / ${name}`);
   byLower.set(k, name);
 }
 
-// --- un alias ne doit pas usurper le pseudo d'un autre joueur
+// --- an alias must not usurp another player's handle
 for (const team of teamsData.teams) {
   for (const [year, entry] of Object.entries(team.worlds)) {
     for (const [canonical, era] of Object.entries(entry.aliases || {})) {
       const clash = byLower.get(low(era));
       if (clash && low(clash) !== low(canonical)) {
-        errors.push(`${team.code} ${year} : l'alias « ${era} » de ${canonical} est déjà le pseudo de ${clash}`);
+        errors.push(`${team.code} ${year}: the alias "${era}" of ${canonical} is already the handle of ${clash}`);
       }
     }
   }
 }
 
-// --- homonymes probables : une carrière interrompue trop longtemps
+// --- probable homonyms: a career interrupted for too long
 const editions = [...teamsData.years].sort((a, b) => a - b);
 for (const [id, seen] of appearances) {
   if (HOMONYMES_VERIFIES.has(id)) continue;
@@ -190,97 +190,98 @@ for (const [id, seen] of appearances) {
   for (let i = 1; i < idx.length; i++) {
     const missed = idx[i] - idx[i - 1] - 1;
     if (missed > HOMONYM_GAP) {
-      warnings.push(`${byLower.get(id)} : ${missed} éditions sans trace entre ${editions[idx[i - 1]]} et ${editions[idx[i]]} — vérifier qu'il s'agit bien de la même personne, puis l'inscrire dans HOMONYMES_VERIFIES`);
+      warnings.push(`${byLower.get(id)}: ${missed} editions without a trace between ${editions[idx[i - 1]]} and ${editions[idx[i]]} — check that it really is the same person, then add them to HOMONYMES_VERIFIES`);
     }
   }
 }
-// Une entrée devenue inutile est une fausse sécurité : autant la retirer.
+// An entry that has become useless is a false sense of security: better remove it.
 for (const id of HOMONYMES_VERIFIES.keys()) {
-  if (!appearances.has(id)) warnings.push(`HOMONYMES_VERIFIES contient « ${id} », absent des lineups : entrée à retirer`);
+  if (!appearances.has(id)) warnings.push(`HOMONYMES_VERIFIES contains "${id}", absent from the lineups: entry to remove`);
 }
 
-// --- libellés de parcours : lus dans la carte et dans sa légende, donc bilingues.
+// --- run labels: read on the map and in its legend, hence bilingual.
 for (const [code, valeur] of Object.entries(resultsData.labels ?? {})) {
   const quoi = manqueLangue(valeur);
-  if (quoi) errors.push(`labels.${code} : ${quoi}`);
+  if (quoi) errors.push(`labels.${code}: ${quoi}`);
 }
 
-// --- résultats
+// --- results
 for (const [year, entries] of Object.entries(resultsData.results)) {
   for (const [code, value] of Object.entries(entries)) {
-    if (!resultsData.labels[value]) errors.push(`résultat ${code} ${year} : valeur inconnue « ${value} »`);
-    if (!present.has(`${year}:${code}`)) errors.push(`résultat ${code} ${year} : l'équipe n'a pas de lineup cette année-là`);
+    if (!resultsData.labels[value]) errors.push(`result ${code} ${year}: unknown value "${value}"`);
+    if (!present.has(`${year}:${code}`)) errors.push(`result ${code} ${year}: the team has no lineup that year`);
   }
 }
 for (const key of present.keys()) {
   const [year, code] = key.split(":");
-  if (!resultsData.results[year]?.[code]) warnings.push(`${code} ${year} : pas de résultat renseigné`);
+  if (!resultsData.results[year]?.[code]) warnings.push(`${code} ${year}: no result recorded`);
 }
 
-// --- nationalités
+// --- nationalities
 for (const region of teamsData.regions) {
-  // `isImport` lit HOME[team.region] sans garde : une région absente ferait planter la carte.
+  // `isImport` reads HOME[team.region] with no guard: a missing region would crash the map.
   const home = playersData.homeCountries?.[region];
-  if (!Array.isArray(home) || !home.length) errors.push(`homeCountries : rien pour la région « ${region} », la carte planterait`);
+  if (!Array.isArray(home) || !home.length) errors.push(`homeCountries: nothing for region "${region}", the map would crash`);
   else for (const code of home) {
-    if (!/^[A-Z]{2}$/.test(code)) errors.push(`homeCountries.${region} : « ${code} » n'est pas un code ISO à 2 lettres`);
+    if (!/^[A-Z]{2}$/.test(code)) errors.push(`homeCountries.${region}: "${code}" is not a 2-letter ISO code`);
   }
 }
 for (const region of Object.keys(playersData.homeCountries ?? {})) {
-  if (!regions.has(region)) warnings.push(`homeCountries.${region} : région absente de "regions"`);
+  if (!regions.has(region)) warnings.push(`homeCountries.${region}: region absent from "regions"`);
 }
 
-// --- noms de ligue : lus au survol de la pilule de région, à côté de la zone géographique.
-// Le sigle seul ne dit ni ce qu'est la ligue, ni où elle se joue. Le nom vient de
-// `Leagues.League` — § 15 du rapport de `fetch-worlds.mjs` —, jamais de connaissances
-// générales : une région sans nom est une erreur, pas un trou qu'on comble de mémoire.
+// --- league names: read when a region pill is hovered, next to the geographic zone. The code
+// alone says neither what the league is nor where it is played. The name comes from
+// `Leagues.League` — § 15 of the `fetch-worlds.mjs` report —, never from general knowledge: a
+// region without a name is an error, not a hole to be filled from memory.
 const leagueNames = teamsData.leagueNames ?? {};
 for (const region of teamsData.regions) {
   const nom = leagueNames[region];
-  if (typeof nom !== "string" || !nom.trim()) errors.push(`leagueNames : rien pour la région « ${region} », l'infobulle de sa pilule n'aurait que le sigle`);
+  if (typeof nom !== "string" || !nom.trim()) errors.push(`leagueNames: nothing for region "${region}", its pill's tooltip would carry the code alone`);
 }
 for (const region of Object.keys(leagueNames)) {
-  if (!regions.has(region)) warnings.push(`leagueNames.${region} : région absente de "regions"`);
+  if (!regions.has(region)) warnings.push(`leagueNames.${region}: region absent from "regions"`);
 }
 for (const [name, code] of Object.entries(playersData.nationality)) {
-  if (!/^[A-Z]{2}$/.test(code)) errors.push(`nationalité de ${name} : « ${code} » n'est pas un code ISO à 2 lettres`);
-  if (!byLower.has(low(name))) warnings.push(`nationalité de ${name} : joueur absent des lineups`);
+  if (!/^[A-Z]{2}$/.test(code)) errors.push(`nationality of ${name}: "${code}" is not a 2-letter ISO code`);
+  if (!byLower.has(low(name))) warnings.push(`nationality of ${name}: player absent from the lineups`);
 }
 const noNat = [...allPlayers].filter((n) => !Object.keys(playersData.nationality).some((k) => low(k) === low(n)));
 
-// --- noms de pays : le panneau de détail écrit le pays en toute lettre, un code sans entrée
-// y retomberait au code brut sans que rien ne le signale. Dans les deux langues, faute de quoi
-// l'interface anglaise écrirait « Corée du Sud » au milieu de textes traduits.
+// --- country names: the detail panel spells the country out in full, and a code with no entry
+// would fall back there to the raw code without anything flagging it. In both languages, failing
+// which the English interface would write "Corée du Sud" in the middle of translated text.
 const countryNames = playersData.countryNames ?? {};
 const codesUtilises = new Set(Object.values(playersData.nationality));
 for (const code of codesUtilises) {
-  if (!countryNames[code]) errors.push(`countryNames : « ${code} » n'a pas de nom, le panneau de détail afficherait le code brut`);
+  if (!countryNames[code]) errors.push(`countryNames: "${code}" has no name, the detail panel would display the raw code`);
 }
 for (const [code, nom] of Object.entries(countryNames)) {
-  if (!/^[A-Z]{2}$/.test(code)) errors.push(`countryNames : « ${code} » n'est pas un code ISO à 2 lettres`);
+  if (!/^[A-Z]{2}$/.test(code)) errors.push(`countryNames: "${code}" is not a 2-letter ISO code`);
   else {
     const quoi = manqueLangue(nom);
-    if (quoi) errors.push(`countryNames.${code} : ${quoi}`);
-    if (!codesUtilises.has(code)) warnings.push(`countryNames.${code} : aucun joueur de ce pays`);
+    if (quoi) errors.push(`countryNames.${code}: ${quoi}`);
+    if (!codesUtilises.has(code)) warnings.push(`countryNames.${code}: no player from that country`);
   }
 }
 
-// La zone géographique de la même infobulle se dérive de `homeCountries` : au plus trois
-// pays, elle les écrit en toute lettre. `ZONE_MAX` est la coupure, tenue en double dans
-// assets/js/app.js, qui porte en plus les trois libellés courts des régions au-delà.
+// The geographic zone of that same tooltip is derived from `homeCountries`: at most three
+// countries, it spells them out in full. `ZONE_MAX` is the cut-off, kept in duplicate in
+// assets/js/app.js, which additionally carries the three short labels of the regions beyond
+// it.
 const ZONE_MAX = 3;
 for (const region of teamsData.regions) {
   const home = playersData.homeCountries?.[region];
   if (!Array.isArray(home) || home.length > ZONE_MAX) continue;
   for (const code of home) {
-    if (!countryNames[code]) errors.push(`countryNames : « ${code} » n'a pas de nom, la zone de la pilule ${region} afficherait le code brut`);
+    if (!countryNames[code]) errors.push(`countryNames: "${code}" has no name, the zone of the ${region} pill would display the raw code`);
   }
 }
 
-// --- étapes de carrière hors Worlds
-// Le pendant de la fenêtre `active` d'une équipe, côté joueur : une étape se pose dans une
-// année-trou — une année sans rangée, **entre** deux apparitions du même joueur. Hors de ce
-// creux, elle n'a rien à relier et n'est donc pas une étape mais une affirmation.
+// --- career steps outside Worlds
+// The counterpart of a team's `active` window, on the player's side: a step is placed in a gap
+// year — a year with no row, **between** two appearances of the same player. Outside that gap it
+// has nothing to link, and is therefore not a step but a claim.
 const careers = careersData.careers ?? {};
 const trousDe = (id) => {
   const vus = [...(appearances.get(id) ?? [])].map((y) => editions.indexOf(y)).filter((i) => i >= 0).sort((a, b) => a - b);
@@ -289,21 +290,21 @@ const trousDe = (id) => {
   return creux;
 };
 let nbEtapes = 0;
-const clubsVus = new Set(); // clubs sans colonne réellement cités par une étape
+const clubsVus = new Set(); // columnless clubs actually cited by a step
 for (const [name, fiche] of Object.entries(careers)) {
-  const where = `carrière de ${name}`;
+  const where = `career of ${name}`;
   const id = low(name);
-  if (!byLower.has(id)) { errors.push(`${where} : joueur absent des lineups`); continue; }
-  if (byLower.get(id) !== name) errors.push(`${where} : graphie « ${byLower.get(id)} » dans les lineups — un joueur s'écrit partout de la même façon`);
+  if (!byLower.has(id)) { errors.push(`${where}: player absent from the lineups`); continue; }
+  if (byLower.get(id) !== name) errors.push(`${where}: spelled "${byLower.get(id)}" in the lineups — a player is spelled the same way everywhere`);
 
-  // `seen` : première et dernière année où une partie est recensée. Elle encadre forcément
-  // les Worlds joués, sans quoi l'un des deux est faux.
+  // `seen`: first and last year with a game on record. It necessarily brackets the Worlds
+  // played, failing which one of the two is wrong.
   const seen = fiche.seen;
   const okSeen = Array.isArray(seen) && seen.length === 2 && seen.every((y) => Number.isInteger(y)) && seen[0] <= seen[1];
-  if (!okSeen) errors.push(`${where} : "seen" doit être [première, dernière] année, en années entières`);
+  if (!okSeen) errors.push(`${where}: "seen" must be [first, last] year, in whole years`);
   const vus = [...(appearances.get(id) ?? [])].sort((a, b) => a - b);
   if (okSeen && vus.length && (seen[0] > vus[0] || seen[1] < vus.at(-1))) {
-    errors.push(`${where} : "seen" [${seen.join(", ")}] n'encadre pas ses Worlds (${vus[0]}–${vus.at(-1)})`);
+    errors.push(`${where}: "seen" [${seen.join(", ")}] does not bracket their Worlds (${vus[0]}–${vus.at(-1)})`);
   }
 
   const creux = trousDe(id);
@@ -311,85 +312,85 @@ for (const [name, fiche] of Object.entries(careers)) {
   for (const key of annees) {
     const y = Number(key);
     const at = `${where}, ${key}`;
-    if (!years.has(y)) { errors.push(`${at} : année hors de la liste "years"`); continue; }
-    // Une étape hors trou est une erreur, exactement comme une lineup hors fenêtre `active`.
-    if (!creux.has(y)) { errors.push(`${at} : cette année n'est pas un trou entre deux Worlds du joueur`); continue; }
+    if (!years.has(y)) { errors.push(`${at}: year outside the "years" list`); continue; }
+    // A step outside a gap is an error, exactly like a lineup outside the `active` window.
+    if (!creux.has(y)) { errors.push(`${at}: this year is not a gap between two of the player's Worlds`); continue; }
     const entry = fiche.years[key];
     const steps = entry?.steps;
-    if (!Array.isArray(steps)) { errors.push(`${at} : "steps" doit être une liste`); continue; }
-    // La règle 5 retient le club majoritaire plus tout autre club à 20 % des parties ou
-    // plus : au-delà de cinq, le compte ne tiendrait pas, et trois est le maximum mesuré.
-    if (steps.length > 3) errors.push(`${at} : ${steps.length} étapes, le seuil de 20 % n'en permet pas autant`);
+    if (!Array.isArray(steps)) { errors.push(`${at}: "steps" must be a list`); continue; }
+    // Rule 5 keeps the majority club plus any other club at 20 % of the games or more: beyond
+    // five the arithmetic would not hold, and three is the measured maximum.
+    if (steps.length > 3) errors.push(`${at}: ${steps.length} steps, the 20 % threshold does not allow that many`);
     if (entry.offLevel !== undefined) {
-      if (entry.offLevel !== true) errors.push(`${at} : "offLevel" ne prend que la valeur true`);
-      else if (steps.length) errors.push(`${at} : "offLevel" marque une année sans étape retenue`);
+      if (entry.offLevel !== true) errors.push(`${at}: "offLevel" only takes the value true`);
+      else if (steps.length) errors.push(`${at}: "offLevel" marks a year with no step kept`);
     }
     const vu = new Set();
     for (const step of steps) {
       const keys = Object.keys(step ?? {});
       if (keys.length !== 1 || !["team", "club"].includes(keys[0])) {
-        errors.push(`${at} : une étape porte soit "team" (code de colonne), soit "club" (club sans colonne)`);
+        errors.push(`${at}: a step carries either "team" (a column code) or "club" (a columnless club)`);
         continue;
       }
       const val = step.team ?? step.club;
-      if (typeof val !== "string" || !val.trim()) { errors.push(`${at} : étape vide`); continue; }
-      if (vu.has(low(val))) errors.push(`${at} : ${val} apparaît deux fois`);
+      if (typeof val !== "string" || !val.trim()) { errors.push(`${at}: empty step`); continue; }
+      if (vu.has(low(val))) errors.push(`${at}: ${val} appears twice`);
       vu.add(low(val));
-      if (step.team && !teamCodes.has(step.team)) errors.push(`${at} : code d'équipe inconnu « ${step.team} »`);
-      // Un club qui est en réalité une colonne doit la rejoindre : sinon le fil contourne
-      // une colonne affichée pour aller se poser dans « Autres équipes ».
+      if (step.team && !teamCodes.has(step.team)) errors.push(`${at}: unknown team code "${step.team}"`);
+      // A club that is in fact a column must join it: otherwise the thread goes around a
+      // displayed column to settle in "Other teams".
       if (step.club) {
-        if (teamCodes.has(step.club)) errors.push(`${at} : « ${step.club} » est un code de colonne, à écrire en "team"`);
+        if (teamCodes.has(step.club)) errors.push(`${at}: "${step.club}" is a column code, to be written as "team"`);
         const col = teamsData.teams.find((t) => t.name === step.club);
-        if (col) errors.push(`${at} : « ${step.club} » est le nom de la colonne ${col.code}, à écrire en "team"`);
+        if (col) errors.push(`${at}: "${step.club}" is the name of column ${col.code}, to be written as "team"`);
         clubsVus.add(step.club);
       }
       nbEtapes++;
     }
   }
 }
-// --- sigles des clubs sans colonne
-// Le badge de leur case dans « Autres équipes ». Même forme qu'un code de colonne, parce que
-// les deux se lisent côte à côte. Une entrée orpheline est une donnée morte ; un club sans
-// entrée est accepté — sa case reste sans badge, et c'est ce que fait le script quand
-// `Teams.Short` ne donne rien d'exploitable.
+// --- short codes of columnless clubs
+// The badge on their chip in "Other teams". The same shape as a column code, because the two are
+// read side by side. An orphan entry is dead data; a club with no entry is accepted — its chip
+// stays without a badge, and that is what the script does when `Teams.Short` gives nothing
+// usable.
 const clubSigles = careersData.clubs ?? {};
 if (careersData.clubs !== undefined && (typeof clubSigles !== "object" || Array.isArray(clubSigles))) {
-  errors.push(`"clubs" doit être un objet « nom de club » → sigle`);
+  errors.push(`"clubs" must be an object "club name" → short code`);
 } else {
   const parSigle = new Map();
   for (const [club, sigle] of Object.entries(clubSigles)) {
-    const where = `sigle de club « ${club} »`;
-    if (!/^[A-Z0-9]{2,5}$/.test(String(sigle))) errors.push(`${where} : « ${sigle} » n'est pas un sigle valide (2 à 5 lettres ou chiffres en majuscules)`);
-    if (!clubsVus.has(club)) errors.push(`${where} : aucune étape ne cite ce club`);
-    if (teamCodes.has(String(sigle))) warnings.push(`${where} : « ${sigle} » est aussi le code de la colonne du même nom — deux badges identiques pour deux choses différentes`);
-    if (parSigle.has(sigle)) warnings.push(`${where} : même sigle que « ${parSigle.get(sigle)} »`);
+    const where = `club short code "${club}"`;
+    if (!/^[A-Z0-9]{2,5}$/.test(String(sigle))) errors.push(`${where}: "${sigle}" is not a valid short code (2 to 5 upper-case letters or digits)`);
+    if (!clubsVus.has(club)) errors.push(`${where}: no step cites this club`);
+    if (teamCodes.has(String(sigle))) warnings.push(`${where}: "${sigle}" is also the code of the column of the same name — two identical badges for two different things`);
+    if (parSigle.has(sigle)) warnings.push(`${where}: same short code as "${parSigle.get(sigle)}"`);
     else parSigle.set(sigle, club);
   }
   for (const club of [...clubsVus].sort()) {
-    if (!Object.hasOwn(clubSigles, club)) warnings.push(`club « ${club} » : pas de sigle, sa case s'affichera sans badge`);
+    if (!Object.hasOwn(clubSigles, club)) warnings.push(`club "${club}": no short code, its chip will show without a badge`);
   }
 }
 
-// Une carrière manquante pour un joueur à trou n'est pas une erreur de structure, mais une
-// collecte inachevée : le fil sautera le trou en silence.
+// A missing career for a player with a gap is not a structural error but an unfinished
+// collection run: the thread will jump over the gap in silence.
 for (const [id, seen] of appearances) {
   if (!trousDe(id).size) continue;
-  if (!Object.hasOwn(careers, byLower.get(id))) warnings.push(`${byLower.get(id)} : ${trousDe(id).size} année(s) entre deux Worlds, sans entrée dans careers.json`);
+  if (!Object.hasOwn(careers, byLower.get(id))) warnings.push(`${byLower.get(id)}: ${trousDe(id).size} year(s) between two Worlds, with no entry in careers.json`);
   void seen;
 }
 
 // --- sources
 for (const year of teamsData.years) {
-  if (!sourcesData.byYear?.[year]?.length) warnings.push(`${year} : aucune source listée dans data/sources.json`);
+  if (!sourcesData.byYear?.[year]?.length) warnings.push(`${year}: no source listed in data/sources.json`);
 }
 
 const lineups = [...present.keys()].length;
-console.log(`${teamsData.teams.length} équipes, ${lineups} lineups, ${allPlayers.size} joueurs affichés, ${noNat.length} sans nationalité vérifiée, ${nbEtapes} étapes hors Worlds.`);
-for (const w of warnings) console.log(`  avertissement · ${w}`);
+console.log(`${teamsData.teams.length} teams, ${lineups} lineups, ${allPlayers.size} players displayed, ${noNat.length} without a verified nationality, ${nbEtapes} steps outside Worlds.`);
+for (const w of warnings) console.log(`  warning · ${w}`);
 if (errors.length) {
-  for (const e of errors) console.error(`  ERREUR · ${e}`);
-  console.error(`${errors.length} erreur(s).`);
+  for (const e of errors) console.error(`  ERROR · ${e}`);
+  console.error(`${errors.length} error(s).`);
   process.exit(1);
 }
-console.log("Données valides.");
+console.log("Data valid.");

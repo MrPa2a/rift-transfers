@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <!-- La carte vit dans /map/, les données et les assets à la racine du site. Cette balise
-       est le seul endroit qui le dit : toutes les URL relatives de la page comme du module
-       app.js — dont ses `fetch("data/*.json")` — se résolvent depuis la racine. -->
+  <!-- The map lives in /map/, the data and the assets at the root of the site. This tag is the
+       only place that says so: every relative URL of the page as of the app.js module — its
+       `fetch("data/*.json")` included — resolves from the root. -->
   <base href="../">
   <title>Rift Transfers</title>
-  <!-- Les textes de l'interface vivent dans assets/js/i18n.js, et `data-i18n` dit lequel va où :
-       une chaîne n'est écrite qu'une fois, dans les deux langues côte à côte. Les métas, elles,
-       portent leur version **anglaise** en dur — c'est la langue par défaut du site, et c'est
-       ce que lit un robot qui n'exécute pas le script. `i18n.js` les réécrit au chargement
-       comme au changement de langue. -->
+  <!-- The interface text lives in assets/js/i18n.js, and `data-i18n` says which string goes
+       where: a string is written only once, in both languages side by side. The metas, for their
+       part, carry their **English** version hard-coded — it is the site's default language, and
+       it is what a crawler that does not run the script reads. `i18n.js` rewrites them at load
+       time as on a language change. -->
   <meta name="description" content="Interactive map of the rosters of every team that came to the 2011–2026 League of Legends World Championships: follow each player from one team to the next.">
   <meta name="theme-color" content="#171b26" media="(prefers-color-scheme: dark)">
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
@@ -34,9 +34,9 @@
 
 <div id="bar" class="float">
   <h1>Rift Transfers</h1>
-  <!-- Le <datalist> natif ne sait ni présenter deux catégories, ni afficher autre chose que
-       du texte, ni être stylé : la barre cherchant maintenant des équipes autant que des
-       joueurs, c'est une combobox écrite à la main. -->
+  <!-- The native <datalist> can neither present two categories, nor display anything other
+       than text, nor be styled: since the bar now searches teams as much as players, this is a
+       hand-written combobox. -->
   <div class="combo">
     <input id="q" type="text" autocomplete="off" spellcheck="false"
            data-i18n-attr="placeholder:q.aria;aria-label:q.aria"
@@ -47,10 +47,10 @@
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 4h12M4.5 8h7M7 12h2"/></svg><span data-i18n="btn.filtres"></span></button>
   <button class="ibtn" id="openStats" type="button" aria-expanded="false" aria-controls="statsDrawer" data-i18n-attr="title:btn.stats.titre">
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 13V8M8 13V3M13 13V6"/></svg><span data-i18n="btn.stats"></span></button>
-  <!-- Deux langues, donc une bascule et non une liste : le bouton porte le code de la langue
-       d'**arrivée**, qui est ce qu'il fait. Son libellé reste visible sous 700 px, contrairement
-       à ceux des deux boutons voisins — deux lettres tiennent toujours, et un globe seul ne
-       dirait pas vers quoi on bascule. -->
+  <!-- Two languages, hence a toggle and not a list: the button carries the code of the language
+       being **switched to**, which is what it does. Its label stays visible below 700 px, unlike
+       those of the two neighbouring buttons — two letters always fit, and a globe on its own
+       would not say what one is switching to. -->
   <button class="ibtn" id="lang" type="button" data-i18n-attr="title:btn.lang.titre;aria-label:btn.lang.titre">
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="8" cy="8" r="6.2"/><path d="M1.8 8h12.4M8 1.8c1.7 1.7 2.6 3.9 2.6 6.2S9.7 12.5 8 14.2C6.3 12.5 5.4 10.3 5.4 8S6.3 3.5 8 1.8Z"/></svg><span data-i18n="btn.lang.code"></span></button>
 </div>
@@ -62,8 +62,8 @@
   <div class="pct" id="zpct">100%</div>
 </div>
 
-<!-- Fermée par défaut : la légende compte une dizaine de lignes et masquait le bas gauche
-     de la carte dès l'ouverture. Elle reste à un clic. -->
+<!-- Closed by default: the legend runs to about ten lines and used to hide the bottom left of
+     the map from the start. It stays one click away. -->
 <details id="legend" class="float">
   <summary data-i18n="legend.titre"></summary>
   <div id="legendBody"></div>
@@ -71,10 +71,10 @@
 
 <div id="sel" class="float" hidden>
   <div id="selText"></div>
-  <!-- Isoler est une bascule, pas une action : d'où aria-pressed. Elle vit ici parce que #sel
-       est le seul endroit commun aux deux sélections — un joueur se prend dans la carte par
-       pointerup, une équipe dans l'en-tête par click, et un geste posé sur la carte laisserait
-       le curseur au-dessus d'autre chose une fois les colonnes resserrées. -->
+  <!-- Isolate is a toggle, not an action: hence aria-pressed. It lives here because #sel is the
+       only place common to both selections — a player is picked up in the map on pointerup, a
+       team in the header on click, and a gesture placed on the map would leave the cursor over
+       something else once the columns have closed up. -->
   <button id="selIso" type="button" aria-pressed="false" hidden></button>
   <button id="selClose" type="button" data-i18n-attr="aria-label:sel.fermer">×</button>
 </div>
@@ -93,8 +93,8 @@
     <div class="grp"><span class="lbl" data-i18n="grp.regions"></span><div class="row" id="regions"></div></div>
     <div class="grp"><span class="lbl" data-i18n="grp.presence"></span>
       <div class="row" id="presence"></div>
-      <!-- Les deux comptes de cette phrase se calculent sur les données, comme ceux des
-           pilules : un nombre écrit en dur dans la page se périmerait à la collecte suivante. -->
+      <!-- The two counts in this sentence are computed from the data, like those on the pills:
+           a number hard-coded into the page would go stale at the next collection run. -->
       <p class="notes" id="presenceNote" style="margin:.4rem 0 0"></p>
     </div>
     <div class="grp"><span class="lbl" data-i18n="grp.equipes"></span>
@@ -143,8 +143,8 @@
 <div id="loadError" class="float load-error" role="alert" hidden>
   <p><b data-i18n="load.titre"></b></p>
   <p data-i18n-html="load.corps"></p>
-  <!-- Le message d'erreur contient lui aussi un <code> — celui de `npm run dev` : ce
-       conteneur-ci porte donc un id, et non plus le premier `code` de la boîte. -->
+  <!-- The error message contains a <code> of its own — the one for `npm run dev`: so this
+       container carries an id, rather than being the box's first `code`. -->
   <p class="hint"><span data-i18n="load.detail"></span> <code id="loadDetail"></code></p>
 </div>
 </body>

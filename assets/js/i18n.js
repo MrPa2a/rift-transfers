@@ -1,30 +1,29 @@
 /*
- * Rift Transfers — socle de traduction. Aucune dépendance, aucune étape de build.
+ * Rift Transfers — translation layer. No dependency, no build step.
  *
- * Le dictionnaire est **plat**, et chaque clé porte ses deux graphies côte à côte plutôt que
- * d'ouvrir deux blocs `fr` et `en` séparés : c'est la seule forme où une chaîne oubliée dans une
- * langue se voit à l'œil, sur la ligne même où elle manque. Rien d'autre ne garantit qu'aucun
- * texte français ne subsiste dans l'interface anglaise.
+ * The dictionary is **flat**, and every key carries its two spellings side by side rather than
+ * opening two separate `fr` and `en` blocks: it is the only form in which a string forgotten in
+ * one language shows at a glance, on the very line where it is missing. Nothing else guarantees
+ * that no French text survives in the English interface.
  *
- * Les textes dérivés des **données** n'entrent pas ici : les noms de pays vivent dans
- * `players.json` et les libellés de parcours dans `results.json`, bilingues eux aussi, parce
- * qu'ils se collectent et se contrôlent comme des données. Les noms de ligue ne se traduisent
- * pas du tout — ce sont des noms propres.
+ * Text derived from the **data** does not belong here: country names live in `players.json` and
+ * run labels in `results.json`, bilingual as well, because they are collected and checked as
+ * data. League names are not translated at all — they are proper nouns.
  */
 
 export const LANGS = ["fr", "en"];
 const DEFAUT = "en";
 const CLE_STOCKAGE = "rift-transfers:lang";
 
-// Pluriel : la règle n'est pas la même des deux côtés. « 0 équipe » est singulier en français,
-// « 0 teams » pluriel en anglais — une seule règle écrirait donc faux dans une des deux langues.
+// Plural: the rule is not the same on both sides. "0 équipe" is singular in French, "0 teams"
+// plural in English — so a single rule would write one of the two languages wrong.
 const PLURIEL = {
   fr: (n) => (Math.abs(n) >= 2 ? "other" : "one"),
   en: (n) => (n === 1 ? "one" : "other"),
 };
-// Ordinaux : « 2e Worlds avec l'équipe » devient « 2nd », et la forme anglaise dépend des deux
-// derniers chiffres (11th, 12th, 13th, et non 11st). Le compte va de 1 à 13 sur ce jeu de
-// données, mais la règle est écrite entière : elle ne coûte rien et ne se repose pas sur ça.
+// Ordinals: "2e Worlds avec l'équipe" becomes "2nd", and the English form depends on the last
+// two digits (11th, 12th, 13th, and not 11st). The count runs from 1 to 13 on this data set, but
+// the rule is written out in full: it costs nothing and does not rely on that.
 const ORDINAL = {
   fr: (n) => (n === 1 ? "er" : "e"),
   en: (n) => {
@@ -33,11 +32,11 @@ const ORDINAL = {
     return ["th", "st", "nd", "rd"][n % 10] || "th";
   },
 };
-// `og:locale` attend un code de territoire, pas une langue seule.
+// `og:locale` expects a territory code, not a bare language.
 const LOCALES = { fr: "fr_FR", en: "en_US" };
 
 const T = {
-  // ---------- métadonnées de la page ----------
+  // ---------- page metadata ----------
   "page.description": {
     fr: "Carte interactive des rosters de toutes les équipes venues aux Worlds 2011–2026 de League of Legends : suivez chaque joueur d'une équipe à l'autre.",
     en: "Interactive map of the rosters of every team that came to the 2011–2026 League of Legends World Championships: follow each player from one team to the next.",
@@ -47,7 +46,7 @@ const T = {
     en: "League of Legends Worlds rosters since 2011, and every player's transfers.",
   },
 
-  // ---------- barre, axe, outils flottants ----------
+  // ---------- bar, axis, floating tools ----------
   "coin.annee": { fr: "ANNÉE", en: "YEAR" },
   "vp.aria": {
     fr: "Carte des rosters, glisser pour se déplacer, molette pour zoomer",
@@ -59,8 +58,8 @@ const T = {
   "btn.filtres.titre": { fr: "Filtres et options", en: "Filters and options" },
   "btn.stats": { fr: "Stats", en: "Stats" },
   "btn.stats.titre": { fr: "Statistiques", en: "Statistics" },
-  // Le bouton de langue annonce la langue **d'arrivée**, pas celle en cours : c'est ce qu'il
-  // fait, et non où l'on est — la page entière le dit déjà.
+  // The language button announces the language being **switched to**, not the current one: that
+  // is what it does, not where one is — the whole page already says that.
   "btn.lang.code": { fr: "EN", en: "FR" },
   "btn.lang.titre": { fr: "Switch to English", en: "Passer en français" },
   "zoom.in": { fr: "Zoomer", en: "Zoom in" },
@@ -68,7 +67,7 @@ const T = {
   "zoom.fit": { fr: "Tout afficher", en: "Show all" },
   "legend.titre": { fr: "Légende", en: "Legend" },
 
-  // ---------- panneau de sélection ----------
+  // ---------- selection panel ----------
   "sel.iso": { fr: "Isoler", en: "Isolate" },
   "sel.tout": { fr: "Tout afficher", en: "Show all" },
   "sel.fermer": { fr: "Retirer la sélection", en: "Clear the selection" },
@@ -89,7 +88,7 @@ const T = {
     en: "No column of the selection within the displayed period",
   },
 
-  // ---------- tiroir de filtres ----------
+  // ---------- filter drawer ----------
   "drawer.fermer": { fr: "Fermer", en: "Close" },
   "grp.periode": { fr: "Période", en: "Period" },
   "periode.de": { fr: "De", en: "From" },
@@ -163,7 +162,7 @@ const T = {
     en: "Keeps only the club just before arriving and the club just after leaving",
   },
 
-  // ---------- notes du tiroir de filtres ----------
+  // ---------- notes in the filter drawer ----------
   "notes.titre": { fr: "Sources et limites des données", en: "Data sources and limits" },
   "notes.rangee": {
     fr: "Une rangée = les joueurs qui ont joué ces Worlds pour l'équipe, pas le roster de la saison. Une case grisée = équipe absente des Worlds, sans roster inventé.",
@@ -222,7 +221,7 @@ const T = {
     en: "<p><b>Full careers</b> · highlights every player who has been through the team, with their whole Worlds career. For following players.</p><p><b>Arrivals and departures</b> · keeps only the club just before arriving and the club just after leaving. For seeing which teams the team trades its players with.</p><p>This choice also decides which columns the <b>Isolate</b> button in the detail panel keeps: all those the team's players have passed through, or only the clubs before and after.</p>",
   },
 
-  // ---------- tiroir de statistiques ----------
+  // ---------- statistics drawer ----------
   "stats.titre": { fr: "Statistiques", en: "Statistics" },
   "stats.note": {
     fr: "Calculées sur les {n} équipes suivies et leurs titulaires aux Worlds {de}–{a}. Touche un nom pour le retrouver sur la carte.",
@@ -264,7 +263,7 @@ const T = {
   "stats.absente": { fr: "équipe absente du jeu de données", en: "team absent from the dataset" },
   "stats.voir": { fr: "Voir la colonne {nom} sur la carte", en: "Show the {nom} column on the map" },
 
-  // ---------- cases, en-têtes et axe de la carte ----------
+  // ---------- chips, headers and year axis ----------
   "zone.et": { fr: " et ", en: " and " },
   "chip.worlds": { fr: "{nom}{alias}{nat} · {poste} · {equipe} {annee}", en: "{nom}{alias}{nat} · {poste} · {equipe} {annee}" },
   "chip.etape": {
@@ -305,7 +304,7 @@ const T = {
     en: "Show only the teams of {annee}, and those its players come from and go to",
   },
 
-  // ---------- refus : pourquoi une équipe n'a pas de colonne ----------
+  // ---------- refusals: why a team has no column ----------
   "refus.periode": {
     fr: "aucune édition dans la période affichée",
     en: "no edition within the displayed period",
@@ -326,7 +325,7 @@ const T = {
   },
   "refus.horsIso": { fr: "hors de l'isolement en cours", en: "outside the current isolation" },
 
-  // ---------- panneau de détail ----------
+  // ---------- detail panel ----------
   "detail.void": {
     fr: "{annee} · aucune partie professionnelle recensée",
     en: "{annee} · no professional game on record",
@@ -344,7 +343,7 @@ const T = {
     en: "{n} players started at Worlds since {annee}, full careers highlighted.",
   },
 
-  // ---------- légende ----------
+  // ---------- legend ----------
   "leg.fil": {
     fr: "changement d'équipe, coloré par poste — le fil bascule en son milieu quand le joueur change de poste",
     en: "team change, coloured by role — the thread switches at its midpoint when the player changes role",
@@ -396,7 +395,7 @@ const T = {
     en: "Drag to pan · wheel or pinch to zoom",
   },
 
-  // ---------- recherche ----------
+  // ---------- search ----------
   "rech.joueurs": { fr: "Joueurs", en: "Players" },
   "rech.equipes": { fr: "Équipes", en: "Teams" },
   "rech.reste.one": { fr: "+ {n} autre — précisez la recherche", en: "+ {n} more — narrow the search" },
@@ -406,7 +405,7 @@ const T = {
     en: "No player or team by that name.",
   },
 
-  // ---------- erreur de chargement ----------
+  // ---------- loading error ----------
   "load.titre": { fr: "Impossible de charger les données.", en: "Could not load the data." },
   "load.corps": {
     fr: "Le site doit être servi par un serveur web (par exemple <code class=\"cmd\">npm run dev</code>), pas ouvert directement depuis le disque.",
@@ -415,13 +414,13 @@ const T = {
   "load.detail": { fr: "Détail :", en: "Details:" },
 };
 
-// ---------- résolution de la langue ----------
-// `?lang=` > `localStorage` > `navigator.languages` > `en`. Pas de géo-IP : ce serait un appel
-// réseau externe, et la langue déclarée du navigateur est de toute façon le meilleur signal.
+// ---------- language resolution ----------
+// `?lang=` > `localStorage` > `navigator.languages` > `en`. No geo-IP: that would be an external
+// network call, and the browser's declared language is the better signal anyway.
 //
-// Un `?lang=` n'est **pas** mémorisé : c'est une variante d'URL, pas un choix. Seul le
-// sélecteur écrit dans `localStorage` — sans quoi un lien partagé en anglais changerait la
-// langue par défaut de qui le suit.
+// A `?lang=` is **not** remembered: it is a URL variant, not a choice. Only the selector writes
+// to `localStorage` — without which a link shared in English would change the default language
+// of whoever follows it.
 const lu = (cle) => { try { return localStorage.getItem(cle); } catch { return null; } };
 function resoudre() {
   const demande = new URLSearchParams(location.search).get("lang");
@@ -438,7 +437,7 @@ function resoudre() {
 let langue = resoudre();
 export const lang = () => langue;
 
-// ---------- lecture du dictionnaire ----------
+// ---------- reading the dictionary ----------
 const remplir = (texte, params) => (params
   ? texte.replace(/\{(\w+)\}/g, (brut, cle) => (cle in params ? String(params[cle]) : brut))
   : texte);
@@ -446,21 +445,21 @@ const remplir = (texte, params) => (params
 export function t(cle, params) {
   const entree = T[cle];
   if (!entree) {
-    // Une clé absente est un bug, pas un cas à gérer : elle s'affiche telle quelle pour qu'on
-    // la voie à la relecture, et la console le dit.
-    console.warn(`i18n : clé inconnue « ${cle} »`);
+    // A missing key is a bug, not a case to handle: it is displayed as is so that it shows on
+    // proofreading, and the console says so.
+    console.warn(`i18n: unknown key "${cle}"`);
     return cle;
   }
   return remplir(entree[langue] ?? entree[DEFAUT] ?? cle, params);
 }
-// Pluriel : `tn("hdr.dehors", 3)` lit `hdr.dehors.other` et passe `n` en paramètre.
+// Plural: `tn("hdr.dehors", 3)` reads `hdr.dehors.other` and passes `n` as a parameter.
 export const tn = (cle, n, params) => t(`${cle}.${PLURIEL[langue](n)}`, { n, ...params });
 export const ord = (n) => `${n}${ORDINAL[langue](n)}`;
 
-// ---------- application au document ----------
-// Trois attributs, et pas un de plus : le texte, le texte riche, et les attributs. Le texte
-// français ne vit **pas** dans le HTML — sinon il y aurait deux sources pour la même chaîne, et
-// c'est exactement la dérive que la table fr/en côte à côte cherche à rendre impossible.
+// ---------- applying to the document ----------
+// Three attributes, and not one more: text, rich text, and attributes. The French text does
+// **not** live in the HTML — otherwise there would be two sources for the same string, and that
+// is exactly the drift the side-by-side fr/en table is meant to make impossible.
 export function appliquer(racine = document) {
   racine.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
   racine.querySelectorAll("[data-i18n-html]").forEach((el) => { el.innerHTML = t(el.dataset.i18nHtml); });
@@ -472,8 +471,8 @@ export function appliquer(racine = document) {
   });
 }
 
-// En-tête du document : la langue déclarée, la description et les métas de partage. `og:title`
-// ne bouge pas — c'est le nom du projet.
+// Document head: the declared language, the description and the sharing metas. `og:title` does
+// not move — it is the name of the project.
 function appliquerEntete() {
   document.documentElement.lang = langue;
   const poser = (selecteur, valeur) => {
@@ -486,18 +485,18 @@ function appliquerEntete() {
 }
 
 const abonnes = new Set();
-// Un changement de langue ne recharge pas la page : la carte est un outil qu'on a déjà réglé —
-// période, filtres, zoom, sélection — et un rechargement rendrait tout ça. Les abonnés
-// reconstruisent ce que le dictionnaire ne peut pas atteindre seul : les libellés que le
-// JavaScript écrit, et la carte elle-même.
+// A language change does not reload the page: the map is a tool one has already set up —
+// period, filters, zoom, selection — and a reload would give all that back. Subscribers rebuild
+// what the dictionary cannot reach on its own: the labels JavaScript writes, and the map
+// itself.
 export const surChangement = (fn) => abonnes.add(fn);
 
 export function setLang(nouvelle) {
   if (!LANGS.includes(nouvelle) || nouvelle === langue) return;
   langue = nouvelle;
-  try { localStorage.setItem(CLE_STOCKAGE, nouvelle); } catch { /* navigation privée : le choix ne survit pas à l'onglet, et c'est tout */ }
-  // L'URL porte la langue choisie, sans navigation : le lien reste partageable tel quel, et
-  // c'est la variante que `hreflang` déclarera.
+  try { localStorage.setItem(CLE_STOCKAGE, nouvelle); } catch { /* private browsing: the choice does not outlive the tab, and that is all */ }
+  // The URL carries the chosen language, without navigating: the link stays shareable as is, and
+  // it is the variant `hreflang` will declare.
   const url = new URL(location.href);
   url.searchParams.set("lang", nouvelle);
   history.replaceState(null, "", url);

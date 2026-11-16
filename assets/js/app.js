@@ -1,20 +1,20 @@
 /*
- * Rift Transfers — carte des rosters des équipes venues aux Worlds de League of Legends.
- * Les données viennent de /data (format décrit dans CONTRIBUTING.md) ; ce fichier ne contient que le rendu.
+ * Rift Transfers — map of the rosters of every team that played the League of Legends Worlds.
+ * The data comes from /data (format described in CONTRIBUTING.md); this file holds the rendering only.
  *
- * Aucun texte affiché n'est écrit ici : tout passe par `t()`, et le dictionnaire vit dans
- * i18n.js. Importer ce module **traduit déjà** le HTML statique de la page, avant même le
- * chargement des données — la boîte d'erreur qui suit en dépend.
+ * No displayed text is written here: everything goes through `t()`, and the dictionary lives in
+ * i18n.js. Importing that module **already translates** the page's static HTML, before the data
+ * is even loaded — the error box below depends on it.
  */
-// `t` est déjà, partout dans ce fichier, la variable d'une équipe — d'où `tr` et `trn` pour
-// traduire, plutôt qu'un renommage de cent lignes qui ne gagnerait rien.
+// Throughout this file `t` is already the variable for a team — hence `tr` and `trn` for
+// translating, rather than a hundred-line rename that would gain nothing.
 import { t as tr, tn as trn, ord, lang, setLang, LANGS, surChangement } from "./i18n.js";
 
-// ---------- chargement des données ----------
-const ROLES = ["top", "jgl", "mid", "bot", "sup"];           // clés internes (classes CSS)
-const ROLE_KEYS = ["top", "jungle", "mid", "bot", "support"]; // clés du JSON
-// Les cinq postes s'écrivent de la même façon dans les deux langues : ce sont les termes du jeu,
-// que personne ne traduit, et ils n'entrent donc pas dans le dictionnaire.
+// ---------- data loading ----------
+const ROLES = ["top", "jgl", "mid", "bot", "sup"];           // internal keys (CSS classes)
+const ROLE_KEYS = ["top", "jungle", "mid", "bot", "support"]; // JSON keys
+// The five roles are spelled the same way in both languages: they are the game's own terms,
+// which nobody translates, so they stay out of the dictionary.
 const ROLE_NAME = { top: "Top", jgl: "Jungle", mid: "Mid", bot: "Bot", sup: "Support" };
 
 async function loadJSON(name) {
@@ -33,53 +33,53 @@ try {
   throw err;
 }
 
-// ALL_YEARS : toutes les éditions, qui servent aux statistiques.
-// YEARS : la plage affichée, recalculée à chaque rendu par le filtre de période.
+// ALL_YEARS: every edition, which the statistics are computed on.
+// YEARS: the displayed range, recomputed on each render by the period filter.
 const ALL_YEARS = TEAMS_DATA.years;
 let YEARS = ALL_YEARS;
 const REGIONS = TEAMS_DATA.regions;
 const RES = RESULTS_DATA.results;
-// Libellés de parcours et noms de pays sont **bilingues dans les données** : ce sont des
-// textes d'interface, mais ils se collectent et se contrôlent avec le reste de /data. Leur
-// lecture passe donc par la langue courante, et non par une table figée au chargement — la
-// langue change sans rechargement de page.
+// Run labels and country names are **bilingual inside the data**: they are interface text, but
+// they are collected and checked along with the rest of /data. Reading them therefore goes
+// through the current language, and not through a table frozen at load time — the language
+// changes without reloading the page.
 const RES_LABEL = RESULTS_DATA.labels;
 const parcours = (code) => RES_LABEL[code]?.[lang()] ?? code;
 const ONGOING_YEAR = RESULTS_DATA.ongoingYear ?? null;
 const HOME = PLAYERS_DATA.homeCountries;
-// Code ISO → nom du pays. Le badge des chips reste au code à deux lettres, faute de place ;
-// seul le panneau de détail a la place d'écrire « Corée du Sud ».
+// ISO code → country name. The chip badge stays with the two-letter code for lack of room;
+// only the detail panel has space enough to spell out "South Korea".
 const COUNTRY = PLAYERS_DATA.countryNames || {};
 const pays = (code) => COUNTRY[code]?.[lang()] ?? code;
-// Nom de la ligue derrière chaque sigle de région, collecté dans `Leagues.League` (§ 15 du
-// rapport de collecte). C'est le nom de la ligue **aujourd'hui**, alors qu'une famille de
-// colonnes couvre seize ans : la LEC s'est appelée « EU LCS » la moitié de sa vie. Le sigle
-// d'une pilule est donc un nom de famille de colonnes, pas la ligue d'une année donnée — la
-// région d'une rangée, elle, se décide à l'année de son édition (docs/SOURCES.md,
-// « Périmètre »). D'où un libellé sobre, qui ne s'énonce pas comme une vérité historique.
+// Name of the league behind each region code, collected from `Leagues.League` (§ 15 of the
+// collection report). It is the league's name **today**, whereas a family of columns spans
+// sixteen years: the LEC was called "EU LCS" for half its life. A pill's code is therefore the
+// name of a family of columns, not the league of a given year — a row's region, for its part,
+// is decided at the year of its edition (docs/SOURCES.md, "Périmètre"). Hence a sober label,
+// one that does not state itself as a historical truth.
 const LEAGUE_NAMES = TEAMS_DATA.leagueNames || {};
-// Zone géographique d'une région, écrite au survol de sa pilule à côté du nom de ligue.
+// Geographic zone of a region, written next to the league name when its pill is hovered.
 //
-// Elle se **dérive de `homeCountries`**, et non de `Leagues.Region` qui arrive dans la même
-// requête : sur LPL, la source dit « China » alors que la carte compte Taïwan et Hong Kong
-// domestiques — l'infobulle contredirait le badge « importé » affiché à quelques pixels de
-// là. `Leagues.Region` est par ailleurs circulaire sur LMS (« LMS ») et approximatif sur LCP.
-// `homeCountries` est le territoire que la carte utilise réellement, déjà arbitré région par
-// région avec sa justification écrite, et déjà dans /data : aucune collecte.
-const ZONE_MAX = 3; // au-delà, la liste des pays est illisible dans une infobulle
-// Les trois régions que `ZONE_MAX` écarte — LEC (25 pays), LCL (8), LLA (7) — reçoivent un
-// libellé court, et ce sont les **seuls** textes nouveaux de l'entrée : le projet les écrit
-// déjà ailleurs (« espace post-soviétique » est dans le dictionnaire et dans docs/SOURCES.md).
-// Table arbitrée : on n'invente pas le nom d'un territoire, pas plus qu'on n'abrège un nom
-// d'équipe de soi-même. Une région trop large qui n'y figure pas n'affiche **pas** de zone.
-// Les deux graphies restent ici, et non dans i18n.js : c'est l'arbitrage qui compte, et il se
-// lit d'un bloc — trois clés dispersées dans le dictionnaire le rendraient invisible.
+// It is **derived from `homeCountries`**, and not from `Leagues.Region`, which arrives in the
+// same query: for the LPL the source says "China" while the map counts Taiwan and Hong Kong as
+// domestic — the tooltip would contradict the "imported" badge shown a few pixels away.
+// `Leagues.Region` is also circular for the LMS ("LMS") and approximate for the LCP.
+// `homeCountries` is the territory the map actually uses, already settled region by region with
+// its justification written down, and already in /data: nothing to collect.
+const ZONE_MAX = 3; // beyond that, the list of countries is unreadable in a tooltip
+// The three regions `ZONE_MAX` rules out — LEC (25 countries), LCL (8), LLA (7) — get a short
+// label, and those are the **only** new pieces of text in this entry: the project already
+// writes them elsewhere ("post-Soviet space" is in the dictionary and in docs/SOURCES.md).
+// A settled table: we do not invent the name of a territory, any more than we abbreviate a team
+// name on our own. A too-wide region absent from it displays **no** zone at all.
+// Both spellings stay here rather than in i18n.js: what matters is the arbitration, and it
+// reads as one block — three keys scattered through the dictionary would make it invisible.
 const ZONES_ARBITREES = {
   LEC: { fr: "Europe", en: "Europe" },
   LCL: { fr: "espace post-soviétique", en: "post-Soviet space" },
   LLA: { fr: "Amérique latine", en: "Latin America" },
 };
-// « Thaïlande, Philippines et Singapour » — le dernier séparé par « et », « and » en anglais.
+// "Thailand, Philippines and Singapore" — the last one joined by "and", "et" in French.
 function zoneDe(region) {
   const codes = HOME[region] || [];
   if (!codes.length) return null;
@@ -90,10 +90,10 @@ function zoneDe(region) {
 const NAT = {};
 for (const [name, code] of Object.entries(PLAYERS_DATA.nationality)) NAT[name.toLowerCase()] = code;
 
-// Une « apparition » = un joueur, une équipe, une édition des Worlds.
-// Un poste partagé par deux joueurs qui franchissent tous deux le seuil de 20 % (`split`)
-// produit **deux** apparitions, affichées en deux demi-cases ciblables ; une rotation restée
-// sous le seuil n'en produit qu'une, et reste signalée par la marque `*`.
+// An "appearance" = one player, one team, one edition of Worlds.
+// A role shared by two players who both cross the 20 % threshold (`split`) produces **two**
+// appearances, displayed as two targetable half-chips; a rotation that stayed under the
+// threshold produces only one, and is still flagged by the `*` mark.
 const teams = [], players = new Map(), apps = [];
 TEAMS_DATA.teams.forEach((td, ti) => {
   const t = { code: td.code, name: td.name, region: td.region, label: td.label, tag: td.tag, i: ti, active: td.active || [], years: {} };
@@ -105,8 +105,8 @@ TEAMS_DATA.teams.forEach((td, ti) => {
       const partage = split.includes(roleKey) && second;
       const noms = partage ? [entry.lineup[roleKey], second] : [entry.lineup[roleKey]];
       const faits = noms.map((name, half) => {
-        // L'identité reste la graphie canonique : le pseudo d'époque ne change que l'affichage,
-        // pour que le fil de carrière ne soit pas scindé.
+        // Identity stays the canonical spelling: the period handle only changes the display,
+        // so that the career thread is not split in two.
         const id = name.toLowerCase();
         if (!players.has(id)) players.set(id, { id, name, apps: [] });
         const a = {
@@ -126,19 +126,19 @@ TEAMS_DATA.teams.forEach((td, ti) => {
 });
 players.forEach(p => p.apps.sort((a, b) => a.year - b.year || a.half - b.half));
 
-// ---------- étapes de carrière hors Worlds (data/careers.json) ----------
-// Une étape dit **où était le joueur** une année sans rangée, entre deux de ses apparitions.
-// Elle entre dans le fil comme une apparition de plus, pour que la ligne ne saute plus le
-// trou, mais elle reste grise : ce n'est pas une rangée de Worlds, et la distinction doit
-// survivre à tout réglage.
+// ---------- career steps outside Worlds (data/careers.json) ----------
+// A step says **where the player was** during a year with no row, between two of their
+// appearances. It enters the thread as one more appearance, so the line no longer jumps over
+// the gap, but it stays grey: it is not a Worlds row, and that distinction must survive every
+// setting.
 //
-// Le club traversé n'a pas toujours de colonne — il n'est jamais allé aux Worlds. Il reçoit
-// alors une pseudo-équipe qu'aucun filtre ne peut rendre visible, et tombe donc dans
-// « Autres équipes » par le prédicat existant, sans cas particulier ailleurs.
+// The club passed through does not always have a column — it never went to Worlds. It then gets
+// a pseudo-team that no filter can make visible, and therefore falls into "Other teams" through
+// the existing predicate, with no special case anywhere else.
 const CAREERS = CAREERS_DATA.careers || {};
-// Sigle des clubs sans colonne, replié par le script depuis `Teams.Short` comme un code de
-// colonne. Un club que la source ne sait pas abréger n'y figure pas : sa case restera sans
-// badge plutôt que de porter une abréviation inventée.
+// Short code for clubs without a column, resolved by the script from `Teams.Short` just like a
+// column code. A club the source cannot abbreviate is absent from it: its chip stays without a
+// badge rather than carrying a made-up abbreviation.
 const CLUB_SIGLES = CAREERS_DATA.clubs || {};
 const byCode = new Map(teams.map(t => [t.code, t]));
 const clubTeams = new Map();
@@ -146,12 +146,12 @@ const clubTeam = name => {
   if (!clubTeams.has(name)) clubTeams.set(name, { code: `@${name}`, name, label: name, tag: CLUB_SIGLES[name] || null, region: null, i: -1, active: [], years: {}, club: true });
   return clubTeams.get(name);
 };
-// Première et dernière année où une partie est recensée au joueur : les deux bornes que les
-// marques de bout affichent. Elles ne disent **pas** une carrière — un joueur encore actif
-// n'a peut-être pas requalifié, et la source ne couvre pas tout.
+// First and last year with a game on record for the player: the two bounds the end marks
+// display. They do **not** state a career — a still-active player may simply not have qualified
+// again, and the source does not cover everything.
 const SEEN = new Map();
-// Années-trous sans la moindre partie recensée. Le mot s'arrête là : « aucune partie
-// professionnelle recensée », jamais « sans club ».
+// Gap years without a single game on record. The wording stops there: "no professional game on
+// record", never "no team".
 const VOIDS = new Map();
 const stepApps = [];
 players.forEach(p => {
@@ -162,16 +162,16 @@ players.forEach(p => {
   for (const [key, entry] of Object.entries(fiche.years || {})) {
     const year = +key;
     if (!entry.steps?.length) {
-      // `offLevel` : le joueur a joué, mais rien qui soit de niveau Primary. On n'en dit rien
-      // — surtout pas qu'il n'a pas joué.
+      // `offLevel`: the player did play, but nothing at Primary level. We say nothing about it
+      // — least of all that they did not play.
       if (!entry.offLevel) {
         if (!VOIDS.has(p.id)) VOIDS.set(p.id, new Set());
         VOIDS.get(p.id).add(year);
       }
       continue;
     }
-    // Le poste est celui de la dernière apparition d'avant : le fil garde son couloir de
-    // colonne au lieu de changer de voie sur une année dont la source ne dit pas le poste.
+    // The role is that of the last appearance before it: the thread keeps its column lane
+    // instead of switching lanes on a year whose role the source does not state.
     const avant = p.apps.filter(a => a.year < year).at(-1) || p.apps[0];
     entry.steps.forEach((st, rang) => {
       const t = st.team ? byCode.get(st.team) : clubTeam(st.club);
@@ -188,14 +188,14 @@ players.forEach(p => {
   p.apps.sort((a, b) => a.year - b.year || a.half - b.half || (a.rang ?? 0) - (b.rang ?? 0));
 });
 
-// Une étape n'a pas de région propre : elle hérite de celle de sa colonne, qui est un
-// emplacement sur la carte et non une affirmation sur la ligue jouée cette année-là. Un club
-// sans colonne n'en a aucune, d'où la garde — `HOME[null]` ferait planter la carte.
+// A step has no region of its own: it inherits its column's, which is a place on the map and
+// not a claim about the league played that year. A club without a column has none at all, hence
+// the guard — `HOME[null]` would crash the map.
 const isImport = a => !a.step && NAT[a.id] && !HOME[a.team.region].includes(NAT[a.id]);
-// ancienneté : n-ième Worlds du joueur avec cette équipe. Une étape n'en est pas un.
+// seniority: the player's n-th Worlds with this team. A step is not one.
 players.forEach(p => { const c = {}; p.apps.forEach(a => { if (a.step) { a.sen = 0; return; } c[a.team.code] = (c[a.team.code] || 0) + 1; a.sen = c[a.team.code]; }); });
 
-// ---------- rendu ----------
+// ---------- rendering ----------
 const CW=132, STEP=24, CH=20, TOPPAD=30, ROWH=250;
 const PADX=8, chipW=CW-PADX*2;
 const KMIN=0.15, KMAX=2.5;
@@ -204,116 +204,115 @@ const vp=$("vp"), world=$("world"), hdr=$("hdr"), rail=$("rail");
 const yTop=y=>YEARS.indexOf(y)*ROWH+TOPPAD;
 const regionVar=r=>`var(--${r.toLowerCase()})`;
 const shortName=t=>t.label||t.code;
-// Badge d'une case de « Autres équipes ». Une colonne porte son code. Un club sans colonne
-// porte le sigle de `CLUB_SIGLES`, et **rien du tout** s'il n'en a pas : son nom entier dans un
-// badge taillé pour trois lettres écrasait le pseudo du joueur en ellipse, puisque `.t` ne se
-// comprime pas et que `.n` est le seul à le faire.
+// Badge of a chip in "Other teams". A column carries its code. A club without a column carries
+// the short code from `CLUB_SIGLES`, and **nothing at all** if it has none: its full name in a
+// badge sized for three letters crushed the player's handle into an ellipsis, since `.t` does
+// not compress and `.n` is the only one that does.
 const tagDe=t=>t.club?t.tag:(t.tag||t.code);
 let H=YEARS.length*ROWH+20;
-// Dix voies de courbe au lieu de cinq : deux par poste, sinon les deux fils d'une case
-// partagée se superposeraient.
+// Ten curve lanes instead of five: two per role, otherwise the two threads of a shared chip
+// would overlap.
 const laneAt=(cx,ri,half)=>cx+14+(2*ri+half)*((chipW-28)/9);
-// La voie est un **couloir de colonne** : stable par (poste, moitié), elle garantit que deux
-// lignes de postes différents ne se superposent pas sur le trajet vertical entre deux années.
-// On ne la déplace donc pas. Mais les dix voies sont réparties sur la largeur *pleine* de la
-// chip, alors qu'une demi-case n'occupe que [0, 58] ou [58, 116] : pour top droite, jungle
-// droite, bot gauche et support gauche, la voie tombe hors de la chip et la ligne semblait
-// sortir de sous le nom voisin. On corrige l'attache — le point de départ et d'arrivée passe
-// au centre de la chip, rejoint par un court coude — et le couloir reste intact.
+// The lane is a **column corridor**: stable per (role, half), it guarantees that two lines of
+// different roles never overlap along the vertical run between two years. So we do not move it.
+// But the ten lanes are spread over the chip's *full* width, whereas a half-chip only occupies
+// [0, 58] or [58, 116]: for top right, jungle right, bot left and support left, the lane falls
+// outside the chip and the line seemed to come out from under the neighbouring name. We fix the
+// anchor — start and end points move to the centre of the chip, reached by a short elbow — and
+// the corridor stays intact.
 const ELBOW=14;
-// Gouttière entre deux blocs d'éditions : la hauteur libre au-dessus d'un bloc, celle que
-// marque déjà le trait d'année. Elle borne le coude ci-dessous — au-delà, il viendrait
-// chercher le bloc voisin.
+// Gutter between two edition blocks: the free height above a block, the one the year rule
+// already marks. It bounds the elbow below — beyond it, the elbow would reach into the
+// neighbouring block.
 const GOUTTIERE=70;
-// Hauteur d'un coude : fonction de l'écart latéral qu'il doit franchir, et non une
-// constante.
+// Height of an elbow: a function of the lateral offset it has to cross, not a constant.
 //
-// Une hauteur fixe de 14 px conviendrait à un fil sans déport, mais un fil qui rejoint la
-// demi-case de droite d'un poste partagé a 63 px à franchir — un rapport de 4,5:1, soit un S
-// écrasé collé au-dessus de la case. Le poste partagé ne fait que créer le décalage : ce qui
-// compte est que le coude s'y adapte, et ce calcul n'a donc pas à connaître les demi-cases.
+// A fixed height of 14 px would suit a thread with no offset, but a thread reaching the right
+// half-chip of a shared role has 63 px to cross — a 4.5:1 ratio, that is, a flattened S stuck
+// above the chip. The shared role merely creates the offset: what matters is that the elbow
+// adapts to it, so this computation has no need to know about half-chips.
 //
-// Le fil commence donc son déport d'autant plus tôt qu'il a plus de chemin à faire, et le S
-// s'étale au lieu de se replier. `ELBOW` reste le plancher : un fil sans déport — le cas
-// général, une case pleine, dont l'attache **est** le couloir — garde ce coude minimal, et sa
-// courbe reste d'ailleurs une verticale droite.
+// The thread therefore starts its offset all the earlier as it has further to go, and the S
+// spreads out instead of folding over itself. `ELBOW` stays the floor: a thread with no offset
+// — the general case, a full chip, whose anchor **is** the corridor — keeps that minimal elbow,
+// and its curve in fact stays a straight vertical.
 const PENTE=0.9;
 const coude=(dx,place)=>Math.min(Math.max(ELBOW,Math.abs(dx)*PENTE),Math.max(ELBOW,place));
-// Demi-largeur de la barre qui ferme les deux bouts du fil. Sa hampe, elle, n'a pas de
-// longueur propre : elle court jusqu'à la jonction entre deux éditions (voir `cap`).
+// Half-width of the bar that closes both ends of the thread. Its stem has no length of its own:
+// it runs to the junction between two editions (see `cap`).
 const CAP=9;
-// La barre s'arrête **avant** la ligne de séparation plutôt que dessus. Une fin de carrière et
-// un début à l'édition suivante tombent sinon au même endroit, dans le même couloir si c'est
-// le même poste, et les deux marques se confondent en une seule — Dyrus s'arrêtant chez TSM en
-// 2015, Hauntzer y arrivant en 2016. De part et d'autre de la ligne, elles se lisent comme
-// deux faits distincts, et la ligne garde son rôle de frontière.
+// The bar stops **before** the separating line rather than on it. Otherwise an end and a start
+// at the next edition land in the same place, in the same corridor if the role is the same, and
+// the two marks merge into one — Dyrus stopping at TSM in 2015, Hauntzer arriving there in
+// 2016. On either side of the line they read as two distinct facts, and the line keeps its role
+// as a boundary.
 const CAP_MARGE=8;
-// Vingt couples ordonnés de postes distincts, donc vingt dégradés, posés une fois pour toute
-// la carte. Un segment prenait la couleur de `B.a.role`, le poste **d'arrivée** : le trajet
-// entier d'un jungler devenu mid était peint en mid, et la couleur disait l'arrivée au lieu
-// de dire le changement.
+// Twenty ordered pairs of distinct roles, hence twenty gradients, laid down once for the whole
+// map. A segment used to take the colour of `B.a.role`, the **arrival** role: the entire run of
+// a jungler turned mid was painted in mid, and the colour stated the arrival instead of stating
+// the change.
 //
-// En `objectBoundingBox`, les coordonnées sont relatives à la boîte de chaque tracé : le même
-// dégradé sert tous les segments du même couple, quelle que soit leur longueur, et il n'y a
-// rien à calculer par segment. Deux arrêts francs à 50 % et non un fondu — la couleur doit
-// dire « ici, il change de poste », pas étaler l'incertitude sur tout le trajet.
+// In `objectBoundingBox`, coordinates are relative to each path's box: the same gradient serves
+// every segment of the same pair, whatever its length, and there is nothing to compute per
+// segment. Two hard stops at 50 % rather than a fade — the colour must say "here, they change
+// role", not smear the uncertainty over the whole run.
 //
-// `stop-color` passe par `style` et non par un attribut de présentation, qui ne résout pas
-// `var()` partout ; le tracé, lui, porte son dégradé en attribut `stroke` plutôt qu'en classe,
-// pour que les vingt couples n'aient pas à être redits un à un dans la feuille de style.
+// `stop-color` goes through `style` and not through a presentation attribute, which does not
+// resolve `var()` everywhere; the path, for its part, carries its gradient in a `stroke`
+// attribute rather than a class, so the twenty pairs need not be restated one by one in the
+// stylesheet.
 const ROLE_GRADS=ROLES.flatMap(a=>ROLES.filter(b=>b!==a).map(b=>
   `<linearGradient id="rg-${a}-${b}" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="0" y2="1">`
   +`<stop offset="50%" style="stop-color:var(--${a})"/><stop offset="50%" style="stop-color:var(--${b})"/></linearGradient>`)).join("");
 const attache=n=>n.lane>=n.x&&n.lane<=n.x+n.w?n.lane:n.x+n.w/2;
-// Fenêtre d'existence de l'organisation, bornée par la plage affichée.
+// Window of the organisation's existence, bounded by the displayed range.
 const activeSpan=t=>[Math.max(YEARS[0],t.active[0]??YEARS[0]),Math.min(YEARS.at(-1),t.active[1]??Infinity)];
 
-// La carte s'ouvre sur la **période entière**, et le préréglage « Tout » est donc celui qui est
-// actif au démarrage. Elle s'ouvrait sur 2013 pour épargner les 500 px de rangées quasi vides
-// des Season 1 et 2 — trois et six équipes suivies — mais cacher deux éditions par défaut
-// coûtait plus que ce qu'elle faisait gagner : être exhaustif est le propos de l'outil, et
-// c'est au filtre de période de resserrer, comme c'est au seuil de présence de dégrossir.
+// The map opens on the **whole period**, so the "All" preset is the one active at start-up. It
+// used to open on 2013 to spare the 500 px of near-empty rows of Season 1 and 2 — three and six
+// teams tracked — but hiding two editions by default cost more than it saved: being exhaustive
+// is the point of the tool, and it is up to the period filter to narrow down, just as it is up
+// to the presence threshold to thin out.
 
-// Nombre d'apparitions aux Worlds de chaque équipe : c'est la mesure du filtre « Présence ».
+// Number of Worlds appearances of each team: that is what the "Presence" filter measures.
 const APPS=new Map(teams.map(t=>[t.code,Object.keys(t.years).length]));
-// Paliers du filtre, choisis sur la distribution réelle : 120 colonnes au total, 54 à partir
-// de deux apparitions, 33 à partir de trois, 19 à partir de cinq. Un curseur continu irait de
-// 1 à 13 alors que 87 colonnes sur 120 sont à une ou deux apparitions — il passerait la moitié
-// de sa course à ne rien déplacer. La carte s'ouvre sur **toutes** les colonnes : être
-// exhaustif est le propos de l'outil, et c'est aux filtres de dégrossir.
+// Steps of the filter, chosen on the real distribution: 120 columns in all, 54 from two
+// appearances up, 33 from three, 19 from five. A continuous slider would run from 1 to 13 while
+// 87 columns out of 120 sit at one or two appearances — it would spend half its travel moving
+// nothing. The map opens on **every** column: being exhaustive is the point of the tool, and it
+// is up to the filters to thin out.
 const PRESENCE=[1,2,3,5];
 const DEFAULT_MIN_APPS=1;
 
 const state={roles:new Set(ROLES),regions:new Set(REGIONS),hiddenTeams:new Set(),minApps:DEFAULT_MIN_APPS,showNat:false,showSen:false,teamMode:"players",pinned:null,pinnedTeam:null,hover:null,
   yearFrom:ALL_YEARS[0],yearTo:ALL_YEARS.at(-1),
-  // Les deux isolements. Ils ne remplacent pas la sélection : le survol et le clic simple
-  // gardent exactement le comportement d'avant — surbrillance, aucune remise en page. Ce sont
-  // deux gestes de plus, et chacun a son propre contrôle : l'axe des années pour `annee`, un
-  // bouton du panneau de détail pour `isole`.
+  // The two isolations. They do not replace the selection: hovering and plain clicking keep
+  // exactly their former behaviour — highlighting, no reflow. They are two further gestures,
+  // and each has its own control: the year axis for `annee`, a button in the detail panel for
+  // `isole`.
   annee:null, isole:false};
-// Une colonne est affichée si sa région l'est, **et** si elle atteint le seuil de présence,
-// **et** si l'équipe n'est pas masquée une à une : les trois filtres se cumulent, chacun
-// agissant à l'intérieur du sous-ensemble déjà retenu par les précédents. Une équipe écartée
-// par l'un des trois se déverse dans « Autres équipes » exactement comme une région masquée —
-// c'est le même prédicat qui décide, partout.
+// A column is displayed if its region is, **and** if it reaches the presence threshold, **and**
+// if the team is not hidden one by one: the three filters compound, each acting inside the
+// subset already kept by the previous ones. A team ruled out by any of the three spills into
+// "Other teams" exactly like a hidden region — the same predicate decides, everywhere.
 const visible=t=>state.regions.has(t.region)&&APPS.get(t.code)>=state.minApps&&!state.hiddenTeams.has(t.code);
-// Et une colonne n'est dessinée que si l'équipe a au moins une édition dans la période : c'est
-// ce compte-là, et non `visible` seul, qui dit s'il reste quelque chose à l'écran.
-// Isolement d'une édition : les participants de l'année, **plus** les équipes d'où
-// viennent ses joueurs et où ils vont l'année d'avant et l'année d'après. Une édition sans ses
-// deux voisines n'énumère que des rosters — la carte parle de transferts, et c'est le voisinage
-// qui porte le mouvement. Mesuré : de 9 à 40 colonnes sur 120 selon l'édition, 40 en 2019.
+// And a column is only drawn if the team has at least one edition within the period: it is that
+// count, and not `visible` alone, that says whether anything is left on screen.
+// Isolating an edition: that year's participants, **plus** the teams its players come from and
+// go to the year before and the year after. An edition without its two neighbours merely lists
+// rosters — the map is about transfers, and it is the neighbourhood that carries the movement.
+// Measured: from 9 to 40 columns out of 120 depending on the edition, 40 in 2019.
 const colonnesDeLEdition=N=>{
   const codes=new Set(teams.filter(t=>t.years[N]).map(t=>t.code));
   const surN=new Set(apps.filter(a=>a.year===N).map(a=>a.id));
   for(const a of apps) if(Math.abs(a.year-N)===1&&surN.has(a.id)) codes.add(a.team.code);
   return codes;
 };
-// Isolement de la sélection : les colonnes par lesquelles elle est passée. Pour un
-// joueur, ses clubs, étapes hors Worlds comprises — 1 à 7 colonnes, médiane 1. Pour une
-// équipe, les colonnes avec lesquelles elle a échangé des joueurs, selon le mode de clic
-// choisi dans les filtres : 27 colonnes au pire en « carrières complètes » (TL), 16 en
-// « arrivées et départs ». Ce n'est pas au raccourci de décider du mode.
+// Isolating the selection: the columns it went through. For a player, their clubs, steps
+// outside Worlds included — 1 to 7 columns, median 1. For a team, the columns it exchanged
+// players with, according to the click mode chosen in the filters: 27 columns at worst in "full
+// careers" (TL), 16 in "arrivals and departures". It is not up to the shortcut to decide the
+// mode.
 const colonnesIsolees=()=>{
   if(state.pinned){
     const p=players.get(state.pinned);
@@ -328,13 +327,13 @@ const colonnesIsolees=()=>{
   }));
   return codes;
 };
-// Les deux isolements **se cumulent**, comme les trois filtres se cumulent déjà entre eux :
-// chacun agit à l'intérieur du sous-ensemble retenu par les précédents, donc l'intersection.
-// `null` quand aucun n'est posé, et c'est ce qui garde `colonne()` à son coût d'avant.
+// The two isolations **compound**, just as the three filters already compound with one another:
+// each acts inside the subset kept by the previous ones, hence the intersection. `null` when
+// neither is set, and that is what keeps `colonne()` at its former cost.
 let reduction=null;
-// La seule part de l'édition isolée, tenue à part : un clic simple sort de l'isolement de
-// sélection mais **pas** de celui-là, qui a son propre contrôle. Les refus qui se jugent sur
-// la carte d'après — un raccourci du tiroir de statistiques — s'y réfèrent.
+// The isolated edition's share alone, kept apart: a plain click leaves the selection isolation
+// but **not** this one, which has its own control. Refusals judged against the map as it will be
+// — a shortcut from the statistics drawer — refer to it.
 let reductionAnnee=null;
 const croiser=jeux=>jeux.length?jeux.reduce((a,b)=>new Set([...a].filter(c=>b.has(c)))):null;
 const reduire=()=>{
@@ -344,10 +343,10 @@ const reduire=()=>{
   if(state.isole){ const s=colonnesIsolees(); if(s) jeux.push(s); }
   return croiser(jeux);
 };
-// Les colonnes que **laisserait** un isolement, sans toucher à l'état. Deux réductions qui se
-// cumulent peuvent ne rien laisser — mesuré, plus de la moitié des couples joueur × édition —
-// et c'est ce qui permet de le dire avant le clic, en grisant le contrôle, plutôt que de
-// laisser un bouton qui ne fait rien ou de vider la carte.
+// The columns an isolation **would leave**, without touching the state. Two reductions that
+// compound may leave nothing — measured, more than half of the player × edition pairs — and
+// that is what makes it possible to say so before the click, by greying the control out, rather
+// than leaving a button that does nothing or emptying the map.
 function colonnesSi({annee=state.annee,isole=state.isole}={}){
   const ys=ALL_YEARS.filter(y=>y>=state.yearFrom&&y<=state.yearTo&&(annee==null||Math.abs(y-annee)<=1));
   const jeux=[];
@@ -356,25 +355,26 @@ function colonnesSi({annee=state.annee,isole=state.isole}={}){
   const r=croiser(jeux);
   return teams.filter(t=>visible(t)&&(!r||r.has(t.code))&&ys.some(y=>t.years[y]));
 }
-// Les rangées affichées : la période, puis l'édition isolée et ses deux voisines. L'isolement
-// **ne réécrit pas** la période — les deux réductions restent lisibles séparément, et sortir de
-// l'isolement rend la période telle qu'elle était. Une édition de bout — 2011, 2026 — n'a
-// qu'une voisine, et l'intersection avec la période s'en charge sans cas particulier.
+// The displayed rows: the period, then the isolated edition and its two neighbours. Isolation
+// **does not rewrite** the period — both reductions stay readable separately, and leaving the
+// isolation gives the period back as it was. An edition at either end — 2011, 2026 — has only
+// one neighbour, and the intersection with the period handles that with no special case.
 const majYears=()=>{
   YEARS=ALL_YEARS.filter(y=>y>=state.yearFrom&&y<=state.yearTo);
-  // Resserrer la période sur une édition isolée lui retirerait sa rangée : l'isolement tombe
-  // alors avec elle, plutôt que de laisser la carte sans aucune rangée à dessiner.
+  // Narrowing the period onto an isolated edition would take away its row: the isolation then
+  // falls with it, rather than leaving the map with no row at all to draw.
   if(state.annee!=null&&!YEARS.includes(state.annee)) state.annee=null;
   if(state.annee!=null) YEARS=YEARS.filter(y=>Math.abs(y-state.annee)<=1);
 };
 const colonne=t=>visible(t)&&(!reduction||reduction.has(t.code))&&YEARS.some(y=>t.years[y]);
-// Pourquoi l'équipe n'a **pas** de colonne à cet instant, ou `null` si elle en a une : la
-// négation de `colonne()`, détaillée cause par cause. Un raccourci de lecture qui viserait une
-// colonne absente doit dire laquelle des quatre l'écarte, et le vocabulaire est celui de la
-// liste à cocher du tiroir — les deux refus énoncent la même règle, à deux endroits.
-// `ignorerSelection` : juger sur la carte **d'après** le geste. Un raccourci de lecture change
-// la sélection, donc sort de l'isolement de sélection — une équipe que celui-ci écartait
-// redevient atteignable, et la refuser serait refuser pour une raison qui n'existera plus.
+// Why the team has **no** column at this moment, or `null` if it has one: the negation of
+// `colonne()`, spelled out cause by cause. A reading shortcut aiming at a missing column must
+// say which of the four rules it out, and the vocabulary is that of the drawer's checklist — the
+// two refusals state the same rule, in two places.
+// `ignorerSelection`: judging against the map **as it will be** after the gesture. A reading
+// shortcut changes the selection, hence leaves the selection isolation — a team the latter ruled
+// out becomes reachable again, and refusing it would be refusing for a reason that will no
+// longer exist.
 const sansColonne=(t,ignorerSelection=false)=>{
   const red=ignorerSelection?reductionAnnee:reduction;
   if(!YEARS.some(y=>t.years[y])) return tr("refus.periode");
@@ -387,11 +387,11 @@ const sansColonne=(t,ignorerSelection=false)=>{
 const view={x:0,y:0,k:1};
 let nodesByPlayer=new Map(), hasOther=false, W=0, cols=[];
 
-// ---------- rendu de la carte ----------
+// ---------- map rendering ----------
 function render(){
-  // Une sélection d'équipe que les filtres viennent d'écarter tombe, et l'isolement qui la
-  // suivait tombe avec elle. **Avant** de calculer la réduction : sinon la carte se dessinerait
-  // une fois sur une sélection qui n'existe plus, et l'isolement garderait ses colonnes.
+  // A team selection the filters have just ruled out falls, and the isolation that followed it
+  // falls with it. **Before** computing the reduction: otherwise the map would be drawn once on
+  // a selection that no longer exists, and the isolation would keep its columns.
   if(state.pinnedTeam){
     const t=byCode.get(state.pinnedTeam);
     if(!t||!visible(t)||!ALL_YEARS.some(y=>y>=state.yearFrom&&y<=state.yearTo&&t.years[y])) state.pinnedTeam=null;
@@ -401,19 +401,19 @@ function render(){
   H=YEARS.length*ROWH+20;
   const vues=new Set(YEARS);
   const inRange=a=>vues.has(a.year);
-  // Sur une édition isolée, les deux rangées voisines ne montrent que les **arrivées et les
-  // sorties** : les joueurs qui sont aussi sur l'édition. Le reste de leur roster n'apprend
-  // rien sur le mouvement qu'on est venu lire, et le ferait disparaître dans la masse.
+  // On an isolated edition, the two neighbouring rows only show the **arrivals and
+  // departures**: the players who are also on that edition. The rest of their roster teaches
+  // nothing about the movement one came to read, and would drown it in the crowd.
   const surEdition=state.annee==null?null:new Set(apps.filter(a=>a.year===state.annee).map(a=>a.id));
   const garde=a=>!surEdition||a.year===state.annee||surEdition.has(a.id);
 
-  // « Autres équipes » n'accueille que ce qui est masqué — région ou équipe. Une équipe
-  // écartée par la période ne doit pas y tomber : les deux tests restent séparés.
+  // "Other teams" only takes in what is hidden — region or team. A team ruled out by the period
+  // must not fall into it: the two tests stay separate.
   const vis=teams.filter(colonne);
   const visSet=new Set(vis);
-  // La colonne n'apparaît que si elle a quelque chose à montrer : un joueur présent dans une
-  // colonne visible **et** dans une équipe masquée, sur la plage affichée. Sans ce test, masquer
-  // la LMS sur 2020–2026 ouvrirait une colonne vide, la région n'y ayant aucune rangée.
+  // The column only appears if it has something to show: a player present both in a visible
+  // column **and** in a hidden team, over the displayed range. Without this test, hiding the LMS
+  // over 2020–2026 would open an empty column, the region having no row there.
   hasOther=[...players.values()].some(p=>{
     const dans=p.apps.filter(a=>inRange(a)&&garde(a));
     return dans.some(a=>visSet.has(a.team))&&dans.some(a=>!visible(a.team));
@@ -422,21 +422,20 @@ function render(){
   vis.forEach(t=>{colX.set(t,x); x+=CW;});
   const otherX=x;
 
-  // Une apparition hors colonne n'informe que si elle touche la carte visible : sans ce
-  // filtre, un joueur parti pour de bon traîne une chip sur toutes les éditions suivantes,
-  // reliées entre elles sans jamais rejoindre une colonne affichée.
+  // An appearance outside any column only informs if it touches the visible map: without this
+  // filter, a player gone for good drags a chip across every following edition, linked to one
+  // another without ever reaching a displayed column.
   //
-  //  - Base : garder l'apparition dont la voisine précédente **ou** suivante tombe dans une
-  //    colonne visible.
-  //  - Garde-fou : dans un bloc jeté **ponté** — encadré de deux apparitions gardées, donc
-  //    traversé par une ligne —, garder en plus une chip par club absent des deux bornes.
-  //    Sinon la ligne saute par-dessus un club sans rien dire : Peanut, HLE seule visible,
-  //    irait de `2017 T1` à `2023 GEN` en effaçant son année LGD.
+  //  - Base: keep the appearance whose previous **or** next neighbour falls in a visible column.
+  //  - Safeguard: inside a discarded block that is **bridged** — framed by two kept appearances,
+  //    hence crossed by a line —, also keep one chip per club absent from the two bounds.
+  //    Otherwise the line jumps over a club without saying a word: Peanut, with HLE alone
+  //    visible, would go from `2017 T1` to `2023 GEN`, erasing his LGD year.
   //
-  // Un bloc de **fin** ne porte aucune ligne — le fil s'arrête à la chip de départ : on le
-  // jette sans rien fausser, et c'est lui qui concentre le bruit. La séquence des clubs reste
-  // donc exacte, la durée approximative ; le panneau de détail, qui ne filtre rien, garde les
-  // années exactes.
+  // A **trailing** block carries no line — the thread stops at the departure chip: we discard it
+  // without distorting anything, and it is where the noise concentrates. The sequence of clubs
+  // therefore stays exact, the duration approximate; the detail panel, which filters nothing,
+  // keeps the exact years.
   const retenues=dans=>{
     const vu=dans.map(a=>colX.has(a.team));
     if(vu.every(Boolean)) return dans;
@@ -456,23 +455,23 @@ function render(){
     return dans.filter((a,i)=>garde[i]);
   };
 
-  // Place d'une étape dans une case de colonne. Elle garde le poste de l'apparition d'avant —
-  // le fil reste dans son couloir — mais ce poste est parfois déjà tenu : Nagne était chez
-  // NaJin en 2014, l'année où Ggoong y a joué les Worlds. Les deux sont vrais, et l'étape
-  // n'est pas un poste de la rangée.
+  // Placement of a step inside a column cell. It keeps the role of the appearance before it —
+  // the thread stays in its corridor — but that role is sometimes already taken: Nagne was at
+  // NaJin in 2014, the year Ggoong played Worlds there. Both are true, and the step is not a
+  // role of the row.
   //
-  // Elle prend alors la **demi-case de droite**, collée au titulaire, exactement comme un
-  // poste partagé — en pointillé, et seulement au focus. Le titulaire ne se resserre qu'au
-  // moment où l'étape paraît : au repos sa case est pleine, inchangée. C'est `apply()` qui
-  // s'en charge, l'étape portant dans `data-voisin` la case à resserrer.
+  // It then takes the **right half-chip**, flush against the starter, exactly like a shared role
+  // — dotted, and only on focus. The starter only narrows at the moment the step appears: at
+  // rest its chip is full, unchanged. `apply()` takes care of that, the step carrying in
+  // `data-voisin` the chip to narrow.
   //
-  // 18 cas sur 371, dont 4 entre deux étapes — les deux sont alors des demi-cases. Aucune
-  // saturation à ce jour : une étape tombant sur un poste **déjà** coupé en deux descendrait
-  // sous les cinq, faute de place.
+  // 18 cases out of 371, 4 of them between two steps — both are then half-chips. No saturation
+  // to date: a step landing on a role **already** split in two would drop below the five, for
+  // lack of room.
   const placeEtape=new Map();
   {
     const cle=(a)=>`${a.id}:${a.year}:${a.team.code}`;
-    const tenu=new Map(); // « code:année:poste » → occupants de la case, titulaires compris
+    const tenu=new Map(); // "code:year:role" → occupants of the cell, starters included
     const occupantsDe=(code,year,ri)=>{
       const e=byCode.get(code)?.years[year];
       return e?e.all.filter(b=>b.ri===ri).map(b=>({worlds:b})):[];
@@ -486,7 +485,7 @@ function render(){
       if(!occ.length){ occ.push({etape:a}); placeEtape.set(cle(a),{ri:a.ri,demi:false,droite:false,voisin:null}); continue; }
       if(occ.length===1){
         const g=occ[0];
-        // Deux étapes sur le même poste : les deux sont des demi-cases, rien à resserrer.
+        // Two steps on the same role: both are half-chips, nothing to narrow.
         if(g.etape) placeEtape.get(cle(g.etape)).demi=true;
         occ.push({etape:a});
         placeEtape.set(cle(a),{ri:a.ri,demi:true,droite:true,voisin:g.worlds?`${g.worlds.id}:${a.year}`:null});
@@ -508,7 +507,7 @@ function render(){
       if(colX.has(a.team)){
         const cx=colX.get(a.team)+PADX;
         if(a.step){
-          // Le couloir reste celui du poste hérité : seule la case bouge dans sa cellule.
+          // The corridor stays that of the inherited role: only the chip moves inside its cell.
           const pl=placeEtape.get(`${a.id}:${a.year}:${a.team.code}`)??{ri:a.ri,demi:false,droite:false,voisin:null};
           const w=pl.demi?chipW/2:chipW;
           return {a,x:cx+(pl.droite?w:0),w,y:yTop(a.year)+pl.ri*STEP,lane:laneAt(cx,a.ri,pl.droite?1:0),
@@ -520,9 +519,9 @@ function render(){
       const n={a,other:true,w:chipW}; (otherByYear[a.year]??=[]).push(n); return n;
     }));
   });
-  // Largeur de « Autres » : une sous-colonne par chip simultanée d'un même poste, jamais
-  // moins de deux. Les cinq rangées étant indexées par le poste, c'est ce cumul —
-  // et non le total de l'année — qui décide de la largeur.
+  // Width of "Other": one sub-column per simultaneous chip of a same role, never fewer than
+  // two. Since the five rows are indexed by role, it is that tally — and not the year's total —
+  // that decides the width.
   const parPoste=l=>{const c={}; l.forEach(n=>c[n.a.ri]=(c[n.a.ri]||0)+1); return Math.max(0,...Object.values(c));};
   const otherCols=Math.max(2,...Object.values(otherByYear).map(parPoste));
   W=x+(hasOther?CW*otherCols:0);
@@ -530,12 +529,12 @@ function render(){
   if(hasOther) cols.push({other:true,x:otherX,w:CW*otherCols});
 
   Object.entries(otherByYear).forEach(([y,list])=>{
-    // La rangée vient du **poste**, comme dans une colonne d'équipe, et non d'un rang dans la
-    // liste : sans ça la chip changeait de ligne d'une année à l'autre selon le nombre de
-    // voisines, et le fil zigzaguait. Deux joueurs du même poste la même année se rangent en
-    // sous-colonnes côte à côte.
-    // Les chips de Worlds prennent les sous-colonnes de gauche, les étapes celles d'après :
-    // les étapes ne se montrant qu'au focus, la colonne reste compacte à l'œil au repos.
+    // The row comes from the **role**, as in a team column, and not from a rank in the list:
+    // without that the chip changed line from one year to the next depending on the number of
+    // neighbours, and the thread zigzagged. Two players of the same role in the same year are
+    // laid out in side-by-side sub-columns.
+    // Worlds chips take the left sub-columns, steps the ones after: since steps only show on
+    // focus, the column stays visually compact at rest.
     list.sort((m,n)=>m.a.ri-n.a.ri||(m.a.step?1:0)-(n.a.step?1:0)||m.a.half-n.a.half||m.a.name.localeCompare(n.a.name));
     const pris={};
     list.forEach(n=>{
@@ -546,8 +545,8 @@ function render(){
   });
 
   let html="";
-  // Le fond de colonne est borné par la fenêtre d'activité de l'organisation : avant sa
-  // création et après sa disparition, la colonne est repliée.
+  // The column background is bounded by the organisation's activity window: before its creation
+  // and after its disappearance, the column is folded away.
   cols.forEach(c=>{
     if(c.other){ html+=`<div class="colbg other" style="left:${c.x}px;width:${c.w}px;height:${H}px"></div>`; return; }
     const [from,to]=activeSpan(c.t);
@@ -558,77 +557,76 @@ function render(){
   });
   YEARS.forEach((y,j)=>{ if(j) html+=`<div class="yrule" style="top:${yTop(y)-GOUTTIERE}px;width:${W}px"></div>`; });
   let paths="";
-  // Deux fils, et un seul visible à la fois.
+  // Two threads, and only one visible at a time.
   //
-  //  - le **raccourci** (`base`) saute l'année-trou d'une apparition de Worlds à la suivante,
-  //    comme la carte le faisait avant les étapes. C'est lui qu'on voit au repos : sans cela,
-  //    des centaines de lignes partent vers « Autres équipes », tout à droite de 120 colonnes,
-  //    et la carte devient illisible pour une information qu'on ne lit qu'un joueur à la fois ;
-  //  - le **détail** (`deep`) passe par les étapes, et ne paraît qu'au focus, avec elles.
+  //  - the **shortcut** (`base`) jumps over the gap year from one Worlds appearance to the next,
+  //    as the map did before steps existed. That is the one seen at rest: without it, hundreds
+  //    of lines head for "Other teams", far right of 120 columns, and the map becomes unreadable
+  //    for a piece of information one only reads one player at a time;
+  //  - the **detail** (`deep`) goes through the steps, and only appears on focus, along with
+  //    them.
   //
-  // Un segment qui ne touche aucune étape est commun aux deux : il n'est tracé qu'une fois.
+  // A segment touching no step is common to both: it is drawn only once.
   const segment=(A,B,cls)=>{
     const x1=A.lane,y1=A.y+CH/2,x2=B.lane,y2=B.y+CH/2,b0=A.bottom,t1=yTop(B.a.year)-6;
     const ax=attache(A), bx=attache(B);
-    // Changement de poste : le segment porte un dégradé qui bascule net en son milieu, au
-    // lieu de la seule couleur d'arrivée. Le couple est choisi par la position **à l'écran**
-    // et non par la chronologie, le dégradé descendant du haut de la boîte vers le bas : un
-    // segment `duo` qui remonte inverserait sinon ses deux couleurs.
+    // Role change: the segment carries a gradient that switches hard at its middle, instead of
+    // the arrival colour alone. The pair is chosen by position **on screen** and not by
+    // chronology, the gradient running from the top of the box downwards: a `duo` segment going
+    // back up would otherwise swap its two colours.
     const haut=A.y<=B.y?A:B, bas=haut===A?B:A;
     const meme=A.a.role===B.a.role;
     const teinte=meme?` ${B.a.role}`:"";
     const peint=meme?"":` stroke="url(#rg-${haut.a.role}-${bas.a.role})"`;
     if(A.a.year===B.a.year){
-      // Un segment `duo` est une diagonale courte, et on a hésité à lui donner un autre
-      // traitement : non, une règle et une seule. Le milieu du tracé est le milieu du tracé.
+      // A `duo` segment is a short diagonal, and we hesitated to treat it differently: no, one
+      // rule and one only. The middle of the path is the middle of the path.
       paths+=`<path class="l${teinte} move duo${cls}"${peint} data-p="${A.a.id}" data-de="${A.a.id}:${A.a.year}" data-vers="${B.a.id}:${B.a.year}" data-r="${B.a.role}" d="M${ax},${y1} L${bx},${y2}"/>`;
       return;
     }
     const creux=VOIDS.get(A.a.id);
     let vide=false;
     if(creux) for(let y=A.a.year+1;y<B.a.year;y++) if(creux.has(y)) vide=true;
-    // Les deux coudes prennent leur hauteur de l'écart latéral qu'ils franchissent, et leur
-    // place de la gouttière voisine : sous le bloc de A au départ, au-dessus de celui de B à
-    // l'arrivée. Les corriger tous les deux, sinon le même fil porterait deux coudes de
-    // factures différentes — celui du départ a seulement plus de place sous lui, donc il se
-    // voyait moins.
+    // Both elbows take their height from the lateral offset they cross, and their room from the
+    // adjacent gutter: below A's block on departure, above B's on arrival. Both are corrected,
+    // otherwise the same thread would carry two elbows of different makes — the departure one
+    // merely has more room below it, so it showed less.
     const y0=A.y+CH;
     const yd=y0+coude(x1-ax,yTop(A.a.year)+ROWH-GOUTTIERE-y0), sd=(yd-y0)*.6;
     const yu=bx===x2?t1:B.y-coude(bx-x2,B.y-(yTop(B.a.year)-GOUTTIERE));
     const te=Math.min(t1,yu);
-    // Un coude de départ assez haut déborde sous le bas du bloc, dans la gouttière : c'est là
-    // que commence alors la grande courbe inter-années, et elle ne peut pas descendre sous le
-    // point d'arrivée de celle-ci.
+    // A tall enough departure elbow spills below the bottom of the block, into the gutter: that
+    // is where the long inter-year curve then starts, and it cannot go below that curve's
+    // arrival point.
     const bd=Math.min(Math.max(b0,yd),te), su=(B.y-yu)*.6, m=(te-bd)*.55;
     paths+=`<path class="l${teinte} ${A.a.team===B.a.team?"same":"move"}${vide?" void":""}${cls}"${peint} data-p="${A.a.id}" data-de="${A.a.id}:${A.a.year}" data-vers="${B.a.id}:${B.a.year}" data-r="${B.a.role}" d="M${ax},${y1} L${ax},${y0} C${ax},${y0+sd} ${x1},${yd-sd} ${x1},${yd} L${x1},${bd} C${x1},${bd+m} ${x2},${te-m} ${x2},${te} L${x2},${yu} C${x2},${yu+su} ${bx},${B.y-su} ${bx},${B.y} L${bx},${y2}"/>`;
   };
   nodesByPlayer.forEach((ns,id)=>{
     for(let k=1;k<ns.length;k++) segment(ns[k-1],ns[k],(ns[k-1].a.step||ns[k].a.step)?" deep":"");
-    // Raccourci : seulement là où le détail s'en écarte, c'est-à-dire par-dessus une étape.
+    // Shortcut: only where the detail departs from it, that is, over a step.
     const mondiaux=ns.map((n,i)=>({n,i})).filter(x=>!x.n.a.step);
     for(let j=1;j<mondiaux.length;j++){
       if(mondiaux[j].i-mondiaux[j-1].i>1) segment(mondiaux[j-1].n,mondiaux[j].n," base");
     }
-    // Amorce et terminaison du fil. Les deux bouts ne sont posés que si la chip dessinée
-    // **est** la première ou la dernière apparition du joueur : la plage d'années comme les
-    // blocs écartés par `retenues` coupent le fil sans le terminer, et une marque y
-    // mentirait. Elles ne paraissent qu'au survol, comme la note le demande.
+    // Start and end of the thread. The two ends are only laid down if the drawn chip **is** the
+    // player's first or last appearance: the year range, like the blocks discarded by
+    // `retenues`, cuts the thread without ending it, and a mark there would lie. They only show
+    // on hover, as the note requires.
     //
-    // La marque dit où s'arrête le fil **dessiné**, c'est-à-dire les Worlds. Ce que la source
-    // recense au-delà est une autre chose, et c'est `seen` qui la porte, dans le panneau de
-    // détail : 567 joueurs ont une partie après leur dernier Worlds.
+    // The mark says where the **drawn** thread stops, that is, Worlds. What the source records
+    // beyond that is another matter, and `seen` is what carries it, in the detail panel: 567
+    // players have a game after their last Worlds.
     const suite=players.get(id).apps;
-    // La barre se pose sur la **ligne de séparation entre deux éditions** — le trait d'année
-    // lui-même — et la hampe court jusqu'à elle depuis la case. Elle a d'abord été posée à
-    // 9 px du bord de la chip, donc dans la rangée du poste voisin, où elle se lisait comme la
-    // marque du joueur du dessus ; puis au bord du bloc de cinq rangées, ce qui la laissait
-    // encore flotter dans la gouttière. Sur la ligne, elle dit sans ambiguïté possible que le
-    // fil commence ou s'arrête **entre ces deux années-là**.
+    // The bar sits on the **separating line between two editions** — the year rule itself — and
+    // the stem runs up to it from the chip. It was first placed 9 px from the edge of the chip,
+    // hence in the neighbouring role's row, where it read as the mark of the player above; then
+    // at the edge of the five-row block, which still left it floating in the gutter. On the
+    // line, it says without any possible ambiguity that the thread starts or stops **between
+    // those two years**.
     //
-    // La hampe croise les rangées intermédiaires de la colonne, comme le fait déjà toute
-    // ligne : les chips sont peintes par-dessus le SVG. Au-dessus de la première rangée
-    // affichée il n'y a pas de ligne — on s'arrête alors au bord du monde, comme le fait déjà
-    // le fond de colonne.
+    // The stem crosses the column's intermediate rows, as every line already does: the chips are
+    // painted over the SVG. Above the first displayed row there is no line — we then stop at the
+    // edge of the world, as the column background already does.
     const cap=(n,fin)=>{
       const x=attache(n), y=fin?n.y+CH:n.y;
       const ligne=fin?yTop(n.a.year)+ROWH-GOUTTIERE:Math.max(0,yTop(n.a.year)-GOUTTIERE);
@@ -643,10 +641,10 @@ function render(){
     const [from,to]=activeSpan(t);
     YEARS.forEach(y=>{
       const e=t.years[y], cx=colX.get(t)+PADX, top=yTop(y);
-      // Hors de la fenêtre d'activité, rien n'est dessiné : l'org n'existait pas encore,
-      // ou plus. « Pas aux Worlds » ne vaut que pendant son existence.
-      // Le libellé reste : les étapes ne s'affichent qu'au focus, et c'est `apply()` qui le
-      // fait taire sur les seules cases dont une étape est effectivement montrée.
+      // Outside the activity window nothing is drawn: the org did not exist yet, or no longer
+      // did. "Not at Worlds" only holds while it exists.
+      // The label stays: steps only show on focus, and it is `apply()` that silences it on the
+      // sole cells where a step is actually being shown.
       if(!e){ if(y>=from&&y<=to) html+=`<div class="absent" data-cell="${t.code}:${y}" style="left:${cx}px;top:${top}px;width:${chipW}px;height:${5*STEP-4}px"><span>${tr("cell.absent")}</span></div>`; return; }
       const r=RES[y]?.[t.code];
       if(e.alias) html+=`<div class="alias" style="left:${cx}px;top:${top-16}px;width:${r?chipW-56:chipW}px">${e.alias}</div>`;
@@ -655,12 +653,12 @@ function render(){
   });
   nodesByPlayer.forEach(ns=>ns.forEach(n=>{
     const a=n.a, label=a.alias||a.team.name, nat=NAT[a.id];
-    // Une étape prend la demi-case de droite quand son poste est déjà tenu : même forme
-    // qu'un poste partagé, mais elle n'en est pas un — pas de « duo », pas de poste du tout.
+    // A step takes the right half-chip when its role is already held: the same shape as a
+    // shared role, but it is not one — no "duo", no role at all.
     const demi=n.demi??(a.halves>1), droite=n.droite??(demi&&a.half);
     const duo=!a.step&&demi?a.team.years[a.year].all.find(b=>b.ri===a.ri&&b!==a):null;
-    // Ce que la source dit d'une étape se limite à « chez X cette année-là » : ni poste —
-    // la rangée n'en a pas —, ni ancienneté, ni rotation.
+    // What the source says of a step amounts to "at X that year": no role — the row has none —,
+    // no seniority, no rotation.
     const marqueNat=nat?` (${nat})`:"";
     const tip=a.step
       ? tr("chip.etape",{nom:a.name,nat:marqueNat,club:label,annee:a.year})
@@ -672,10 +670,10 @@ function render(){
     const mark=n.other?(tag?`<span class="t">${tag}</span>`:""):(!a.step&&(a.alt||a.doubt)?`<span class="q">${a.doubt?"?":"*"}</span>`:"");
     html+=`<div class="chip${demi?" half":""}${droite?" right":""}${a.step?" step":""}" data-p="${a.id}" data-c="${a.id}:${a.year}" data-r="${a.role}" data-w="${n.w}"${a.step&&!n.other?` data-cell="${a.team.code}:${a.year}"`:""}${n.voisin?` data-voisin="${n.voisin}"`:""} style="left:${n.x}px;top:${n.y}px;width:${n.w}px;--s:${Math.min(a.sen-1,5)*11}%" title="${tip}"><span class="r ${a.role}"></span>${nat?`<span class="nat${isImport(a)?" imp":""}">${nat}</span>`:""}<span class="n">${a.shown}</span>${a.sen>1?`<span class="sen">${ord(a.sen)}</span>`:""}${mark}</div>`;
   }));
-  // Les deux rangées voisines de l'édition isolée passent sous un voile, écrit **après** les
-  // cases pour les recouvrir. Un voile plutôt qu'une opacité sur chaque case : l'estompe du
-  // focus se joue déjà sur l'opacité des cases, et les deux se seraient disputé la même
-  // propriété. Il ne capture rien, donc les cases qu'il recouvre restent survolables.
+  // The two rows adjacent to the isolated edition pass under a veil, written **after** the
+  // chips so as to cover them. A veil rather than an opacity on each chip: focus dimming already
+  // plays on chip opacity, and the two would have fought over the same property. It captures
+  // nothing, so the chips it covers stay hoverable.
   if(state.annee!=null) for(const y of YEARS){
     if(y===state.annee) continue;
     html+=`<div class="voile" style="top:${yTop(y)-GOUTTIERE}px;height:${ROWH}px;width:${W}px"></div>`;
@@ -683,26 +681,26 @@ function render(){
   world.style.width=W+"px"; world.style.height=H+"px";
   world.innerHTML=html;
 
-  // Sous-titre de la colonne « Autres équipes » : les régions masquées, puis le nombre
-  // d'équipes masquées une à une — celles dont la région, elle, est bien affichée.
+  // Subtitle of the "Other teams" column: the hidden regions, then the number of teams hidden
+  // one by one — those whose region is in fact displayed.
   const nMasquees=teams.filter(t=>state.regions.has(t.region)&&!visible(t)).length;
   const dehors=[...REGIONS.filter(r=>!state.regions.has(r)),...(nMasquees?[trn("hdr.dehors",nMasquees)]:[])].join(" · ");
   hdr.innerHTML=cols.map(c=>c.other
     ?`<div class="th other" data-x="${c.x}" data-w="${c.w}" title="${tr("hdr.autres.titre")}"><span class="rg">${dehors}</span><span class="tn">${tr("hdr.autres")}</span></div>`
-    // Le `×` masque la colonne ; le reste de l'en-tête épingle l'équipe. Deux cibles
-    // distinctes, sans quoi les deux gestes se marcheraient dessus. La liste à cocher du
-    // tiroir reste la source de vérité — ce bouton n'en est qu'un raccourci.
+    // The `×` hides the column; the rest of the header pins the team. Two distinct targets,
+    // without which the two gestures would tread on each other. The drawer's checklist stays
+    // the source of truth — this button is only a shortcut to it.
     :`<div class="th" data-team="${c.t.code}" data-x="${c.x}" data-w="${c.w}" title="${tr("hdr.equipe.titre",{nom:c.t.name})}"><span class="rg"><b style="background:${regionVar(c.t.region)}"></b>${c.t.region}</span><span class="tn">${shortName(c.t)}</span><button type="button" class="hide" data-hide="${c.t.code}" aria-label="${tr("hdr.masquer.aria",{nom:shortName(c.t)})}" title="${tr("hdr.masquer.titre")}">×</button></div>`).join("");
-  // L'axe des années devient cliquable : une année isole son édition. Cliquer une **voisine**
-  // y déplace l'isolement — on avance ainsi d'édition en édition —, cliquer l'édition isolée
-  // elle-même en sort. C'est le seul chemin de retour depuis l'axe, puisqu'une fois isolé il ne
-  // porte plus que trois années.
+  // The year axis becomes clickable: a year isolates its edition. Clicking a **neighbour**
+  // moves the isolation there — that is how one walks from edition to edition —, clicking the
+  // isolated edition itself leaves it. It is the only way back from the axis, since once
+  // isolated it carries no more than three years.
   rail.innerHTML=YEARS.map(y=>{
     const on=y===state.annee;
-    // Une année qui ne laisserait aucune colonne avec l'isolement de sélection en cours est
-    // grisée et inerte, la raison dans son `title` : même règle que les noms d'équipe du
-    // tiroir de statistiques — on refuse, on dit pourquoi, et on ne défait pas l'autre
-    // isolement en douce. Le test ne coûte que quand une sélection est isolée.
+    // A year that would leave no column at all under the current selection isolation is greyed
+    // out and inert, the reason in its `title`: the same rule as the team names in the
+    // statistics drawer — we refuse, we say why, and we do not quietly undo the other
+    // isolation. The test only costs anything when a selection is isolated.
     const mort=!on&&state.isole&&!colonnesSi({annee:y}).length;
     const aide=on?tr("rail.isolee")
       :mort?tr("rail.morte",{annee:y})
@@ -710,9 +708,9 @@ function render(){
       :tr("rail.isoler",{annee:y});
     return `<button type="button" class="ylab${on?" iso":""}" data-y="${yTop(y)+2.5*STEP}" data-year="${y}" aria-pressed="${on}" aria-disabled="${mort}" title="${aide}">${y}${y===ONGOING_YEAR?`<small>${tr("rail.ongoing")}</small>`:""}</button>`;
   }).join("");
-  // Reste le cas que le contrôle d'entrée ne voit pas : l'édition isolée a retiré sa colonne
-  // à l'équipe épinglée. La sélection tombe, et si un isolement la suivait, la réduction qu'on
-  // vient d'appliquer n'est plus la bonne — on refait la page, une fois et pas deux.
+  // One case the entry check does not see is left: the isolated edition has taken the pinned
+  // team's column away. The selection falls, and if an isolation followed it, the reduction just
+  // applied is no longer the right one — we lay the page out again, once and not twice.
   if(state.pinnedTeam&&!vis.some(t=>t.code===state.pinnedTeam)){
     state.pinnedTeam=null;
     if(state.isole){ state.isole=false; return void render(); }
@@ -723,13 +721,13 @@ function render(){
   applyView(); apply();
 }
 
-// ---------- navigation : déplacement et zoom ----------
+// ---------- navigation: panning and zooming ----------
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function clampView(){
-  // Marge de débord proportionnelle au viewport : on doit pouvoir pousser la première colonne
-  // au-delà du tiroir de filtres, qui masque ~302 px (360 px moins les 58 px du rail des
-  // années). Le plancher à 320 px tient cette promesse sur une fenêtre courte, où
-  // min(w,h)*0.5 tomberait sous le seuil. Le bouton « tout afficher » sert de filet.
+  // Overscroll margin proportional to the viewport: one must be able to push the first column
+  // past the filter drawer, which hides ~302 px (360 px minus the 58 px of the year rail). The
+  // 320 px floor keeps that promise on a short window, where min(w,h)*0.5 would fall below the
+  // threshold. The "fit to view" button acts as a safety net.
   const w=vp.clientWidth, h=vp.clientHeight, m=Math.max(320,Math.min(w,h)*0.5);
   view.x=clamp(view.x, Math.min(w-W*view.k-m, m), m);
   view.y=clamp(view.y, Math.min(h-H*view.k-m, m+60), m+60);
@@ -829,29 +827,29 @@ vp.addEventListener("keydown",e=>{
 });
 addEventListener("resize",()=>applyView());
 
-// ---------- sélection ----------
-// ---------- isolement : deux réductions, deux gestes ----------
-// Jusqu'ici la sélection ne passait que par `apply()` : on restylait des éléments déjà en
-// place, sans jamais remettre la carte en page. L'isolement casse cette séparation, parce que
-// « ne garder que les colonnes qui comptent » est une décision de mise en page, donc de
-// `render()`. C'est le seul endroit du fichier où une sélection déclenche un rendu.
+// ---------- selection ----------
+// ---------- isolation: two reductions, two gestures ----------
+// Until now selection only went through `apply()`: elements already in place were restyled,
+// without ever laying the map out again. Isolation breaks that separation, because "keep only
+// the columns that matter" is a layout decision, hence one for `render()`. It is the only place
+// in this file where a selection triggers a render.
 //
-// La règle qui borne le dégât : **le mode d'avant est conservé tel quel.** Un survol et un
-// clic simple surlignent, et rien ne bouge. L'isolement est un geste distinct, visible, et il
-// se défait d'un geste évident.
+// The rule that bounds the damage: **the former mode is kept exactly as it was.** A hover and a
+// plain click highlight, and nothing moves. Isolation is a distinct, visible gesture, and it is
+// undone by an obvious one.
 //
-// Deux réductions qui se cumulent peuvent ne rien laisser — un joueur isolé qui n'a joué
-// aucune édition de l'année isolée. On refuse alors le **second** geste au lieu de vider la
-// carte : c'est déjà la règle de `setHidden()`, qui ne masque jamais la dernière colonne.
+// Two reductions that compound may leave nothing — an isolated player who played no edition of
+// the isolated year. We then refuse the **second** gesture instead of emptying the map: that is
+// already the rule of `setHidden()`, which never hides the last column.
 function essayer(modif){
   if(!colonnesSi(modif).length) return false;
   Object.assign(state,modif);
   return true;
 }
-// Recentrer après coup n'est pas une finition : les colonnes se sont resserrées, donc tout a
-// bougé, et la chip qu'on vient de cliquer peut être à des milliers de pixels de là où la main
-// l'a laissée. On revient sur la sélection — et au retour aussi, plutôt que sur la vue d'avant
-// l'isolement : si la sélection a changé entre-temps, y revenir serait faux.
+// Recentring afterwards is not a finishing touch: the columns have closed up, so everything has
+// moved, and the chip just clicked may be thousands of pixels from where the hand left it. We
+// come back onto the selection — on the way out too, rather than onto the view from before the
+// isolation: if the selection has changed meanwhile, returning to it would be wrong.
 function recadrer(){
   if(state.pinned&&nodesByPlayer.has(state.pinned)) return void cadrerJoueur(state.pinned);
   if(state.pinnedTeam){ const c=cols.find(c=>c.t&&c.t.code===state.pinnedTeam); if(c) return void cadrerColonne(c.t,c); }
@@ -863,49 +861,49 @@ function isolerAnnee(y){
   render(); recadrer(); return true;
 }
 function basculerIsolement(){
-  // Le bouton est une bascule, et il **garde la sélection** en sortant : revoir la carte
-  // entière sans perdre le joueur qu'on lisait n'est pas la même chose que tout relâcher.
-  // C'est le `×` qui relâche, et c'est tout l'intérêt de les séparer.
+  // The button is a toggle, and it **keeps the selection** on the way out: seeing the whole map
+  // again without losing the player one was reading is not the same as releasing everything.
+  // The `×` is what releases, and that is the whole point of keeping them apart.
   if(!essayer({isole:!state.isole})) return false;
   render(); recadrer(); return true;
 }
-// Tout relâcher d'un geste. Le clic dans le vide ne suffit plus une fois isolé : les colonnes
-// sont resserrées et le vide a presque disparu de l'écran.
+// Release everything in one gesture. Clicking empty space no longer suffices once isolated: the
+// columns have closed up and empty space has all but vanished from the screen.
 function toutMontrer(){
   if(!state.isole&&state.annee==null) return false;
   state.isole=false; state.annee=null;
   render(); recadrer(); return true;
 }
 
-// La case est la seule prise sur un joueur, et le fil n'en est pas une. L'essai a été fait :
-// le fil change de tracé au focus — le raccourci cède la place au détail qui passe par les
-// étapes —, donc le survoler le fait disparaître de sous le curseur, le focus retombe, le
-// raccourci revient, et on boucle sans fin. Rendre le fil survolable demanderait de lui donner
-// une géométrie unique, c'est-à-dire d'afficher au repos les 189 détours par les années sans
-// Worlds, dont 64 traversent jusqu'à « Autres équipes ». Le prix est trop haut pour le gain.
+// The chip is the only handle on a player, and the thread is not one. It was tried: the thread
+// changes its path on focus — the shortcut gives way to the detail that goes through the steps
+// —, so hovering it makes it vanish from under the cursor, focus drops, the shortcut comes back,
+// and it loops forever. Making the thread hoverable would mean giving it a single geometry, that
+// is, showing at rest the 189 detours through Worlds-less years, 64 of which run all the way to
+// "Other teams". The price is too high for the gain.
 function tap(target){
   const c=target.closest&&target.closest(".chip");
   if(c){ state.pinnedTeam=null; state.pinned=c.dataset.p; state.hover=null; }
-  // Un clic dans le vide relâche un **joueur** : on l'a pris dans la carte, la carte est son
-  // contexte, et cliquer ailleurs y vaut « non, pas lui ». Il ne relâche **pas une équipe**,
-  // qui se prend dans l'en-tête, hors de la zone qu'on fait glisser : un clic malheureux ne
-  // doit pas la perdre. Elle se relâche en recliquant son en-tête, ou par le × du panneau —
-  // deux sorties explicites, comme l'édition isolée qui ne se quitte qu'en recliquant son
-  // année. Une fois isolé, le vide a de toute façon presque disparu de l'écran, les colonnes
-  // étant resserrées : ce n'était plus une sortie fiable.
+  // Clicking empty space releases a **player**: they were picked up inside the map, the map is
+  // their context, and clicking elsewhere there amounts to "no, not that one". It does **not
+  // release a team**, which is picked up in the header, outside the area one drags: an unlucky
+  // click must not lose it. It is released by clicking its header again, or through the panel's
+  // × — two explicit exits, like the isolated edition which is only left by clicking its year
+  // again. Once isolated, empty space has all but vanished from the screen anyway, the columns
+  // having closed up: it was no longer a reliable exit.
   else if(state.pinnedTeam) return;
   else { state.pinned=null; state.hover=null; }
   apresSelection();
 }
-// Pendant un **isolement d'équipe**, survoler un joueur descend d'un cran : la disposition des
-// colonnes reste celle de l'équipe, et seule la ligne du joueur s'allume dedans. C'est un
-// sous-contexte, pas une sélection — il tient au curseur et se défait en le retirant, sans
-// jamais remettre la carte en page. Le clic, lui, garde son sens : il reporte la sélection et
-// l'isolement sur le joueur, et là les colonnes bougent.
+// During a **team isolation**, hovering a player goes one level down: the column layout stays
+// the team's, and only the player's line lights up inside it. It is a sub-context, not a
+// selection — it holds to the cursor and undoes itself when it leaves, without ever laying the
+// map out again. The click keeps its meaning: it moves selection and isolation onto the player,
+// and there the columns do move.
 //
-// Hors isolement la règle d'avant tient, et c'est délibéré : une équipe épinglée ignore le
-// survol, sans quoi promener la souris sur 120 colonnes ferait battre la surbrillance en
-// permanence. Isolé, il en reste une poignée, et le geste est maîtrisable.
+// Outside isolation the former rule holds, and that is deliberate: a pinned team ignores hover,
+// otherwise sweeping the mouse over 120 columns would make the highlight flicker constantly.
+// Isolated, a handful are left, and the gesture is manageable.
 const survolPossible=()=>!state.pinned&&(!state.pinnedTeam||state.isole);
 world.addEventListener("mouseover",e=>{const c=e.target.closest(".chip"); if(c&&!drag&&survolPossible()&&matchMedia("(hover:hover)").matches){state.hover=c.dataset.p;apply();}});
 world.addEventListener("mouseout",e=>{if(e.target.closest(".chip")&&state.hover){state.hover=null;apply();}});
@@ -915,23 +913,23 @@ hdr.addEventListener("click",e=>{
   const th=e.target.closest(".th[data-team]"); if(!th) return;
   state.pinned=null; state.hover=null; state.pinnedTeam=state.pinnedTeam===th.dataset.team?null:th.dataset.team; apresSelection();
 });
-// Le `×` relâche tout, isolement de la sélection compris. L'édition isolée, elle, a son propre
-// contrôle — l'axe des années — et ne part pas avec la sélection.
+// The `×` releases everything, selection isolation included. The isolated edition has its own
+// control — the year axis — and does not leave with the selection.
 $("selClose").onclick=()=>{state.pinned=null; state.pinnedTeam=null; state.hover=null; $("q").value=""; apresSelection();};
 $("selIso").onclick=basculerIsolement;
-// `aria-disabled` grise sans bloquer le clic : le refus se redit donc ici, pour la souris
-// comme pour le clavier.
+// `aria-disabled` greys out without blocking the click: the refusal is therefore restated here,
+// for the mouse as for the keyboard.
 rail.addEventListener("click",e=>{
   const l=e.target.closest(".ylab[data-year]"); if(!l) return;
   isolerAnnee(state.annee===+l.dataset.year?null:+l.dataset.year);
 });
 
-// Les **cases** que le mode « arrivées et départs » garde : celles de l'équipe, plus le club
-// juste avant l'arrivée et le club juste après le départ. Le mode ne liste plus ses segments :
-// un segment est gardé si ses deux cases le sont, et c'est le seul moyen d'être d'accord avec
-// la carte. Les lister par index de carrière les faisait rater dès qu'une apparition était
-// écartée du rendu — par la période, par `retenues`, ou par un isolement — et Maple arrivait
-// chez PSG en 2021 sans le moindre fil, alors que c'est de là qu'il rejoint TSM.
+// The **chips** the "arrivals and departures" mode keeps: the team's own, plus the club just
+// before the arrival and the club just after the departure. The mode no longer lists its
+// segments: a segment is kept if both its chips are, and that is the only way to agree with the
+// map. Listing them by career index made them miss as soon as an appearance was dropped from the
+// render — by the period, by `retenues`, or by an isolation — and Maple arrived at PSG in 2021
+// without a single thread, when that is where he joins TSM from.
 function lineage(code){
   const chips=new Set(), from={}, to={}; let debut=0;
   players.forEach(p=>p.apps.forEach((a,k)=>{
@@ -949,23 +947,23 @@ const fmtFlow=o=>Object.entries(o).sort((a,b)=>b[1].length-a[1].length).map(([t,
 function apply(){
   const {hover,pinned,pinnedTeam}=state;
   const lin=!hover&&!pinned&&pinnedTeam&&state.teamMode==="lineage"?lineage(pinnedTeam):null;
-  // Une étape compte comme passage par la colonne : épingler T1 doit surligner le fil de
-  // Faker en 2014, année où il y était sans aller aux Worlds.
+  // A step counts as a passage through the column: pinning T1 must highlight Faker's thread in
+  // 2014, the year he was there without going to Worlds.
   const ids=hover?new Set([hover]):pinned?new Set([pinned]):(pinnedTeam&&!lin)?new Set([...apps,...stepApps].filter(a=>a.team.code===pinnedTeam).map(a=>a.id)):null;
   world.classList.toggle("focus",!!ids||!!lin);
   world.classList.toggle("showNat",state.showNat);
   world.classList.toggle("showSen",state.showSen);
-  const parCase=new Map(); // data-c → chip, pour retrouver le titulaire à resserrer
+  const parCase=new Map(); // data-c → chip, to find the starter to narrow
   world.querySelectorAll("[data-p]").forEach(el=>{
     const isPath=el.tagName==="path";
     if(!isPath&&el.dataset.c) parCase.set(el.dataset.c,el);
-    // Un bout de fil se surligne **avec sa case**, et jamais seul : il n'a pas de `data-k`,
-    // mais il porte le `data-c` de la case à laquelle il est accroché. Le surligner par joueur
-    // laissait des marques orphelines en « arrivées et départs », là où ce mode ne garde que
-    // certaines cases du joueur — Zven en portait une à ORI 2015, sa case étant éteinte.
-    // Tout se surligne par les **cases** : un segment quand ses deux extrémités le sont, un
-    // bout de fil quand la case à laquelle il tient l'est. Rien ne peut donc rester allumé
-    // sans de quoi s'accrocher, et l'ensemble reste d'accord avec ce que la carte dessine.
+    // An end mark is highlighted **with its chip**, and never on its own: it has no `data-k`,
+    // but it carries the `data-c` of the chip it hangs on. Highlighting it per player left
+    // orphan marks in "arrivals and departures", where that mode only keeps some of the
+    // player's chips — Zven carried one at ORI 2015 with his chip switched off.
+    // Everything is highlighted through the **chips**: a segment when both its ends are, an end
+    // mark when the chip it holds on to is. So nothing can stay lit with nothing to hang on to,
+    // and the whole stays in agreement with what the map draws.
     const bout=isPath&&el.classList.contains("cap");
     el.classList.toggle("hl",lin
       ?(isPath&&!bout
@@ -974,11 +972,11 @@ function apply(){
       :(!!ids&&ids.has(el.dataset.p)));
     el.classList.toggle(isPath?"roff":"off",!state.roles.has(el.dataset.r));
   });
-  // Trois états d'en-tête au clic sur une équipe : épinglée, en lien, sans rapport. L'ensemble
-  // « en lien » se déduit des chips **réellement surlignées**, et non de `lineage`, pour deux
-  // raisons : c'est le seul moyen d'être d'accord avec la carte (plage d'années, blocs jetés
-  // par `retenues`), et ça évite de faire correspondre un libellé court à un code d'équipe.
-  // L'en-tête « Autres équipes » suit la même règle : en lien s'il porte une chip surlignée.
+  // Three header states when a team is clicked: pinned, related, unrelated. The "related" set
+  // is derived from the chips **actually highlighted**, and not from `lineage`, for two reasons:
+  // it is the only way to agree with the map (year range, blocks discarded by `retenues`), and
+  // it avoids matching a short label against a team code. The "Other teams" header follows the
+  // same rule: related if it carries a highlighted chip.
   let liees=null, autresLiee=false;
   if(pinnedTeam){
     liees=new Set();
@@ -992,15 +990,15 @@ function apply(){
     th.classList.toggle("on",on);
     th.classList.toggle("dim",!!liees&&!on&&(th.dataset.team?!liees.has(th.dataset.team):!autresLiee));
   });
-  // Une case « Pas aux Worlds » dont l'étape est effectivement montrée se tait : le libellé
-  // est centré, la chip lui passerait dessus. Hors focus il reste, puisque rien ne s'affiche.
+  // A "Not at Worlds" cell whose step is actually shown falls silent: the label is centred, the
+  // chip would run over it. Out of focus it stays, since nothing is displayed.
   const tues=new Set();
   world.querySelectorAll(".chip.step.hl[data-cell]").forEach(el=>tues.add(el.dataset.cell));
   world.querySelectorAll(".absent[data-cell]").forEach(el=>el.classList.toggle("muette",tues.has(el.dataset.cell)));
 
-  // Et un titulaire dont le poste reçoit une étape se resserre en demi-case le temps qu'elle
-  // paraisse. Au repos sa case est pleine : c'est la rangée des Worlds, elle ne doit rien
-  // perdre pour une information qu'on n'a pas demandée.
+  // And a starter whose role receives a step narrows to a half-chip for as long as it shows. At
+  // rest their chip is full: this is the Worlds row, and it must lose nothing for a piece of
+  // information nobody asked for.
   world.querySelectorAll(".chip.serre").forEach(el=>{
     el.classList.remove("serre","half");
     el.style.width=`${el.dataset.w}px`;
@@ -1015,9 +1013,9 @@ function apply(){
   const sel=$("sel"), out=$("selText"), show=hover||pinned;
   if(show){
     const p=players.get(show), nat=NAT[p.id], creux=VOIDS.get(p.id)||new Set();
-    // Le panneau ne filtre rien : il donne la suite des clubs, étapes hors Worlds comprises,
-    // et les années que la source ne recense pas. Une étape se fond dans la période du club
-    // qu'elle prolonge — c'est la carrière qu'on lit ici, la carte portant la distinction.
+    // The panel filters nothing: it gives the sequence of clubs, steps outside Worlds included,
+    // and the years the source does not record. A step merges into the spell at the club it
+    // extends — it is the career one reads here, the map carrying the distinction.
     const items=[];
     p.apps.forEach(a=>{
       const dernier=[...items].reverse().find(i=>i.kind==="run");
@@ -1026,13 +1024,13 @@ function apply(){
       if(last?.kind==="run"&&last.label===label&&last.role===a.role&&last.to===a.year-1) last.to=a.year;
       else items.push({kind:"run",label,role:a.role,from:a.year,to:a.year});
     });
-    // « aucune partie professionnelle recensée », jamais « sans club » : la source dit qu'elle
-    // ne recense rien, pas que le joueur n'avait pas d'équipe.
+    // "no professional game on record", never "no team": the source says it records nothing,
+    // not that the player had no team.
     const chaine=items.map(i=>i.kind==="void"
       ?`<span class="hint">${tr("detail.void",{annee:i.year})}</span>`
       :`${i.label} <span class="hint">${i.from===i.to?i.from:i.from+"–"+i.to} · ${ROLE_NAME[i.role]}</span>`).join(" → ");
-    // Les deux bornes du fil. « Connue » et pas « début » ni « fin de carrière » : un joueur
-    // encore actif peut n'avoir pas requalifié, et la couverture de la source a ses limites.
+    // The two bounds of the thread. "Known" and not "start" or "end of career": a still-active
+    // player may simply not have qualified again, and the source's coverage has its limits.
     const vu=SEEN.get(p.id);
     const bornes=vu?`<br><span class="hint">${tr("detail.bornes",{de:vu[0],a:vu[1]})}</span>`:"";
     out.innerHTML=`<b class="nm">${p.name}</b>${nat?`<span class="hint">${pays(nat)} · </span>`:""}${chaine}${bornes}`;
@@ -1044,20 +1042,20 @@ function apply(){
     out.innerHTML=`<b class="nm">${t.name}</b><span class="hint">${tr("detail.equipe",{n,annee:ALL_YEARS[0]})}</span>`;
   }
   sel.hidden=!(show||pinnedTeam);
-  // Le × se cache sur un simple survol, qui n'a rien à relâcher — mais pas quand une équipe
-  // est épinglée dessous : le survol n'est alors qu'un sous-contexte, et le contrôle qui
-  // relâche la sélection ne doit pas s'évanouir sous le curseur.
+  // The × hides on a mere hover, which has nothing to release — but not when a team is pinned
+  // underneath: the hover is then only a sub-context, and the control that releases the
+  // selection must not vanish from under the cursor.
   $("selClose").hidden=!!hover&&!pinned&&!pinnedTeam;
-  // Le bouton n'a de sens que sur une sélection **posée** : isoler au survol réorganiserait la
-  // carte en passant la souris. C'est une bascule, donc `aria-pressed` et non une action.
+  // The button only makes sense on a **settled** selection: isolating on hover would rearrange
+  // the map as the mouse goes by. It is a toggle, hence `aria-pressed` and not an action.
   const iso=$("selIso"), pose=!!pinned||!!pinnedTeam;
   iso.hidden=!pose;
   sel.classList.toggle("avec-iso",pose);
   iso.setAttribute("aria-pressed",String(state.isole));
   iso.textContent=state.isole?tr("sel.tout"):tr("sel.iso");
-  // Grisé quand l'isolement ne laisserait rien — 35 joueurs sur 749 n'ont aucune colonne dans
-  // la période ouverte par défaut, et l'édition isolée resserre encore. Dire pourquoi vaut
-  // mieux qu'un bouton qui ne fait rien.
+  // Greyed out when the isolation would leave nothing — 35 players out of 749 have no column at
+  // all in the period open by default, and an isolated edition narrows further. Saying why is
+  // worth more than a button that does nothing.
   const mort=pose&&!state.isole&&!colonnesSi({isole:true}).length;
   iso.setAttribute("aria-disabled",String(mort));
   iso.title=state.isole?tr("sel.iso.titre.sortir")
@@ -1070,12 +1068,11 @@ function renderLegend(lin){
   const L=[];
   L.push(`<span><svg width="30" height="10"><line x1="2" y1="5" x2="28" y2="5" stroke="currentColor" stroke-width="1.8"/></svg> ${tr("leg.fil")}</span>`);
   L.push(`<span><span class="lg-half"><i></i><i></i></span> ${tr("leg.demi")}${apps.some(a=>a.doubt)?tr("leg.demi.doute"):""}</span>`);
-  // Les quatre libellés de parcours viennent de `results.json`, comme ceux de la carte : les
-  // réécrire ici en donnerait deux sources, et la légende finirait par ne plus nommer ce que
-  // les rangées affichent.
+  // The four run labels come from `results.json`, like those on the map: rewriting them here
+  // would give two sources, and the legend would end up no longer naming what the rows show.
   L.push(`<span><span class="lg-res">${["QF","SF","F"].map(parcours).join(" · ")}</span> ${tr("leg.parcours")} · <b style="color:var(--bot)">${parcours("W")}</b></span>`);
-  // Dire « premier » et « dernier Worlds », et pas « début » ni « fin de carrière » : la
-  // carte ne voit que les éditions, et un joueur encore actif n'a peut-être pas requalifié.
+  // Say "first" and "last Worlds", and not "start" or "end of career": the map only sees the
+  // editions, and a still-active player may simply not have qualified again.
   L.push(`<span><svg width="30" height="12"><line x1="10" y1="2" x2="20" y2="2" stroke="currentColor" stroke-width="2"/><line x1="15" y1="2" x2="15" y2="10" stroke="currentColor" stroke-width="2"/></svg> ${tr("leg.bouts")}</span>`);
   if(state.showNat) L.push(`<span><span class="lg-nat">KR</span> ${tr("leg.nat")} · <span class="lg-nat" style="color:var(--accent);border-color:var(--accent)">KR</span> ${tr("leg.nat.imp")}</span>`);
   if(state.showSen) L.push(`<span><span class="senbar"></span> ${tr("leg.sen",{de:ord(1),a:ord(6)})}</span>`);
@@ -1089,9 +1086,9 @@ function renderLegend(lin){
   $("legendBody").innerHTML=L.join("");
 }
 
-// ---------- recherche ----------
-// Cadrages, extraits de `selectPlayer` et `selectTeam` parce que l'isolement doit recadrer
-// après un rendu, sans repasser par la sélection qui n'a pas changé.
+// ---------- search ----------
+// Framings, pulled out of `selectPlayer` and `selectTeam` because isolation has to re-frame
+// after a render, without going through a selection that has not changed.
 function cadrerJoueur(id){
   const ns=nodesByPlayer.get(id);
   if(!ns?.length) return;
@@ -1099,21 +1096,21 @@ function cadrerJoueur(id){
   centerOn(n.x+chipW/2,n.y+(bas-n.y)/2,Math.min(1,Math.max(.45,vp.clientHeight/((bas-n.y)+300))));
 }
 function cadrerColonne(t,c){
-  // Cadrer sur les seules éditions que l'équipe a jouées dans la période affichée : une
-  // colonne de deux rangées sur seize se centrerait sinon sur du vide.
+  // Frame on the sole editions the team played within the displayed period: a column of two
+  // rows out of sixteen would otherwise centre on empty space.
   const ys=YEARS.filter(y=>t.years[y]);
   if(!ys.length) return;
   const haut=yTop(ys[0]), bas=yTop(ys.at(-1))+5*STEP;
   centerOn(c.x+c.w/2,(haut+bas)/2,Math.min(1,Math.max(.45,vp.clientHeight/((bas-haut)+300))));
 }
-// Suite d'un changement de sélection, et aussi de mode de clic : les deux changent l'ensemble
-// des colonnes que garde l'isolement, sans que l'isolement lui-même soit remis en cause. Une
-// sélection nouvelle **le reporte sur elle** plutôt que d'en sortir — on reste dans le même
-// geste de lecture, sur quelqu'un d'autre.
+// Aftermath of a selection change, and of a click-mode change too: both change the set of
+// columns the isolation keeps, without the isolation itself being called into question. A new
+// selection **moves it onto itself** rather than leaving it — one stays within the same reading
+// gesture, on somebody else.
 //
-// Tant que rien n'est isolé, c'est `apply()` et rien d'autre, le comportement d'avant intact.
-// Isolé, il faut remettre en page, mais seulement si cet ensemble a réellement changé : sinon
-// on paierait un rendu complet à chaque survol.
+// As long as nothing is isolated, it is `apply()` and nothing else, the former behaviour intact.
+// Isolated, the page must be laid out again, but only if that set really changed: otherwise we
+// would pay a full render on every hover.
 function apresSelection(){
   if(!state.pinned&&!state.pinnedTeam) state.isole=false;
   const avant=reduction;
@@ -1128,15 +1125,15 @@ function selectPlayer(id){
   apresSelection();
   cadrerJoueur(id);
 }
-// Le pendant de `selectPlayer` pour une équipe : poser la sélection, puis recentrer sur la
-// colonne. Le mode de clic — « carrières complètes » ou « arrivées et départs » — reste celui
-// que l'utilisateur a choisi dans les filtres, ce n'est pas au raccourci d'en décider.
+// The counterpart of `selectPlayer` for a team: set the selection, then recentre on the column.
+// The click mode — "full careers" or "arrivals and departures" — stays the one the user chose in
+// the filters; it is not up to the shortcut to decide.
 //
-// **Équipe sans colonne : on refuse.** Pas de démasquage d'office — un clic dans les
-// statistiques n'a pas à modifier les filtres sans le dire — et pas de boîte de dialogue, qui
-// coûterait plus qu'elle ne rend pour un raccourci de lecture. C'est l'entrée elle-même qui
-// est grisée et porte la raison (`majStatsTeams`), et ce refus préventif dit la même règle que
-// le nettoyage de `state.pinnedTeam` par `render()` quand la colonne disparaît.
+// **Team without a column: we refuse.** No unhiding on the sly — a click in the statistics has
+// no business changing the filters without saying so — and no dialog box, which would cost more
+// than it gives for a reading shortcut. It is the entry itself that is greyed out and carries
+// the reason (`majStatsTeams`), and this pre-emptive refusal states the same rule as the
+// cleanup of `state.pinnedTeam` by `render()` when the column disappears.
 function selectTeam(code){
   const t=byCode.get(code);
   if(!t||sansColonne(t,true)) return false;
@@ -1146,33 +1143,34 @@ function selectTeam(code){
   if(c) cadrerColonne(t,c);
   return true;
 }
-// Les noms d'équipe de « Rosters inchangés » sont des raccourcis dont l'état dépend des
-// filtres, pas du contenu du tiroir : il se rafraîchit à chaque rendu, comme les pilules de
-// région, au lieu d'être figé à la construction.
+// The team names in "Unchanged rosters" are shortcuts whose state depends on the filters, not
+// on the drawer's contents: it is refreshed on every render, like the region pills, instead of
+// being frozen at build time.
 function majStatsTeams(){
   document.querySelectorAll("#stats button[data-team]").forEach(b=>{
     const t=byCode.get(b.dataset.team), pourquoi=t?sansColonne(t,true):tr("stats.absente");
-    // `aria-disabled` plutôt que l'attribut `disabled` : un bouton désactivé ne reçoit aucun
-    // événement de souris dans plusieurs navigateurs, et n'afficherait donc pas le `title` qui
-    // porte la raison du refus — tout l'intérêt du grisé. `selectTeam` refuse de son côté.
+    // `aria-disabled` rather than the `disabled` attribute: a disabled button receives no mouse
+    // event at all in several browsers, and would therefore not show the `title` that carries
+    // the reason for the refusal — the whole point of greying out. `selectTeam` refuses on its
+    // own side.
     b.setAttribute("aria-disabled",String(!!pourquoi));
     b.title=pourquoi?`${t?t.name:b.dataset.team} · ${pourquoi}`:tr("stats.voir",{nom:t.name});
   });
 }
 
-// ---------- recherche : joueurs et équipes ----------
-// Combobox écrite à la main : le `<datalist>` natif tiendrait en trois lignes, mais il ne
-// sait ni présenter deux catégories — la barre cherche des équipes autant que des joueurs —,
-// ni afficher autre chose que du texte, ni être stylé.
+// ---------- search: players and teams ----------
+// Hand-written combobox: the native `<datalist>` would fit in three lines, but it can neither
+// present two categories — the bar searches teams as much as players —, nor display anything
+// other than text, nor be styled.
 const q=$("q"), qlist=$("qlist");
-// Forme de comparaison : minuscules, diacritiques retirés, pour que « pain » trouve
-// `paiN Gaming` et « kabum » `KaBuM! e-Sports`. Seule la **recherche** est tolérante — la
-// graphie d'un pseudo reste une clé de données, et rien ici ne la touche.
+// Comparison form: lower case, diacritics stripped, so that "pain" finds `paiN Gaming` and
+// "kabum" `KaBuM! e-Sports`. Only the **search** is forgiving — the spelling of a handle stays a
+// data key, and nothing here touches it.
 const pli=s=>String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-// Une entrée **par graphie** de joueur : un joueur renommé se cherche sous les deux, et c'est
-// une règle de données, pas une commodité — la ligne du pseudo d'époque porte alors la graphie
-// canonique en appui, pour que le lien entre les deux se voie. Une entrée par équipe, trouvable
-// sous son code, son nom complet et son libellé court.
+// One entry **per spelling** of a player: a renamed player is searched under both, and that is
+// a data rule, not a convenience — the period-handle line then carries the canonical spelling as
+// support, so that the link between the two can be seen. One entry per team, findable under its
+// code, its full name and its short label.
 const ENTREES=[];
 players.forEach(p=>{
   ENTREES.push({kind:"j",id:p.id,nom:p.name,note:null,cles:[pli(p.name)]});
@@ -1189,9 +1187,10 @@ teams.forEach(t=>{
     note:court===t.name?t.region:`${t.name} · ${t.region}`,
     cles:[...new Set([pli(t.code),pli(t.name),pli(court)])]});
 });
-// Huit par groupe : au-delà, la liste cesse d'aider et le compte restant dit qu'il faut
-// préciser. Un début de mot passe avant un milieu de mot, et une correspondance entière avant
-// tout le reste — taper « t1 » doit donner T1 en tête, pas les douze codes qui contiennent 1.
+// Eight per group: beyond that the list stops helping, and the remaining count says one must be
+// more specific. A match at the start of a word comes before a match in the middle, and a whole
+// match before everything else — typing "t1" must put T1 first, not the twelve codes containing
+// a 1.
 const MAX_GROUPE=8;
 function chercher(texte){
   const k=pli(texte.trim());
@@ -1221,16 +1220,16 @@ function majListe(){
   const res=chercher(q.value);
   let h="";
   options=[];
-  // Deux groupes nommés plutôt qu'une liste plate : un `listbox` n'accepte que des `option`
-  // et des `group`, et les deux catégories ne se lisent pas de la même façon — un pseudo se
-  // reconnaît, un code d'équipe se devine.
+  // Two named groups rather than a flat list: a `listbox` only accepts `option` and `group`
+  // elements, and the two categories are not read the same way — a handle is recognised, a team
+  // code is guessed at.
   for(const [kind,titre] of [["j",tr("rech.joueurs")],["e",tr("rech.equipes")]]){
     const tout=res.filter(e=>e.kind===kind);
     if(!tout.length) continue;
     h+=`<div role="group" aria-label="${titre}"><div class="lbl" aria-hidden="true">${titre}</div>`;
     for(const e of tout.slice(0,MAX_GROUPE)){
-      // Une équipe sans colonne à cet instant reste listée : la trouver est déjà une réponse.
-      // Elle est inerte, avec sa raison — on ne modifie pas les filtres sans le dire.
+      // A team with no column at this moment stays listed: finding it is already an answer. It
+      // is inert, with its reason — we do not change the filters without saying so.
       const t=kind==="e"?byCode.get(e.code):null;
       const pourquoi=t?sansColonne(t,true):null;
       const i=options.length;
@@ -1248,7 +1247,7 @@ function majListe(){
   qlist.innerHTML=h;
   qlist.hidden=false;
   q.setAttribute("aria-expanded","true");
-  // Le premier choix possible est actif d'emblée : Entrée doit marcher sans flèche.
+  // The first possible choice is active straight away: Enter must work without an arrow key.
   actif=options.findIndex(o=>!o.mort);
   majActif();
 }
@@ -1258,8 +1257,8 @@ function majActif(){
   q.setAttribute("aria-activedescendant",`qo${actif}`);
   qlist.querySelector(`#qo${actif}`)?.scrollIntoView({block:"nearest"});
 }
-// Les entrées inertes sont sautées : s'arrêter sur une ligne dont Entrée ne fera rien
-// donnerait l'impression que le clavier est cassé.
+// Inert entries are skipped: stopping on a line where Enter will do nothing would give the
+// impression that the keyboard is broken.
 function bouger(pas){
   if(!options.length) return;
   let i=actif;
@@ -1282,12 +1281,12 @@ q.addEventListener("keydown",e=>{
   if(e.key==="ArrowDown"){ e.preventDefault(); qlist.hidden?majListe():bouger(1); }
   else if(e.key==="ArrowUp"){ e.preventDefault(); bouger(-1); }
   else if(e.key==="Enter"){ if(actif>=0){ e.preventDefault(); choisir(actif); } }
-  // Échap ferme la liste **et s'arrête là** : la cascade du document défait l'isolement et
-  // les tiroirs, ce qui n'a rien à voir avec une liste ouverte sous le curseur.
+  // Escape closes the list **and stops there**: the document's cascade undoes isolation and
+  // drawers, which has nothing to do with a list open under the cursor.
   else if(e.key==="Escape"&&!qlist.hidden){ e.preventDefault(); e.stopPropagation(); fermerListe(); }
 });
-// `mousedown` plutôt que le clic pour garder le focus : sans ça le champ perd le focus avant
-// que le clic n'arrive, et la liste se referme sous le doigt.
+// `mousedown` rather than click, to keep the focus: without it the field loses focus before the
+// click arrives, and the list closes under the finger.
 qlist.addEventListener("mousedown",e=>e.preventDefault());
 qlist.addEventListener("click",e=>{
   const el=e.target.closest(".opt[data-i]");
@@ -1295,11 +1294,11 @@ qlist.addEventListener("click",e=>{
 });
 document.addEventListener("click",e=>{ if(!(e.target.closest&&e.target.closest(".combo"))) fermerListe(); });
 
-// ---------- tiroirs ----------
+// ---------- drawers ----------
 function setDrawer(id,open){
   const d=$(id); d.classList.toggle("open",open);
-  // La barre de recherche et la légende glissent à droite du tiroir de filtres (CSS `.fopen`)
-  // pour rester lisibles au lieu de passer dessous.
+  // The search bar and the legend slide to the right of the filter drawer (CSS `.fopen`) so as
+  // to stay readable instead of going under it.
   if(id==="filters") document.body.classList.toggle("fopen",open);
   $(id==="filters"?"openFilters":"openStats").setAttribute("aria-expanded",open);
   if(!open) closeTip();
@@ -1307,9 +1306,9 @@ function setDrawer(id,open){
 $("openFilters").onclick=()=>{const o=!$("filters").classList.contains("open"); if(o&&innerWidth<900) setDrawer("statsDrawer",false); setDrawer("filters",o);};
 $("openStats").onclick=()=>{const o=!$("statsDrawer").classList.contains("open"); if(o&&innerWidth<900) setDrawer("filters",false); setDrawer("statsDrawer",o);};
 document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>setDrawer(b.dataset.close,false));
-// Échap, en tête de la cascade existante : l'isolement d'abord, puis l'infobulle, puis les
-// tiroirs. Une seule pression rend la carte entière — deux niveaux pour deux isolements
-// seraient à deviner, alors que « Échap annule ce que je viens de faire » ne l'est pas.
+// Escape, at the head of the existing cascade: isolation first, then the tooltip, then the
+// drawers. A single press gives back the whole map — two levels for two isolations would have to
+// be guessed at, whereas "Escape undoes what I have just done" does not.
 document.addEventListener("keydown",e=>{
   if(e.key!=="Escape") return;
   if(toutMontrer()) return;
@@ -1323,27 +1322,27 @@ function pill(container,label,color,on,onToggle,cls="pill"){
   b.onclick=()=>b.setAttribute("aria-pressed",onToggle());
   container.appendChild(b); return b;
 }
-// Les libellés que le JavaScript écrit une fois pour toutes — pilules de période, de seuil, de
-// mode, et les deux phrases de note chiffrées — ne peuvent pas passer par `data-i18n` : ils
-// n'existent pas dans le HTML. Chacun s'enregistre ici avec de quoi se réécrire, et le
-// changement de langue rejoue la liste. Tout le reste de l'interface est déjà reconstruit par
-// `render()` ou par `apply()`, qui repassent par `tr()` à chaque fois.
+// The labels JavaScript writes once and for all — period, threshold and mode pills, and the two
+// numbered note sentences — cannot go through `data-i18n`: they do not exist in the HTML. Each
+// registers here along with what it takes to rewrite itself, and a language change replays the
+// list. All the rest of the interface is already rebuilt by `render()` or by `apply()`, which go
+// back through `tr()` every time.
 const LIBELLES=[];
 const libelle=fn=>{LIBELLES.push(fn); fn();};
 const majLibelles=()=>LIBELLES.forEach(fn=>fn());
 
-// ---------- filtre de période ----------
+// ---------- period filter ----------
 const yFrom=$("yFrom"), yTo=$("yTo");
-// La coupure tombe en 2020, année où la LMS cesse d'être une région majeure : c'est la
-// rupture la plus nette du jeu de données après 2015 — 38 % de joueurs communs entre 2019 et
-// 2020, et 7 organisations entrantes pour 7 sortantes.
+// The split falls in 2020, the year the LMS stopped being a major region: it is the sharpest
+// break in the data set after 2015 — 38 % of players in common between 2019 and 2020, and 7
+// incoming organisations for 7 outgoing ones.
 const ERAS=[
   ["ere.tout",ALL_YEARS[0],ALL_YEARS.at(-1)],
   ["ere.moderne",2020,ALL_YEARS.at(-1)],
   ["ere.historique",ALL_YEARS[0],2019],
 ];
 function remplirAnnees(){
-  // La borne haute ne propose que des années ≥ borne basse, et réciproquement.
+  // The upper bound only offers years ≥ the lower bound, and vice versa.
   const opt=(y,sel)=>`<option value="${y}"${y===sel?" selected":""}>${y}</option>`;
   yFrom.innerHTML=ALL_YEARS.filter(y=>y<=state.yearTo).map(y=>opt(y,state.yearFrom)).join("");
   yTo.innerHTML=ALL_YEARS.filter(y=>y>=state.yearFrom).map(y=>opt(y,state.yearTo)).join("");
@@ -1371,14 +1370,14 @@ const regionBtns=new Map(REGIONS.map(r=>[r,pill($("regions"),r,regionVar(r),true
   if(state.regions.has(r)){ if(state.regions.size===1) return true; state.regions.delete(r); } else state.regions.add(r);
   render(); return state.regions.has(r);
 })]));
-// Le seuil de présence peut vider une région entière — la GPL dès « 2+ », quatre familles à
-// « 3+ ». Une pilule cochée sans aucune colonne derrière serait incomprise : elle porte donc
-// son compte, et c'est le compte qui dit d'abaisser le seuil.
+// The presence threshold can empty a whole region — the GPL as soon as "2+", four families at
+// "3+". A ticked pill with no column behind it would be baffling: it therefore carries its
+// count, and it is the count that says to lower the threshold.
 //
-// Le `title` porte trois choses, une par ligne — un `title` natif accepte les retours à la
-// ligne : le nom de la ligue, sa zone géographique, puis le compte de colonnes. Le sigle seul
-// ne disait ni ce que c'est, ni où ça se joue. Une région sans nom collecté, ou trop large et
-// absente de `ZONES_ARBITREES`, saute simplement sa ligne : jamais de libellé inventé.
+// The `title` carries three things, one per line — a native `title` accepts line breaks: the
+// name of the league, its geographic zone, then the column count. The code alone said neither
+// what it is nor where it is played. A region with no collected name, or too wide and absent
+// from `ZONES_ARBITREES`, simply skips its line: never an invented label.
 function majRegionPills(){
   for(const [r,b] of regionBtns){
     const total=teams.filter(t=>t.region===r).length;
@@ -1388,16 +1387,15 @@ function majRegionPills(){
     b.title=[LEAGUE_NAMES[r]||null,zoneDe(r),compte].filter(Boolean).join("\n");
   }
 }
-// ---------- masquage des colonnes d'équipe ----------
-// La liste à cocher est la source de vérité, le `×` de l'en-tête un raccourci : une colonne
-// masquée doit pouvoir revenir sans deviner où cliquer. Elle est groupée par région et ne
-// liste que les régions affichées, puisque le masquage agit **à l'intérieur** du
-// sous-ensemble retenu par le filtre de régions. Une équipe masquée dont la région est
-// ensuite masquée reste masquée au retour de celle-ci — « tout réafficher » est le filet qui
-// garantit le retour en un geste.
-// Seuil de présence : « au moins N apparitions aux Worlds ». Une seule borne, pas deux —
-// une période est un intervalle, un nombre d'apparitions est un seuil, et une borne haute ne
-// répondrait à aucune question qu'on se pose.
+// ---------- hiding team columns ----------
+// The checklist is the source of truth, the header's `×` a shortcut: a hidden column must be
+// able to come back without guessing where to click. It is grouped by region and only lists the
+// displayed regions, since hiding acts **inside** the subset kept by the region filter. A hidden
+// team whose region is hidden afterwards stays hidden when that region comes back — "show all
+// again" is the safety net that guarantees a one-gesture return.
+// Presence threshold: "at least N Worlds appearances". One bound, not two — a period is an
+// interval, a number of appearances is a threshold, and an upper bound would answer no question
+// anybody asks.
 const presenceBtns=PRESENCE.map(n=>{
   const b=pill($("presence"),`${n}+`,null,n===DEFAULT_MIN_APPS,()=>{
     state.minApps=n;
@@ -1413,8 +1411,8 @@ const presenceBtns=PRESENCE.map(n=>{
   });
   return b;
 });
-// Les deux comptes de la note sous le filtre : le nombre de colonnes à une seule apparition,
-// et le total. Calculés, et non écrits dans la page — une collecte les déplacerait.
+// The two counts in the note under the filter: the number of columns with a single appearance,
+// and the total. Computed, not written into the page — a collection run would move them.
 libelle(()=>{
   $("presenceNote").textContent=tr("presence.note",{
     n:teams.filter(t=>APPS.get(t.code)===1).length,total:teams.length});
@@ -1425,7 +1423,7 @@ libelle(()=>{
 const teamsList=$("teamsList"), teamsSum=$("teamsSum");
 function renderTeamList(){
   const dedans=teams.filter(t=>state.regions.has(t.region)), n=dedans.filter(t=>state.hiddenTeams.has(t.code)).length;
-  // Restaurer le focus : le rendu complet de la liste l'effacerait à chaque case cochée.
+  // Restore the focus: a full re-render of the list would wipe it on every ticked box.
   const actif=teamsList.contains(document.activeElement)?document.activeElement.dataset.team:null;
   const aff=dedans.length-n;
   teamsSum.textContent=n?trn("teams.affichees.sur",aff,{total:dedans.length}):trn("teams.affichees",dedans.length);
@@ -1435,14 +1433,14 @@ function renderTeamList(){
     h+=`<div class="tgrp"><div class="thd"><b><i style="background:${regionVar(r)}"></i>${r}</b>`
       +`<span><button type="button" data-rg="${r}" data-on="1">${tr("teams.toutes")}</button><button type="button" data-rg="${r}">${tr("teams.aucune")}</button></span></div><div class="labs">`
       +lot.map(t=>{
-        // Une équipe sans aucune édition dans la période affichée n'a pas de colonne : la
-        // case reste utile mais ne change rien tant que la période n'est pas élargie.
+        // A team with no edition at all in the displayed period has no column: the box stays
+        // useful but changes nothing until the period is widened.
         const vide=!YEARS.some(y=>t.years[y]);
-        // Une équipe sous le seuil de présence n'a pas de colonne non plus : sa case reste
-        // cochée — ce n'est pas elle qui l'écarte — mais le libellé le dit.
+        // A team under the presence threshold has no column either: its box stays ticked — it
+        // is not what rules the team out — but the label says so.
         const sousSeuil=APPS.get(t.code)<state.minApps;
-        // Les deux refus énoncent la même règle que `sansColonne()`, et se lisent donc dans les
-        // mêmes termes : une seule chaîne par cause, un seul endroit où elle est écrite.
+        // Both refusals state the same rule as `sansColonne()`, and therefore read in the same
+        // terms: one string per cause, one single place where it is written.
         const pourquoi=vide?` · ${tr("refus.periode")}`:sousSeuil?` · ${trn("refus.seuil",APPS.get(t.code))}`:"";
         return `<label class="toggle tm${vide||sousSeuil?" vide":""}" title="${t.name}${pourquoi}"><input type="checkbox" data-team="${t.code}"${state.hiddenTeams.has(t.code)?"":" checked"}> ${shortName(t)}</label>`;
       }).join("")+`</div></div>`;
@@ -1451,9 +1449,9 @@ function renderTeamList(){
   teamsList.innerHTML=h;
   if(actif) teamsList.querySelector(`input[data-team="${actif}"]`)?.focus();
 }
-// Masquer la dernière colonne viderait la carte : on s'arrête avant. D'où le test à chaque
-// tour plutôt qu'une fois pour toutes — « Aucune » sur la seule région affichée laisse une
-// équipe debout au lieu de ne rien faire.
+// Hiding the last column would empty the map: we stop short of that. Hence the test on every
+// pass rather than once and for all — "None" on the only displayed region leaves one team
+// standing instead of doing nothing.
 function setHidden(codes,masquer){
   let change=false;
   for(const c of codes){
@@ -1466,7 +1464,7 @@ function setHidden(codes,masquer){
 }
 teamsList.addEventListener("change",e=>{
   const cb=e.target.closest("input[data-team]"); if(!cb) return;
-  // Refus (dernière colonne) : la case retrouve son état, `render` n'ayant pas eu lieu.
+  // Refusal (last column): the box returns to its state, `render` not having taken place.
   if(!setHidden([cb.dataset.team],!cb.checked)) cb.checked=!cb.checked;
 });
 teamsList.addEventListener("click",e=>{
@@ -1475,10 +1473,10 @@ teamsList.addEventListener("click",e=>{
   if(b.dataset.rg) setHidden(teams.filter(t=>t.region===b.dataset.rg).map(t=>t.code),!b.dataset.on);
 });
 
-// Le mode ne décide pas que de la surbrillance : isolement posé, il décide aussi des colonnes
-// gardées — toutes celles qu'ont traversées les joueurs de l'équipe, ou seulement les clubs
-// d'avant et d'après, 27 colonnes au pire contre 16. D'où `apresSelection()` et non `apply()` :
-// changer de mode change l'ensemble des colonnes, donc demande une remise en page.
+// The mode does not only decide the highlighting: with an isolation set, it also decides which
+// columns are kept — all those the team's players went through, or only the clubs before and
+// after, 27 columns at worst against 16. Hence `apresSelection()` and not `apply()`: changing
+// mode changes the set of columns, and therefore calls for a new layout.
 const modeBtns=["players","lineage"].map(m=>{
   const b=pill($("teamMode"),"",null,m==="players",()=>{state.teamMode=m; modeBtns.forEach(x=>x.setAttribute("aria-pressed",x===b)); apresSelection(); return true;},"pill mode");
   libelle(()=>{ b.textContent=tr(`mode.${m}`); b.title=tr(`mode.${m}.titre`); });
@@ -1498,22 +1496,22 @@ modeInfo.addEventListener("click",e=>{
 document.addEventListener("click",e=>{if(!modeTip.hidden&&!e.target.closest("#modeTip,#modeInfo")) closeTip();});
 $("filters").querySelector(".dbody").addEventListener("scroll",closeTip,{passive:true});
 
-// ---------- statistiques ----------
-// Fonction et non plus bloc immédiat : les sept tableaux portent des titres et des notes, et un
-// changement de langue doit les réécrire. Les mesures sont recalculées avec — elles ne dépendent
-// d'aucun filtre, donc le coût est celui d'un seul passage sur 749 joueurs, une fois par bascule.
+// ---------- statistics ----------
+// A function and no longer an immediate block: the seven tables carry titles and notes, and a
+// language change must rewrite them. The measures are recomputed along with them — they depend
+// on no filter, so the cost is a single pass over 749 players, once per toggle.
 function renderStats(){
   const plist=[...players.values()];
-  // Toutes ces mesures comptent des **Worlds** : « le plus de Worlds », « d'un Worlds à
-  // l'autre », « titulaires ». Une étape hors Worlds n'en est pas un, et la colonne qu'elle
-  // traverse n'a pas toujours de région — `flow[null]` ferait planter le tiroir.
+  // All these measures count **Worlds**: "most Worlds", "from one Worlds to the next",
+  // "starters". A step outside Worlds is not one, and the column it goes through does not always
+  // have a region — `flow[null]` would crash the drawer.
   const mondiaux=p=>p.apps.filter(a=>!a.step);
   const btn=p=>`<button type="button" class="pl" data-id="${p.id}">${p.name}</button>`;
   const most=plist.map(p=>({p,n:mondiaux(p).length})).sort((a,b)=>b.n-a.n||a.p.name.localeCompare(b.p.name)).slice(0,10);
   const trav=plist.map(p=>({p,n:new Set(mondiaux(p).map(a=>a.team.code)).size})).filter(x=>x.n>=3).sort((a,b)=>b.n-a.n||mondiaux(b.p).length-mondiaux(a.p).length).slice(0,10);
-  // Deux voyageurs différents, et la confusion entre les deux était la faute : le premier
-  // compte les équipes **avec lesquelles on est allé aux Worlds**, le second tous les clubs
-  // traversés, étapes hors Worlds et clubs sans colonne compris.
+  // Two different travellers, and confusing the two was the mistake: the first counts the teams
+  // **one went to Worlds with**, the second every club passed through, steps outside Worlds and
+  // columnless clubs included.
   const carr=plist.map(p=>({p,n:new Set(p.apps.map(a=>a.team.code)).size,w:new Set(mondiaux(p).map(a=>a.team.code)).size}))
     .filter(x=>x.n>=4).sort((a,b)=>b.n-a.n||a.p.name.localeCompare(b.p.name)).slice(0,10);
   const stable=[];
@@ -1543,25 +1541,26 @@ function renderStats(){
   $("stats").innerHTML=h;
   majStatsTeams();
 }
-// Deux raccourcis sur la même liste : un nom de joueur, un nom d'équipe. Le test sur
-// `data-team` passe d'abord, le bouton d'équipe portant aussi la classe `.pl`. L'écoute est
-// posée **une fois**, sur le conteneur que `renderStats()` ne remplace pas : sans ça, chaque
-// changement de langue en ajouterait une.
+// Two shortcuts on the same list: a player name, a team name. The `data-team` test comes first,
+// the team button also carrying the `.pl` class. The listener is attached **once**, on the
+// container `renderStats()` does not replace: without that, every language change would add
+// one more.
 $("stats").addEventListener("click",e=>{
   const te=e.target.closest("button[data-team]");
-  // Le tiroir ne se referme que si la sélection a bien eu lieu : sur un refus, l'entrée
-  // grisée doit rester sous les yeux avec sa raison.
+  // The drawer only closes if the selection actually took place: on a refusal, the greyed-out
+  // entry must stay in sight with its reason.
   if(te){ if(selectTeam(te.dataset.team)&&innerWidth<900) setDrawer("statsDrawer",false); return; }
   const b=e.target.closest(".pl"); if(!b) return; if(innerWidth<900) setDrawer("statsDrawer",false); selectPlayer(b.dataset.id);
 });
 
-// ---------- changement de langue ----------
-// Le sélecteur n'est qu'une bascule entre deux langues : il porte le code de celle d'arrivée.
+// ---------- language switching ----------
+// The selector is only a toggle between two languages: it carries the code of the one being
+// switched to.
 $("lang").onclick=()=>setLang(LANGS.find(l=>l!==lang()));
-// Ce que le dictionnaire ne peut pas atteindre seul. `appliquer()` a déjà réécrit le HTML
-// statique quand on arrive ici ; restent les libellés que le JavaScript écrit, les sept
-// tableaux de statistiques, la carte entière — en-têtes, axe, infobulles, légende, panneau de
-// détail —, et la liste de recherche si elle est ouverte sous le curseur.
+// What the dictionary cannot reach on its own. `appliquer()` has already rewritten the static
+// HTML by the time we get here; what is left is the labels JavaScript writes, the seven
+// statistics tables, the whole map — headers, axis, tooltips, legend, detail panel —, and the
+// search list if it is open under the cursor.
 surChangement(()=>{
   majLibelles();
   renderStats();
@@ -1569,19 +1568,19 @@ surChangement(()=>{
   if(!qlist.hidden) majListe();
 });
 
-// ---------- démarrage ----------
-// La légende est fermée par défaut à toutes les largeurs (attribut `open` retiré du HTML) :
-// il n'y a donc plus de cas étroit à rattraper ici.
+// ---------- start-up ----------
+// The legend is closed by default at every width (the `open` attribute removed from the HTML):
+// there is therefore no narrow case left to catch up on here.
 remplirAnnees();
 renderStats();
 render();
 view.k=innerWidth<700?.7:.9; view.x=16; view.y=70; applyView();
 
-// Lien profond : `?q=` ouvre la carte sur un joueur ou une équipe déjà sélectionné. La portée
-// s'arrête là — sérialiser les filtres, la période et le zoom dans l'URL est une autre
-// fonctionnalité, et elle n'est pas demandée. La valeur passe par la **même** recherche que la
-// barre, donc un code d'équipe, un nom complet, un libellé court ou un pseudo d'époque marchent
-// tous, accents et casse indifférents ; rien ne se passe si elle ne trouve rien.
+// Deep link: `?q=` opens the map on an already selected player or team. The scope stops there —
+// serialising the filters, the period and the zoom into the URL is another feature, and it is
+// not being asked for. The value goes through the **same** search as the bar, so a team code, a
+// full name, a short label or a period handle all work, accents and case notwithstanding;
+// nothing happens if it finds nothing.
 {
   const cherche=new URLSearchParams(location.search).get("q");
   if(cherche?.trim()){

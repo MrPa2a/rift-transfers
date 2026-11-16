@@ -1,19 +1,18 @@
 <!doctype html>
 <!--
-  Redirection vers /map/, en attendant la page de présentation qui prendra cette place.
-  La racine ne doit jamais être une page vide : un lien déjà partagé vers la racine doit
-  mener à la carte.
+  Redirect to /map/, pending the landing page that will take this place. The root must never be
+  an empty page: a link already shared to the root has to lead to the map.
 
-  Le chemin est relatif — « map/ » et non « /map/ » — parce que le site est servi depuis
-  /rift-transfers/ sur GitHub Pages et depuis / en développement local.
+  The path is relative — "map/" and not "/map/" — because the site is served from
+  /rift-transfers/ on GitHub Pages and from / in local development.
 -->
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <base href="./">
   <title>Rift Transfers</title>
-  <meta name="description" content="Carte interactive des rosters de toutes les équipes venues aux Worlds 2011–2026 de League of Legends.">
+  <meta name="description" content="Interactive map of the rosters of every team that came to the 2011–2026 League of Legends World Championships.">
   <meta name="robots" content="noindex">
   <meta http-equiv="refresh" content="0; url=map/">
   <link rel="canonical" href="https://mrpa2a.github.io/rift-transfers/map/">
@@ -30,10 +29,10 @@
   </style>
 </head>
 <body>
-  <p>Rift Transfers — <a href="map/">ouvrir la carte</a>.</p>
+  <p>Rift Transfers — <a href="map/">open the map</a>.</p>
   <script>
-    // La balise refresh suffit, mais elle perd la requête et l'ancre : on les reporte quand
-    // JavaScript est là, pour qu'un lien profond partagé vers la racine arrive entier.
+    // The refresh tag is enough, but it loses the query string and the fragment: we carry them
+    // over when JavaScript is available, so that a deep link shared to the root arrives whole.
     location.replace("map/" + location.search + location.hash);
   </script>
 </body>

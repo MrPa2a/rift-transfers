@@ -1,4 +1,4 @@
-/* Polices auto-hébergées (Fontsource, licence SIL OFL 1.1 — voir assets/fonts/). */
+/* Self-hosted fonts (Fontsource, SIL OFL 1.1 licence — see assets/fonts/). */
 /* barlow-latin-ext-400-normal */
 @font-face {
   font-family: 'Barlow';
@@ -126,17 +126,16 @@
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
-/* Rift Transfers — plan de travail plein écran façon carte :
-   équipes en colonnes, éditions des Worlds en rangées, outils flottants et tiroirs latéraux. */
+/* Rift Transfers — full-screen, map-like workspace:
+   teams as columns, Worlds editions as rows, floating tools and side drawers. */
 :root{
   --bg:#f3f4f7; --panel:#ffffff; --fg:#161a24; --muted:#5d6475; --line:#d9dce4; --chip:#ffffff; --absent:#e8eaf0;
   --accent:#1f5bd6; --sen:#0f8f86;
   --top:#c4472f; --jgl:#2f8a4c; --mid:#2c63c9; --bot:#c98a12; --sup:#8a45b8;
   --lck:#1f5bd6; --lpl:#c8322a; --lec:#0f8f86; --lcs:#5a4bd1; --lms:#b06a12;
-  /* Les neuf régions mineures. La couleur de région ne sert qu'à deux pastilles
-     accolées à un libellé texte — l'en-tête de colonne et la pilule de filtre —
-     jamais au fond d'une colonne ni à une ligne : il suffit que deux familles
-     voisines dans l'ordre des colonnes ne se confondent pas. */
+  /* The nine minor regions. A region colour only serves two dots set against a text label —
+     the column header and the filter pill — never a column background nor a line: it is enough
+     that two families adjacent in the column order are not mistaken for each other. */
   --lcp:#1683a8; --ljl:#b8336b; --vcs:#4d8a1b; --gpl:#8a7414; --lco:#8a3fb0;
   --tcl:#c25a1f; --lcl:#5c6b8a; --cblol:#2c8a6a; --lla:#a8338a;
   --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
@@ -161,8 +160,8 @@
   color-scheme:dark}
 
 
-/* --dw : largeur du tiroir de filtres. Elle sert aussi de décalage aux outils flottants de
-   gauche, qui glissent à sa droite quand il s'ouvre — d'où la variable partagée. */
+/* --dw: width of the filter drawer. It also serves as the offset for the left-hand floating
+   tools, which slide to its right when it opens — hence the shared variable. */
 :root{--shadow:0 4px 18px rgba(20,26,40,.14),0 1px 3px rgba(20,26,40,.08);--grid-dot:rgba(30,40,70,.07);--HH:46px;--YW:58px;--dw:min(360px,calc(100vw - 36px))}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--shadow:0 6px 22px rgba(0,0,0,.5),0 1px 3px rgba(0,0,0,.4);--grid-dot:rgba(255,255,255,.05)}}
 :root[data-theme="dark"]{--shadow:0 6px 22px rgba(0,0,0,.5),0 1px 3px rgba(0,0,0,.4);--grid-dot:rgba(255,255,255,.05)}
@@ -173,7 +172,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14
 button{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-/* ---------- plan de travail ---------- */
+/* ---------- workspace ---------- */
 #vp{position:fixed;top:calc(env(safe-area-inset-top,0px) + var(--HH));left:var(--YW);right:0;bottom:0;overflow:hidden;touch-action:none;cursor:grab;
   background-color:var(--bg);background-image:radial-gradient(var(--grid-dot) 1.2px,transparent 1.2px);background-size:22px 22px}
 #vp.drag{cursor:grabbing}
@@ -185,9 +184,9 @@ button{font:inherit;color:inherit}
 #corner{position:fixed;top:env(safe-area-inset-top,0px);left:0;width:var(--YW);height:var(--HH);background:var(--panel);border-right:1px solid var(--line);border-bottom:1px solid var(--line);z-index:6;display:flex;align-items:center;justify-content:center;font:700 13px var(--f-display);letter-spacing:.06em;color:var(--muted)}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
 .th{position:absolute;top:0;height:100%;padding:6px 8px;display:flex;flex-direction:column;justify-content:center;gap:2px;border-left:1px solid var(--line);cursor:pointer;user-select:none;overflow:hidden;background:var(--panel);transition:opacity .15s,background .15s}
-/* Trois états, et le survol ne partage plus le style de l'épinglée — sinon la colonne qu'on
-   vient de cliquer se confond avec celle qu'on frôle. Épinglée : anneau d'accent. En lien :
-   affichage normal. Sans rapport : grisée, c'est elle qui fait le tri (82 % des colonnes). */
+/* Three states, and hover no longer shares the pinned style — otherwise the column just
+   clicked is confused with the one being brushed past. Pinned: accent ring. Related: normal
+   display. Unrelated: greyed out, and that is what does the sorting (82 % of the columns). */
 .th:hover{background:var(--absent)}
 .th.on{background:var(--absent);box-shadow:inset 0 0 0 2px var(--accent)}
 .th.on .tn{color:var(--accent)}
@@ -196,14 +195,14 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .th .rg{font:600 9.5px var(--f-body);letter-spacing:.1em;display:flex;align-items:center;gap:5px;color:var(--muted);white-space:nowrap}
 .th .rg b{width:12px;height:3px;border-radius:2px;display:block;flex:0 0 auto}
 .th.other{cursor:default;background:var(--absent)}
-/* Le `×` n'est cliquable qu'une fois visible : invisible, il resterait une zone piégeuse en
-   haut à droite de chaque en-tête, là où un doigt vise l'épinglage. Il reste tabulable. */
+/* The `×` is only clickable once visible: invisible, it would remain a booby-trapped area at
+   the top right of every header, right where a finger aims to pin. It stays tabbable. */
 .th .hide{position:absolute;top:2px;right:2px;width:18px;height:18px;padding:0;border:none;border-radius:4px;background:none;color:var(--muted);font:600 14px/1 var(--f-body);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .15s}
 .th:hover .hide,.th .hide:focus-visible{opacity:1;pointer-events:auto}
 .th .hide:hover{background:var(--line);color:var(--fg)}
-/* L'axe des années est cliquable : une année isole son édition. Le bouton garde l'aspect de
-   l'étiquette d'avant — c'est un repère avant d'être un contrôle — et ne se signale qu'au
-   survol et quand il est pressé. */
+/* The year axis is clickable: a year isolates its edition. The button keeps the look of the
+   former label — it is a landmark before being a control — and only announces itself on hover
+   and when pressed. */
 .ylab{position:absolute;left:0;right:0;text-align:center;font:500 13px var(--f-mono);color:var(--muted);transform:translateY(-50%);
   background:none;border:none;padding:4px 0;cursor:pointer;border-radius:6px}
 .ylab:hover{color:var(--fg);background:var(--absent)}
@@ -215,14 +214,13 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .colbg{position:absolute;top:0;border-left:1px solid var(--line)}
 .colbg.other{background:color-mix(in srgb,var(--absent) 70%,transparent);border-left:1px dashed var(--muted)}
 .yrule{position:absolute;left:0;border-top:1px dashed var(--line)}
-/* Rangée voisine d'une édition isolée : un voile par-dessus, et non une opacité sur chaque
-   case — l'estompe du focus se joue déjà sur l'opacité des cases, et les deux se seraient
-   disputé la même propriété. Il ne capture pas le pointeur : ce qu'il recouvre reste
-   survolable et cliquable. */
+/* Row adjacent to an isolated edition: a veil over it, and not an opacity on each chip — focus
+   dimming already plays on chip opacity, and the two would have fought over the same property.
+   It does not capture the pointer: what it covers stays hoverable and clickable. */
 .voile{position:absolute;left:0;background:color-mix(in srgb,var(--bg) 62%,transparent);pointer-events:none}
-/* Le SVG couvre toute la carte : il est hors du hit-test, sans quoi il volerait les clics aux
-   cases. Rendre les tracés eux-mêmes survolables a été essayé et abandonné — voir la note sur
-   le raccourci plus bas. */
+/* The SVG covers the whole map: it is out of the hit test, otherwise it would steal the chips'
+   clicks. Making the paths themselves hoverable was tried and abandoned — see the note on the
+   shortcut below. */
 #world svg{position:absolute;inset:0;overflow:visible;pointer-events:none}
 path.l{fill:none;stroke-linecap:round;transition:opacity .15s,stroke-width .15s}
 path.same{stroke-width:1.3;opacity:.22;display:none}
@@ -232,21 +230,21 @@ path.move{stroke-width:1.8;opacity:.6}
 .focus path.l.hl{opacity:1;stroke-width:3.2}
 .focus path.same.hl{display:inline}
 path.roff{display:none!important}
-/* #7a — bouts du fil. Permanentes elles alourdiraient la carte autant que les lignes
-   elles-memes : elles n'existent qu'au survol, et la regle qui suit doit donc passer
-   apres `.focus path.l` a specificite egale. */
-/* Le fil traverse une annee sans la moindre partie recensee. Il ne dit pas « sans club » :
-   il dit que la source ne recense rien entre ces deux cases. Au survol seulement. */
+/* Thread end marks. Permanent, they would weigh the map down as much as the lines themselves:
+   they only exist on hover, so the rule below must come after `.focus path.l` at equal
+   specificity. */
+/* The thread crosses a year without a single game on record. It does not say "no team": it says
+   the source records nothing between those two chips. On hover only. */
 .focus path.l.hl.void{stroke-dasharray:4 5}
-/* Le fil detaille, qui passe par les etapes, et le raccourci qui les saute : l'un remplace
-   l'autre au focus, et jamais les deux ensemble. */
+/* The detailed thread, which goes through the steps, and the shortcut that skips them: one
+   replaces the other on focus, and never both at once. */
 path.deep{display:none}
 .focus path.deep.hl{display:inline}
-/* Le raccourci s'efface au focus, remplacé par le détail. C'est aussi ce qui interdit de
-   rendre les tracés survolables : le fil qu'on survolerait changerait de forme à cause de ce
-   survol même, sortirait du hit-test, le navigateur émettrait `mouseout`, le focus
-   retomberait, le raccourci reviendrait sous le curseur — une boucle sans fin, qu'on voit sur
-   le fil DRX 2017 → T1 2019 de Khan. La case reste donc la seule prise sur un joueur. */
+/* The shortcut fades on focus, replaced by the detail. That is also what rules out making the
+   paths hoverable: the thread being hovered would change shape because of that very hover, leave
+   the hit test, the browser would fire `mouseout`, focus would drop, the shortcut would come
+   back under the cursor — an endless loop, visible on Khan's DRX 2017 → T1 2019 thread. The chip
+   therefore stays the only handle on a player. */
 .focus path.base.hl{display:none}
 path.duo{stroke-width:1.5;opacity:.5}
 path.cap{stroke-width:2;opacity:0}
@@ -259,7 +257,7 @@ path.cap{stroke-width:2;opacity:0}
 .chip .q,.chip .t{font:600 10px var(--f-body);color:var(--muted);margin-left:auto;flex:0 0 auto}
 .chip .t{letter-spacing:.04em}
 .chip:hover{border-color:var(--fg)}
-/* Poste tenu par deux joueurs : deux demi-cases accolees, largeur totale inchangee. */
+/* Role held by two players: two half-chips side by side, total width unchanged. */
 .chip.half{padding-right:3px;gap:3px}
 .chip.half .n{font-size:12px;letter-spacing:-.1px}
 .chip.half .sen{display:none!important}
@@ -271,19 +269,19 @@ path.cap{stroke-width:2;opacity:0}
 .focus .chip{opacity:.28}
 .focus .chip.hl{opacity:1;border-color:var(--fg);border-width:1.5px;font-weight:600}
 .chip.off{opacity:.15!important}
-/* Etape hors Worlds : la distinction doit survivre a tout reglage, donc elle tient dans la
-   case elle-meme — fond raye, texte en retrait — et pas dans un etat d'interaction. */
-/* Une etape ne se montre qu'au focus. Permanentes, les 435 cases et surtout les lignes
-   qu'elles tirent vers « Autres equipes », tout a droite de 120 colonnes, rendaient la carte
-   illisible pour une information qu'on ne lit qu'un joueur a la fois. */
+/* Step outside Worlds: the distinction must survive every setting, so it is carried by the chip
+   itself — hatched background, receding text — and not by an interaction state. */
+/* A step only shows on focus. Permanent, the 435 chips and above all the lines they pull towards
+   "Other teams", far right of 120 columns, made the map unreadable for information that is only
+   read one player at a time. */
 .chip.step{display:none;background:repeating-linear-gradient(135deg,var(--absent) 0 5px,transparent 5px 10px),var(--chip);border-style:dashed;color:var(--muted);font-weight:400}
 .focus .chip.step.hl{display:flex}
-/* Titulaire resserre le temps qu'une etape paraisse a cote de lui : il garde son opacite de
-   fond de carte, c'est l'etape qui est surlignee, pas lui. */
+/* Starter narrowed for as long as a step shows beside them: they keep their map-background
+   opacity, since it is the step that is highlighted, not them. */
 .chip.serre{transition:width .12s}
 .chip.step .r{opacity:.45}
 .focus .chip.step.hl{border-style:dashed;font-weight:500}
-/* Case « Pas aux Worlds » dont l'etape est montree : le cadre reste, le libelle se tait. */
+/* "Not at Worlds" cell whose step is shown: the frame stays, the label falls silent. */
 .absent.muette span{visibility:hidden}
 .lg-step{display:inline-block;padding:0 5px;border:1px dashed var(--line);border-radius:4px;background:repeating-linear-gradient(135deg,var(--absent) 0 5px,transparent 5px 10px),var(--chip);color:var(--muted);font-size:11px}
 .r.top{background:var(--top)} .r.jgl{background:var(--jgl)} .r.mid{background:var(--mid)} .r.bot{background:var(--bot)} .r.sup{background:var(--sup)}
@@ -291,14 +289,14 @@ path.cap{stroke-width:2;opacity:0}
 .nat.imp{color:var(--accent);border-color:var(--accent)}
 .showNat .chip .nat{display:inline-block}
 .chip .sen{display:none;font:600 10px var(--f-mono);color:var(--muted);margin-left:auto;flex:0 0 auto}
-/* L'ancienneté prend le `margin-left:auto`, et ce qui la suit se colle à elle. Mais la règle
-   doit être portée par `.showSen` : hors de cette option `.sen` est en `display:none` et ne
-   pousse plus rien, alors que le sélecteur `+` continuait de matcher — le tag d'équipe et les
-   marques `*` / `?` perdaient leur alignement à droite pour venir coller au nom. Même raison
-   pour `:not(.half)` : une demi-case masque son ancienneté faute de place. */
+/* Seniority takes the `margin-left:auto`, and what follows it sticks to it. But the rule must
+   be carried by `.showSen`: outside that option `.sen` is `display:none` and no longer pushes
+   anything, while the `+` selector kept matching — the team tag and the `*` / `?` marks lost
+   their right alignment and came up against the name. Same reason for `:not(.half)`: a half-chip
+   hides its seniority for lack of room. */
 .showSen .chip:not(.half) .sen + .q,.showSen .chip:not(.half) .sen + .t{margin-left:4px}
 .showSen .chip{background:color-mix(in srgb,var(--sen) var(--s),var(--chip))}
-/* Une etape n'a pas d'anciennete : la barre de seniorite ne doit pas lui manger sa rayure. */
+/* A step has no seniority: the seniority bar must not eat into its hatching. */
 .showSen .chip.step{background:repeating-linear-gradient(135deg,var(--absent) 0 5px,transparent 5px 10px),var(--chip)}
 .showSen .chip .sen{display:inline}
 .alias{position:absolute;font:600 10px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -306,16 +304,16 @@ path.cap{stroke-width:2;opacity:0}
 .res.win{color:var(--bot);opacity:1;font-weight:700}
 .absent{position:absolute;border:1px dashed var(--line);border-radius:4px;background:var(--absent);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11.5px}
 
-/* ---------- éléments flottants ---------- */
+/* ---------- floating elements ---------- */
 .float{position:fixed;z-index:20;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow)}
 #bar{top:calc(env(safe-area-inset-top,0px) + var(--HH) + 12px);left:calc(var(--YW) + max(12px,env(safe-area-inset-left,0px)));display:flex;align-items:center;gap:6px;padding:5px;max-width:calc(100vw - var(--YW) - 24px)}
 #bar h1{font:700 19px var(--f-display);margin:0 6px 0 8px;white-space:nowrap;letter-spacing:.01em}
 .combo{position:relative;display:flex;flex:1 1 180px;min-width:0}
 #q{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg);width:100%;min-width:0}
 #q:focus{outline:2px solid var(--accent);outline-offset:-1px}
-/* La liste tombe sous le champ, plus large que lui : un nom d'équipe entier n'entre pas dans
-   la largeur d'une barre de recherche. Elle est au-dessus des outils flottants (20) mais sous
-   les tiroirs (40), qui la recouvrent légitimement. */
+/* The list drops below the field, wider than it: a full team name does not fit the width of a
+   search bar. It sits above the floating tools (20) but under the drawers (40), which legitimately
+   cover it. */
 #qlist{position:absolute;top:calc(100% + 6px);left:0;width:max(100%,300px);max-width:calc(100vw - var(--YW) - 48px);
   max-height:min(52vh,360px);overflow-y:auto;overscroll-behavior:contain;background:var(--panel);border:1px solid var(--line);
   border-radius:10px;box-shadow:var(--shadow);z-index:30;padding:4px}
@@ -325,9 +323,9 @@ path.cap{stroke-width:2;opacity:0}
 #qlist .opt .hint{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 #qlist .opt i{width:9px;height:9px;border-radius:50%;flex:0 0 auto;align-self:center}
 #qlist .opt[aria-selected="true"]{background:var(--absent)}
-/* Une équipe sans colonne à cet instant reste listée — la trouver est déjà une réponse — mais
-   elle est inerte, avec sa raison dans le `title` : même refus et même vocabulaire que le
-   tiroir de statistiques et que la liste à cocher des filtres. */
+/* A team with no column at that moment stays listed — finding it is already an answer — but it
+   is inert, with its reason in the `title`: the same refusal and the same vocabulary as the
+   statistics drawer and the filter checklist. */
 #qlist .opt[aria-disabled="true"]{opacity:.45;cursor:default}
 #qlist .opt[aria-disabled="true"][aria-selected="true"]{background:none}
 #qlist .vide{padding:10px 9px;color:var(--muted);font-size:12.5px}
@@ -336,8 +334,8 @@ path.cap{stroke-width:2;opacity:0}
 .ibtn:hover{border-color:var(--muted)}
 .ibtn[aria-expanded="true"]{background:var(--fg);color:var(--panel);border-color:var(--fg)}
 .ibtn svg{width:16px;height:16px;flex:0 0 auto}
-/* Le sélecteur de langue porte un code de deux lettres, pas un mot : il tient en monospace,
-   et le garder à largeur fixe évite que la barre ne bouge d'un pixel à la bascule. */
+/* The language selector carries a two-letter code, not a word: it fits in monospace, and keeping
+   it at a fixed width stops the bar from moving a pixel on toggle. */
 #lang span{font:600 12px var(--f-mono);letter-spacing:.04em}
 #lang{padding:0 9px;gap:5px}
 
@@ -350,8 +348,8 @@ path.cap{stroke-width:2;opacity:0}
 #legend{left:calc(var(--YW) + max(12px,env(safe-area-inset-left,0px)));bottom:calc(14px + env(safe-area-inset-bottom,0px));max-width:min(330px,calc(100vw - var(--YW) - 90px));font-size:12.5px;color:var(--muted)}
 #legend summary{cursor:pointer;padding:8px 12px;font-weight:600;color:var(--fg);list-style:none;display:flex;align-items:center;gap:6px}
 #legend summary::-webkit-details-marker{display:none}
-/* La légende est en bas et se déplie vers le haut : fermée, le chevron montre où elle va
-   s'ouvrir ; ouverte, il montre où elle va se replier. */
+/* The legend sits at the bottom and unfolds upwards: closed, the chevron shows where it will
+   open; open, it shows where it will fold back. */
 #legend summary::after{content:"▴";margin-left:auto;color:var(--muted)}
 #legend[open] summary::after{content:"▾"}
 #legendBody{padding:0 12px 10px;display:flex;flex-direction:column;gap:6px;line-height:1.4}
@@ -369,19 +367,19 @@ path.cap{stroke-width:2;opacity:0}
 #sel .hint{color:var(--muted)}
 #selClose{position:absolute;top:6px;right:6px;width:28px;height:28px;border:none;background:none;cursor:pointer;color:var(--muted);font-size:18px;border-radius:6px}
 #selClose:hover{background:var(--absent)}
-/* « Isoler » se pose à gauche du ×, et le texte du panneau lui laisse la place par le padding
-   droit de #sel. Pressé, il s'inverse : c'est une bascule qui reste enfoncée. */
+/* "Isolate" sits to the left of the ×, and the panel's text makes room for it through #sel's
+   right padding. Pressed, it inverts: it is a toggle that stays depressed. */
 #selIso{position:absolute;top:6px;right:38px;height:28px;min-width:104px;padding:0 10px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font:600 12px var(--f-body);border-radius:6px;white-space:nowrap}
 #selIso:hover{border-color:var(--muted)}
 #selIso[aria-disabled="true"]{opacity:.45;cursor:default}
 #selIso[aria-disabled="true"]:hover{border-color:var(--line)}
 #selIso[aria-pressed="true"]{background:var(--fg);color:var(--panel);border-color:var(--fg)}
-/* Le texte du panneau laisse la place au bouton quand il est là, et la reprend sinon : une
-   sélection par simple survol n'affiche pas le bouton et garde toute la largeur.
-   `min-width` fige la boîte pour que « Isoler » et « Tout afficher » ne la fassent pas sauter. */
+/* The panel's text makes room for the button when it is there, and takes it back otherwise: a
+   selection by mere hover does not show the button and keeps the full width.
+   `min-width` freezes the box so that "Isolate" and "Show all" do not make it jump. */
 #sel.avec-iso{padding-right:152px}
 
-/* ---------- tiroirs ---------- */
+/* ---------- drawers ---------- */
 .drawer{position:fixed;top:0;bottom:0;z-index:40;width:var(--dw);background:var(--panel);box-shadow:var(--shadow);display:flex;flex-direction:column;transition:transform .22s ease;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 #filters{left:0;transform:translateX(-105%);border-right:1px solid var(--line);padding-left:env(safe-area-inset-left,0px)}
 #statsDrawer{right:0;transform:translateX(105%);border-left:1px solid var(--line);width:min(480px,calc(100vw - 36px));padding-right:env(safe-area-inset-right,0px)}
@@ -396,7 +394,7 @@ path.cap{stroke-width:2;opacity:0}
 .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .pill{font:600 12px var(--f-body);letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 11px 6px 9px;cursor:pointer;display:flex;align-items:center;gap:6px}
 .pill i{width:10px;height:10px;border-radius:50%;display:block}
-/* Compte porté par une pilule de région quand le seuil de présence en écarte des colonnes. */
+/* Count carried by a region pill when the presence threshold rules some of its columns out. */
 .pill .cnt{font-size:10px;font-weight:500;color:var(--muted);letter-spacing:0;text-transform:none;font-variant-numeric:tabular-nums}
 .pill[aria-pressed="false"]{opacity:.4}
 .row.years{gap:10px;align-items:center}
@@ -406,8 +404,8 @@ path.cap{stroke-width:2;opacity:0}
 .pill.mode{text-transform:none;letter-spacing:0;font-size:13px;padding:6px 12px}
 .pill.mode[aria-pressed="true"]{background:var(--fg);color:var(--panel);border-color:var(--fg)}
 .pill.mode[aria-pressed="false"]{opacity:1}
-/* Liste à cocher des équipes : repliée par défaut, elle tiendra 130 entrées sans pousser le
-   reste du tiroir hors de vue. Groupée par région, deux colonnes par groupe. */
+/* Team checklist: folded by default, it will hold 130 entries without pushing the rest of the
+   drawer out of view. Grouped by region, two columns per group. */
 .teamlist>summary{cursor:pointer;font-size:13px;color:var(--muted);padding:2px 0;list-style:none;display:flex;align-items:center;gap:6px}
 .teamlist>summary::-webkit-details-marker{display:none}
 .teamlist>summary::after{content:"▾";margin-left:auto}
@@ -443,10 +441,10 @@ path.cap{stroke-width:2;opacity:0}
 .st .v{font:500 12.5px var(--f-mono);color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
 .pl{font:600 14px var(--f-body);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
 .pl:hover{text-decoration-color:var(--accent)}
-/* Nom d'équipe de « Rosters inchangés » : même affordance que le nom de joueur, en gras —
-   c'était du texte mort, on lisait la ligne sans pouvoir aller la voir. Grisé et inerte quand
-   l'équipe n'a pas de colonne à cet instant, la raison étant dans son `title` : le même refus,
-   et le même vocabulaire, que la case « vide » de la liste à cocher du tiroir. */
+/* Team name in "Unchanged rosters": the same affordance as a player name, in bold — it used to
+   be dead text, one read the line without being able to go and see it. Greyed out and inert when
+   the team has no column at that moment, the reason being in its `title`: the same refusal, and
+   the same vocabulary, as the "empty" box in the drawer's checklist. */
 .pl.tl{font-weight:700}
 .pl[aria-disabled="true"]{color:var(--muted);text-decoration:none;cursor:default}
 .tw{overflow-x:auto}
@@ -456,21 +454,20 @@ table.fl td{min-width:42px;text-align:center;padding:6px 3px;border-radius:4px;f
 table.fl td small{color:var(--muted);font-size:10px}
 table.fl td.na{color:var(--muted);background:transparent}
 
-/* Tiroir de filtres ouvert : la barre de recherche, la légende et l'axe des années glissent
-   à sa droite au lieu de disparaître dessous. Ils peuvent chevaucher la carte — et c'est le
-   prix assumé pour l'axe, qui masque alors ses 58 px de colonnes : perdre le repère temporel
-   pendant tout le réglage des filtres coûtait plus cher, et le débord libre de `clampView()`
-   permet de dégager les colonnes de dessous. Sous 900 px le tiroir couvre presque tout
-   l'écran : rien à décaler, il n'y aurait plus de place. */
+/* Filter drawer open: the search bar, the legend and the year axis slide to its right instead of
+   vanishing underneath. They may overlap the map — and that is the accepted price for the axis,
+   which then hides its 58 px of columns: losing the time landmark for the whole time the filters
+   are being set cost more, and the free overscroll of `clampView()` lets one clear the columns
+   from underneath. Below 900 px the drawer covers nearly the whole screen: nothing to shift,
+   there would be no room left. */
 #bar,#legend,#rail,#corner{transition:transform .22s ease}
 @media (min-width:900px){
-  /* `#rail` et `#corner` sont en `left:0`, collés au bord : leur décalage est la largeur
-     pleine du tiroir, sans la soustraction que les outils flottants doivent faire pour leur
-     propre marge. */
+  /* `#rail` and `#corner` are at `left:0`, flush with the edge: their offset is the drawer's
+     full width, without the subtraction the floating tools have to make for their own margin. */
   body.fopen #rail,body.fopen #corner{transform:translateX(var(--dw))}
-  /* Les deux outils flottants se posent à droite de l'axe déplacé, et non du tiroir : ils
-     sont en `z-index:20` contre 5, et se poseraient sinon sur les 46 px d'axe qu'ils
-     recouvrent — on aurait déplacé le repère temporel pour le cacher derrière autre chose. */
+  /* The two floating tools settle to the right of the shifted axis, and not of the drawer: they
+     are at `z-index:20` against 5, and would otherwise sit on the 46 px of axis they cover — we
+     would have moved the time landmark only to hide it behind something else. */
   body.fopen #bar,body.fopen #legend{transform:translateX(calc(var(--dw) + 12px - max(12px,env(safe-area-inset-left,0px))))}
 }
 
@@ -484,13 +481,13 @@ table.fl td.na{color:var(--muted);background:transparent}
   #bar h1{display:none}
   .ibtn span{display:none}
   .ibtn{padding:0 9px}
-  /* Deux exceptions à la ligne du dessus : le code de langue reste visible — deux lettres
-     tiennent toujours, et un globe seul ne dirait pas vers quelle langue on bascule. */
+  /* Two exceptions to the line above: the language code stays visible — two letters always fit,
+     and a globe on its own would not say which language one is switching to. */
   #lang span{display:inline}
   #lang svg{display:none}
   .ylab{font-size:11px}
   #sel{width:calc(100vw - var(--YW) - 24px);bottom:calc(64px + env(safe-area-inset-bottom,0px))}
-  /* Étroit, le panneau ne peut pas réserver 152 px : le bouton se resserre sur son texte. */
+  /* When narrow, the panel cannot reserve 152 px: the button closes in on its text. */
   #selIso{min-width:0;right:34px;padding:0 8px;font-size:11.5px}
   #sel.avec-iso{padding-right:124px}
   #legend{max-width:calc(100vw - var(--YW) - 80px)}
