@@ -72,7 +72,7 @@ ligue et zone géographique d'une région ».
 
 ### `data/results.json`
 
-Parcours de chaque équipe par année : `W` vainqueur, `F` finale, `SF` demi-finale, `QF` quart, `G` groupes, `S` phase suisse, `P` play-in, `F*` finale pas encore jouée. `fetch-worlds.mjs` les calcule depuis le classement de Leaguepedia — § 12 du rapport — sauf `F*`, qu'il ne peut pas déduire. `ongoingYear` affiche « EN COURS » à côté de l'année ; passez-le à `null` une fois la finale jouée.
+Parcours de chaque équipe par année : `W` vainqueur, `F` finale, `SF` demi-finale, `QF` quart, `G` groupes, `S` phase suisse, `P` play-in, `F*` finale pas encore jouée. Les libellés de `labels` sont lus sur la carte comme dans sa légende : ils portent donc **les deux langues de l'interface**, et `npm run validate` les y exige. `fetch-worlds.mjs` les calcule depuis le classement de Leaguepedia — § 12 du rapport — sauf `F*`, qu'il ne peut pas déduire. `ongoingYear` affiche « EN COURS » à côté de l'année ; passez-le à `null` une fois la finale jouée.
 
 ### `data/players.json`
 
@@ -80,7 +80,7 @@ Nationalité (code ISO à 2 lettres) par joueur, et pays « domestiques » de ch
 
 `homeCountries` est une **décision**, pas un relevé : un code oublié fait passer tout joueur de ce pays pour un importé, en silence, et `npm run validate` ne peut vérifier que la forme. Les 14 listes sont justifiées une à une dans [docs/SOURCES.md](docs/SOURCES.md), section « Pays domestiques de chaque région » ; une région nouvelle en exige une.
 
-`countryNames` donne le nom français de chaque code : le panneau de détail écrit « Corée du Sud » là où le badge des chips garde `KR`, faute de place. Un code employé par `nationality` sans entrée dans `countryNames` est une erreur de `npm run validate`.
+`countryNames` donne le nom de chaque code **dans les deux langues de l'interface** — `"KR": { "fr": "Corée du Sud", "en": "South Korea" }` : le panneau de détail écrit le pays en toute lettre là où le badge des chips garde `KR`, faute de place. Les noms anglais sont les noms courts ISO 3166, la forme usuelle étant gardée là où ISO donne une forme administrative longue, comme le fait déjà la colonne française. Un code employé par `nationality` sans entrée, ou une entrée à qui manque une des deux langues, est une erreur de `npm run validate`.
 
 ### `data/careers.json`
 
@@ -110,7 +110,9 @@ Sources par année, avec ce que chacune a permis de vérifier. Voir aussi [docs/
 
 ## Code
 
-Le site est en HTML, CSS et JavaScript sans framework ni étape de build : `map/index.html`, `assets/css/styles.css`, `assets/js/app.js`. Gardez cette simplicité tant que possible.
+Le site est en HTML, CSS et JavaScript sans framework ni étape de build : `map/index.html`, `assets/css/styles.css`, `assets/js/app.js`, `assets/js/i18n.js`. Gardez cette simplicité tant que possible.
+
+L'interface est **bilingue**, et aucun texte affiché ne s'écrit dans `app.js` ni dans `index.html` : tout passe par `assets/js/i18n.js`, où chaque clé porte ses deux graphies côte à côte — c'est la seule forme où une chaîne oubliée dans une langue se voie à l'œil. Dans la page, `data-i18n` remplit un texte, `data-i18n-html` un texte riche, `data-i18n-attr="title:cle;aria-label:cle"` des attributs. Un libellé que le JavaScript écrit une fois pour toutes s'enregistre par `libelle()`, pour que la bascule de langue le réécrive sans recharger la page.
 
 ## Messages de commit
 

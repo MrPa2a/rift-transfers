@@ -34,6 +34,19 @@ const years = new Set(teamsData.years);
 const regions = new Set(teamsData.regions);
 const low = (s) => String(s ?? "").toLowerCase();
 
+// Les libellés que l'interface tire des données sont bilingues : l'interface anglaise ne doit
+// pas écrire « Corée du Sud » à côté de textes traduits. Le contrôle exige donc les **deux**
+// langues, et non plus un nom unique — une seule des deux laisserait le trou passer en silence,
+// puisque la carte se replie sur le code brut ou sur l'autre langue sans rien signaler.
+const LANGS = ["fr", "en"];
+const manqueLangue = (valeur) => {
+  if (typeof valeur !== "object" || valeur === null || Array.isArray(valeur)) return "doit porter { \"fr\": …, \"en\": … }";
+  const vides = LANGS.filter((l) => typeof valeur[l] !== "string" || !valeur[l].trim());
+  if (vides.length) return `langue${vides.length > 1 ? "s" : ""} manquante${vides.length > 1 ? "s" : ""} : ${vides.join(", ")}`;
+  const extra = Object.keys(valeur).filter((l) => !LANGS.includes(l));
+  return extra.length ? `langue${extra.length > 1 ? "s" : ""} inconnue${extra.length > 1 ? "s" : ""} : ${extra.join(", ")}` : null;
+};
+
 // --- équipes et lineups
 const teamCodes = new Set();
 const present = new Map(); // "2024:T1" -> true
@@ -186,6 +199,12 @@ for (const id of HOMONYMES_VERIFIES.keys()) {
   if (!appearances.has(id)) warnings.push(`HOMONYMES_VERIFIES contient « ${id} », absent des lineups : entrée à retirer`);
 }
 
+// --- libellés de parcours : lus dans la carte et dans sa légende, donc bilingues.
+for (const [code, valeur] of Object.entries(resultsData.labels ?? {})) {
+  const quoi = manqueLangue(valeur);
+  if (quoi) errors.push(`labels.${code} : ${quoi}`);
+}
+
 // --- résultats
 for (const [year, entries] of Object.entries(resultsData.results)) {
   for (const [code, value] of Object.entries(entries)) {
@@ -230,27 +249,31 @@ for (const [name, code] of Object.entries(playersData.nationality)) {
 const noNat = [...allPlayers].filter((n) => !Object.keys(playersData.nationality).some((k) => low(k) === low(n)));
 
 // --- noms de pays : le panneau de détail écrit le pays en toute lettre, un code sans entrée
-// y retomberait au code brut sans que rien ne le signale.
+// y retomberait au code brut sans que rien ne le signale. Dans les deux langues, faute de quoi
+// l'interface anglaise écrirait « Corée du Sud » au milieu de textes traduits.
 const countryNames = playersData.countryNames ?? {};
 const codesUtilises = new Set(Object.values(playersData.nationality));
 for (const code of codesUtilises) {
-  if (!countryNames[code]) errors.push(`countryNames : « ${code} » n'a pas de nom français, le panneau de détail afficherait le code brut`);
+  if (!countryNames[code]) errors.push(`countryNames : « ${code} » n'a pas de nom, le panneau de détail afficherait le code brut`);
 }
 for (const [code, nom] of Object.entries(countryNames)) {
   if (!/^[A-Z]{2}$/.test(code)) errors.push(`countryNames : « ${code} » n'est pas un code ISO à 2 lettres`);
-  else if (typeof nom !== "string" || !nom.trim()) errors.push(`countryNames.${code} : nom vide`);
-  else if (!codesUtilises.has(code)) warnings.push(`countryNames.${code} : aucun joueur de ce pays`);
+  else {
+    const quoi = manqueLangue(nom);
+    if (quoi) errors.push(`countryNames.${code} : ${quoi}`);
+    if (!codesUtilises.has(code)) warnings.push(`countryNames.${code} : aucun joueur de ce pays`);
+  }
 }
 
 // La zone géographique de la même infobulle se dérive de `homeCountries` : au plus trois
-// pays, elle les écrit en français. `ZONE_MAX` est la coupure, tenue en double dans
+// pays, elle les écrit en toute lettre. `ZONE_MAX` est la coupure, tenue en double dans
 // assets/js/app.js, qui porte en plus les trois libellés courts des régions au-delà.
 const ZONE_MAX = 3;
 for (const region of teamsData.regions) {
   const home = playersData.homeCountries?.[region];
   if (!Array.isArray(home) || home.length > ZONE_MAX) continue;
   for (const code of home) {
-    if (!countryNames[code]) errors.push(`countryNames : « ${code} » n'a pas de nom français, la zone de la pilule ${region} afficherait le code brut`);
+    if (!countryNames[code]) errors.push(`countryNames : « ${code} » n'a pas de nom, la zone de la pilule ${region} afficherait le code brut`);
   }
 }
 

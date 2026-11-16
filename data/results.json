@@ -1,15 +1,15 @@
 {
-  "$comment": "Parcours de chaque équipe suivie. W vainqueur, F finale, SF demi-finale, QF quart de finale, G phase de groupes, S phase suisse, P play-in. F* = qualifiée pour une finale pas encore jouée.",
+  "$comment": "Parcours de chaque équipe suivie. W vainqueur, F finale, SF demi-finale, QF quart de finale, G phase de groupes, S phase suisse, P play-in. F* = qualifiée pour une finale pas encore jouée. Les libellés de « labels » sont lus dans la carte et dans sa légende : ils portent donc les deux langues de l'interface, et npm run validate les y exige.",
   "ongoingYear": 2026,
   "labels": {
-    "W": "★ Vainqueur",
-    "F": "Finale",
-    "SF": "Demi",
-    "QF": "Quarts",
-    "G": "Groupes",
-    "S": "Suisse",
-    "P": "Play-in",
-    "F*": "En finale"
+    "W": { "fr": "★ Vainqueur", "en": "★ Champion" },
+    "F": { "fr": "Finale", "en": "Final" },
+    "SF": { "fr": "Demi", "en": "Semi" },
+    "QF": { "fr": "Quarts", "en": "Quarters" },
+    "G": { "fr": "Groupes", "en": "Groups" },
+    "S": { "fr": "Suisse", "en": "Swiss" },
+    "P": { "fr": "Play-in", "en": "Play-in" },
+    "F*": { "fr": "En finale", "en": "In the final" }
   },
   "results": {
     "2011": {"FNC": "W", "AAA": "F", "TSM": "SF", "EPIK": "SF", "GDE": "QF", "CLG": "QF", "PCFC": "QF", "XAN": "QF"},

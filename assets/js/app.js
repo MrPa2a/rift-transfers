@@ -1,11 +1,20 @@
 /*
  * Rift Transfers — carte des rosters des équipes venues aux Worlds de League of Legends.
  * Les données viennent de /data (format décrit dans CONTRIBUTING.md) ; ce fichier ne contient que le rendu.
+ *
+ * Aucun texte affiché n'est écrit ici : tout passe par `t()`, et le dictionnaire vit dans
+ * i18n.js. Importer ce module **traduit déjà** le HTML statique de la page, avant même le
+ * chargement des données — la boîte d'erreur qui suit en dépend.
  */
+// `t` est déjà, partout dans ce fichier, la variable d'une équipe — d'où `tr` et `trn` pour
+// traduire, plutôt qu'un renommage de cent lignes qui ne gagnerait rien.
+import { t as tr, tn as trn, ord, lang, setLang, LANGS, surChangement } from "./i18n.js";
 
 // ---------- chargement des données ----------
 const ROLES = ["top", "jgl", "mid", "bot", "sup"];           // clés internes (classes CSS)
 const ROLE_KEYS = ["top", "jungle", "mid", "bot", "support"]; // clés du JSON
+// Les cinq postes s'écrivent de la même façon dans les deux langues : ce sont les termes du jeu,
+// que personne ne traduit, et ils n'entrent donc pas dans le dictionnaire.
 const ROLE_NAME = { top: "Top", jgl: "Jungle", mid: "Mid", bot: "Bot", sup: "Support" };
 
 async function loadJSON(name) {
@@ -20,7 +29,7 @@ try {
 } catch (err) {
   const box = document.getElementById("loadError");
   box.hidden = false;
-  box.querySelector("code").textContent = String(err.message || err);
+  document.getElementById("loadDetail").textContent = String(err.message || err);
   throw err;
 }
 
@@ -30,12 +39,18 @@ const ALL_YEARS = TEAMS_DATA.years;
 let YEARS = ALL_YEARS;
 const REGIONS = TEAMS_DATA.regions;
 const RES = RESULTS_DATA.results;
+// Libellés de parcours et noms de pays sont **bilingues dans les données** : ce sont des
+// textes d'interface, mais ils se collectent et se contrôlent avec le reste de /data. Leur
+// lecture passe donc par la langue courante, et non par une table figée au chargement — la
+// langue change sans rechargement de page.
 const RES_LABEL = RESULTS_DATA.labels;
+const parcours = (code) => RES_LABEL[code]?.[lang()] ?? code;
 const ONGOING_YEAR = RESULTS_DATA.ongoingYear ?? null;
 const HOME = PLAYERS_DATA.homeCountries;
-// Code ISO → nom français. Le badge des chips reste au code à deux lettres, faute de place ;
+// Code ISO → nom du pays. Le badge des chips reste au code à deux lettres, faute de place ;
 // seul le panneau de détail a la place d'écrire « Corée du Sud ».
 const COUNTRY = PLAYERS_DATA.countryNames || {};
+const pays = (code) => COUNTRY[code]?.[lang()] ?? code;
 // Nom de la ligue derrière chaque sigle de région, collecté dans `Leagues.League` (§ 15 du
 // rapport de collecte). C'est le nom de la ligue **aujourd'hui**, alors qu'une famille de
 // colonnes couvre seize ans : la LEC s'est appelée « EU LCS » la moitié de sa vie. Le sigle
@@ -54,21 +69,23 @@ const LEAGUE_NAMES = TEAMS_DATA.leagueNames || {};
 const ZONE_MAX = 3; // au-delà, la liste des pays est illisible dans une infobulle
 // Les trois régions que `ZONE_MAX` écarte — LEC (25 pays), LCL (8), LLA (7) — reçoivent un
 // libellé court, et ce sont les **seuls** textes nouveaux de l'entrée : le projet les écrit
-// déjà ailleurs (« espace post-soviétique » est dans map/index.html et dans docs/SOURCES.md).
+// déjà ailleurs (« espace post-soviétique » est dans le dictionnaire et dans docs/SOURCES.md).
 // Table arbitrée : on n'invente pas le nom d'un territoire, pas plus qu'on n'abrège un nom
 // d'équipe de soi-même. Une région trop large qui n'y figure pas n'affiche **pas** de zone.
+// Les deux graphies restent ici, et non dans i18n.js : c'est l'arbitrage qui compte, et il se
+// lit d'un bloc — trois clés dispersées dans le dictionnaire le rendraient invisible.
 const ZONES_ARBITREES = {
-  LEC: "Europe",
-  LCL: "espace post-soviétique",
-  LLA: "Amérique latine",
+  LEC: { fr: "Europe", en: "Europe" },
+  LCL: { fr: "espace post-soviétique", en: "post-Soviet space" },
+  LLA: { fr: "Amérique latine", en: "Latin America" },
 };
-// « Thaïlande, Philippines et Singapour » — liste en français, le dernier séparé par « et ».
+// « Thaïlande, Philippines et Singapour » — le dernier séparé par « et », « and » en anglais.
 function zoneDe(region) {
-  const pays = HOME[region] || [];
-  if (!pays.length) return null;
-  if (pays.length > ZONE_MAX) return ZONES_ARBITREES[region] || null;
-  const noms = pays.map(c => COUNTRY[c] || c);
-  return noms.length > 1 ? `${noms.slice(0, -1).join(", ")} et ${noms.at(-1)}` : noms[0];
+  const codes = HOME[region] || [];
+  if (!codes.length) return null;
+  if (codes.length > ZONE_MAX) return ZONES_ARBITREES[region]?.[lang()] || null;
+  const noms = codes.map(pays);
+  return noms.length > 1 ? `${noms.slice(0, -1).join(", ")}${tr("zone.et")}${noms.at(-1)}` : noms[0];
 }
 const NAT = {};
 for (const [name, code] of Object.entries(PLAYERS_DATA.nationality)) NAT[name.toLowerCase()] = code;
@@ -360,11 +377,11 @@ const colonne=t=>visible(t)&&(!reduction||reduction.has(t.code))&&YEARS.some(y=>
 // redevient atteignable, et la refuser serait refuser pour une raison qui n'existera plus.
 const sansColonne=(t,ignorerSelection=false)=>{
   const red=ignorerSelection?reductionAnnee:reduction;
-  if(!YEARS.some(y=>t.years[y])) return "aucune édition dans la période affichée";
-  if(APPS.get(t.code)<state.minApps) return `${APPS.get(t.code)} apparition${APPS.get(t.code)>1?"s":""}, sous le seuil de présence`;
-  if(!state.regions.has(t.region)) return `région ${t.region} décochée`;
-  if(state.hiddenTeams.has(t.code)) return "colonne masquée";
-  if(red&&!red.has(t.code)) return ignorerSelection?`aucune rangée sur l'édition ${state.annee} isolée ni ses voisines`:"hors de l'isolement en cours";
+  if(!YEARS.some(y=>t.years[y])) return tr("refus.periode");
+  if(APPS.get(t.code)<state.minApps) return trn("refus.seuil",APPS.get(t.code));
+  if(!state.regions.has(t.region)) return tr("refus.region",{region:t.region});
+  if(state.hiddenTeams.has(t.code)) return tr("refus.masquee");
+  if(red&&!red.has(t.code)) return ignorerSelection?tr("refus.horsAnnee",{annee:state.annee}):tr("refus.horsIso");
   return null;
 };
 const view={x:0,y:0,k:1};
@@ -630,10 +647,10 @@ function render(){
       // ou plus. « Pas aux Worlds » ne vaut que pendant son existence.
       // Le libellé reste : les étapes ne s'affichent qu'au focus, et c'est `apply()` qui le
       // fait taire sur les seules cases dont une étape est effectivement montrée.
-      if(!e){ if(y>=from&&y<=to) html+=`<div class="absent" data-cell="${t.code}:${y}" style="left:${cx}px;top:${top}px;width:${chipW}px;height:${5*STEP-4}px"><span>Pas aux Worlds</span></div>`; return; }
+      if(!e){ if(y>=from&&y<=to) html+=`<div class="absent" data-cell="${t.code}:${y}" style="left:${cx}px;top:${top}px;width:${chipW}px;height:${5*STEP-4}px"><span>${tr("cell.absent")}</span></div>`; return; }
       const r=RES[y]?.[t.code];
       if(e.alias) html+=`<div class="alias" style="left:${cx}px;top:${top-16}px;width:${r?chipW-56:chipW}px">${e.alias}</div>`;
-      if(r) html+=`<div class="res${r==="W"?" win":""}" style="left:${cx}px;top:${top-16}px;width:${chipW}px">${RES_LABEL[r]}</div>`;
+      if(r) html+=`<div class="res${r==="W"?" win":""}" style="left:${cx}px;top:${top-16}px;width:${chipW}px">${parcours(r)}</div>`;
     });
   });
   nodesByPlayer.forEach(ns=>ns.forEach(n=>{
@@ -644,14 +661,16 @@ function render(){
     const duo=!a.step&&demi?a.team.years[a.year].all.find(b=>b.ri===a.ri&&b!==a):null;
     // Ce que la source dit d'une étape se limite à « chez X cette année-là » : ni poste —
     // la rangée n'en a pas —, ni ancienneté, ni rotation.
+    const marqueNat=nat?` (${nat})`:"";
     const tip=a.step
-      ? `${a.name}${nat?" ("+nat+")":""} · chez ${label} en ${a.year} · pas aux Worlds cette année-là`
-      : `${a.name}${a.shown!==a.name?` (${a.shown} à l'époque)`:""}${nat?" ("+nat+")":""} · ${ROLE_NAME[a.role]} · ${label} ${a.year}`
-        +(a.sen>1?` · ${a.sen}e Worlds avec l'équipe`:"")
-        +(duo?` · poste partagé avec ${duo.name}`:"")+(a.alt?` · rotation avec ${a.alt}`:"")+(a.doubt?" · à vérifier":"");
+      ? tr("chip.etape",{nom:a.name,nat:marqueNat,club:label,annee:a.year})
+      : tr("chip.worlds",{nom:a.name,alias:a.shown!==a.name?tr("chip.alias",{pseudo:a.shown}):"",
+          nat:marqueNat,poste:ROLE_NAME[a.role],equipe:label,annee:a.year})
+        +(a.sen>1?tr("chip.sen",{rang:ord(a.sen)}):"")
+        +(duo?tr("chip.duo",{nom:duo.name}):"")+(a.alt?tr("chip.rotation",{nom:a.alt}):"")+(a.doubt?tr("chip.doute"):"");
     const tag=n.other?tagDe(a.team):null;
     const mark=n.other?(tag?`<span class="t">${tag}</span>`:""):(!a.step&&(a.alt||a.doubt)?`<span class="q">${a.doubt?"?":"*"}</span>`:"");
-    html+=`<div class="chip${demi?" half":""}${droite?" right":""}${a.step?" step":""}" data-p="${a.id}" data-c="${a.id}:${a.year}" data-r="${a.role}" data-w="${n.w}"${a.step&&!n.other?` data-cell="${a.team.code}:${a.year}"`:""}${n.voisin?` data-voisin="${n.voisin}"`:""} style="left:${n.x}px;top:${n.y}px;width:${n.w}px;--s:${Math.min(a.sen-1,5)*11}%" title="${tip}"><span class="r ${a.role}"></span>${nat?`<span class="nat${isImport(a)?" imp":""}">${nat}</span>`:""}<span class="n">${a.shown}</span>${a.sen>1?`<span class="sen">${a.sen}e</span>`:""}${mark}</div>`;
+    html+=`<div class="chip${demi?" half":""}${droite?" right":""}${a.step?" step":""}" data-p="${a.id}" data-c="${a.id}:${a.year}" data-r="${a.role}" data-w="${n.w}"${a.step&&!n.other?` data-cell="${a.team.code}:${a.year}"`:""}${n.voisin?` data-voisin="${n.voisin}"`:""} style="left:${n.x}px;top:${n.y}px;width:${n.w}px;--s:${Math.min(a.sen-1,5)*11}%" title="${tip}"><span class="r ${a.role}"></span>${nat?`<span class="nat${isImport(a)?" imp":""}">${nat}</span>`:""}<span class="n">${a.shown}</span>${a.sen>1?`<span class="sen">${ord(a.sen)}</span>`:""}${mark}</div>`;
   }));
   // Les deux rangées voisines de l'édition isolée passent sous un voile, écrit **après** les
   // cases pour les recouvrir. Un voile plutôt qu'une opacité sur chaque case : l'estompe du
@@ -667,13 +686,13 @@ function render(){
   // Sous-titre de la colonne « Autres équipes » : les régions masquées, puis le nombre
   // d'équipes masquées une à une — celles dont la région, elle, est bien affichée.
   const nMasquees=teams.filter(t=>state.regions.has(t.region)&&!visible(t)).length;
-  const dehors=[...REGIONS.filter(r=>!state.regions.has(r)),...(nMasquees?[`${nMasquees} équipe${nMasquees>1?"s":""}`]:[])].join(" · ");
+  const dehors=[...REGIONS.filter(r=>!state.regions.has(r)),...(nMasquees?[trn("hdr.dehors",nMasquees)]:[])].join(" · ");
   hdr.innerHTML=cols.map(c=>c.other
-    ?`<div class="th other" data-x="${c.x}" data-w="${c.w}" title="Joueurs passés par des équipes qui ne sont pas affichées"><span class="rg">${dehors}</span><span class="tn">Autres équipes</span></div>`
+    ?`<div class="th other" data-x="${c.x}" data-w="${c.w}" title="${tr("hdr.autres.titre")}"><span class="rg">${dehors}</span><span class="tn">${tr("hdr.autres")}</span></div>`
     // Le `×` masque la colonne ; le reste de l'en-tête épingle l'équipe. Deux cibles
     // distinctes, sans quoi les deux gestes se marcheraient dessus. La liste à cocher du
     // tiroir reste la source de vérité — ce bouton n'en est qu'un raccourci.
-    :`<div class="th" data-team="${c.t.code}" data-x="${c.x}" data-w="${c.w}" title="${c.t.name} · cliquer pour épingler l'équipe, recliquer pour relâcher"><span class="rg"><b style="background:${regionVar(c.t.region)}"></b>${c.t.region}</span><span class="tn">${shortName(c.t)}</span><button type="button" class="hide" data-hide="${c.t.code}" aria-label="Masquer ${shortName(c.t)}" title="Masquer cette colonne">×</button></div>`).join("");
+    :`<div class="th" data-team="${c.t.code}" data-x="${c.x}" data-w="${c.w}" title="${tr("hdr.equipe.titre",{nom:c.t.name})}"><span class="rg"><b style="background:${regionVar(c.t.region)}"></b>${c.t.region}</span><span class="tn">${shortName(c.t)}</span><button type="button" class="hide" data-hide="${c.t.code}" aria-label="${tr("hdr.masquer.aria",{nom:shortName(c.t)})}" title="${tr("hdr.masquer.titre")}">×</button></div>`).join("");
   // L'axe des années devient cliquable : une année isole son édition. Cliquer une **voisine**
   // y déplace l'isolement — on avance ainsi d'édition en édition —, cliquer l'édition isolée
   // elle-même en sort. C'est le seul chemin de retour depuis l'axe, puisqu'une fois isolé il ne
@@ -685,11 +704,11 @@ function render(){
     // tiroir de statistiques — on refuse, on dit pourquoi, et on ne défait pas l'autre
     // isolement en douce. Le test ne coûte que quand une sélection est isolée.
     const mort=!on&&state.isole&&!colonnesSi({annee:y}).length;
-    const aide=on?"Édition isolée · cliquer pour revenir à la carte entière"
-      :mort?`La sélection isolée n'a aucune colonne sur ${y} ni ses voisines`
-      :state.annee!=null?`Déplacer l'isolement sur ${y}`
-      :`N'afficher que les équipes de ${y}, et celles d'où viennent ses joueurs et où ils vont`;
-    return `<button type="button" class="ylab${on?" iso":""}" data-y="${yTop(y)+2.5*STEP}" data-year="${y}" aria-pressed="${on}" aria-disabled="${mort}" title="${aide}">${y}${y===ONGOING_YEAR?"<small>EN COURS</small>":""}</button>`;
+    const aide=on?tr("rail.isolee")
+      :mort?tr("rail.morte",{annee:y})
+      :state.annee!=null?tr("rail.deplacer",{annee:y})
+      :tr("rail.isoler",{annee:y});
+    return `<button type="button" class="ylab${on?" iso":""}" data-y="${yTop(y)+2.5*STEP}" data-year="${y}" aria-pressed="${on}" aria-disabled="${mort}" title="${aide}">${y}${y===ONGOING_YEAR?`<small>${tr("rail.ongoing")}</small>`:""}</button>`;
   }).join("");
   // Reste le cas que le contrôle d'entrée ne voit pas : l'édition isolée a retiré sa colonne
   // à l'équipe épinglée. La sélection tombe, et si un isolement la suivait, la réduction qu'on
@@ -925,7 +944,7 @@ function lineage(code){
   }));
   return {chips,from,to,debut};
 }
-const fmtFlow=o=>Object.entries(o).sort((a,b)=>b[1].length-a[1].length).map(([t,l])=>`<span title="${l.join(", ")}">${t} <span class="hint">×${l.length}</span></span>`).join(", ")||`<span class="hint">aucun</span>`;
+const fmtFlow=o=>Object.entries(o).sort((a,b)=>b[1].length-a[1].length).map(([t,l])=>`<span title="${l.join(", ")}">${t} <span class="hint">×${l.length}</span></span>`).join(", ")||`<span class="hint">${tr("detail.lineage.aucun")}</span>`;
 
 function apply(){
   const {hover,pinned,pinnedTeam}=state;
@@ -1010,19 +1029,19 @@ function apply(){
     // « aucune partie professionnelle recensée », jamais « sans club » : la source dit qu'elle
     // ne recense rien, pas que le joueur n'avait pas d'équipe.
     const chaine=items.map(i=>i.kind==="void"
-      ?`<span class="hint">${i.year} · aucune partie professionnelle recensée</span>`
+      ?`<span class="hint">${tr("detail.void",{annee:i.year})}</span>`
       :`${i.label} <span class="hint">${i.from===i.to?i.from:i.from+"–"+i.to} · ${ROLE_NAME[i.role]}</span>`).join(" → ");
     // Les deux bornes du fil. « Connue » et pas « début » ni « fin de carrière » : un joueur
     // encore actif peut n'avoir pas requalifié, et la couverture de la source a ses limites.
     const vu=SEEN.get(p.id);
-    const bornes=vu?`<br><span class="hint">première apparition connue : ${vu[0]} · dernière apparition connue : ${vu[1]}</span>`:"";
-    out.innerHTML=`<b class="nm">${p.name}</b>${nat?`<span class="hint">${COUNTRY[nat]||nat} · </span>`:""}${chaine}${bornes}`;
+    const bornes=vu?`<br><span class="hint">${tr("detail.bornes",{de:vu[0],a:vu[1]})}</span>`:"";
+    out.innerHTML=`<b class="nm">${p.name}</b>${nat?`<span class="hint">${pays(nat)} · </span>`:""}${chaine}${bornes}`;
   } else if(lin){
     const t=teams.find(t=>t.code===pinnedTeam);
-    out.innerHTML=`<b class="nm">${t.name}</b><span class="hint">Arrivées et départs</span><br>Arrivées depuis : ${fmtFlow(lin.from)}<br>Départs vers : ${fmtFlow(lin.to)} <span class="hint">· ${lin.debut} premiers Worlds ici</span>`;
+    out.innerHTML=`<b class="nm">${t.name}</b><span class="hint">${tr("mode.lineage")}</span><br>${tr("detail.lineage.depuis")}${fmtFlow(lin.from)}<br>${tr("detail.lineage.vers")}${fmtFlow(lin.to)} <span class="hint">${tr("detail.lineage.debut",{n:lin.debut})}</span>`;
   } else if(pinnedTeam){
     const t=teams.find(t=>t.code===pinnedTeam), n=new Set(apps.filter(a=>a.team===t).map(a=>a.id)).size;
-    out.innerHTML=`<b class="nm">${t.name}</b><span class="hint">${n} joueurs titulaires aux Worlds depuis ${ALL_YEARS[0]}, carrières complètes surlignées.</span>`;
+    out.innerHTML=`<b class="nm">${t.name}</b><span class="hint">${tr("detail.equipe",{n,annee:ALL_YEARS[0]})}</span>`;
   }
   sel.hidden=!(show||pinnedTeam);
   // Le × se cache sur un simple survol, qui n'a rien à relâcher — mais pas quand une équipe
@@ -1035,35 +1054,38 @@ function apply(){
   iso.hidden=!pose;
   sel.classList.toggle("avec-iso",pose);
   iso.setAttribute("aria-pressed",String(state.isole));
-  iso.textContent=state.isole?"Tout afficher":"Isoler";
+  iso.textContent=state.isole?tr("sel.tout"):tr("sel.iso");
   // Grisé quand l'isolement ne laisserait rien — 35 joueurs sur 749 n'ont aucune colonne dans
   // la période ouverte par défaut, et l'édition isolée resserre encore. Dire pourquoi vaut
   // mieux qu'un bouton qui ne fait rien.
   const mort=pose&&!state.isole&&!colonnesSi({isole:true}).length;
   iso.setAttribute("aria-disabled",String(mort));
-  iso.title=state.isole?"Revoir toutes les colonnes, sans perdre la sélection"
-    :mort?(state.annee!=null?`Aucune colonne de la sélection sur l'édition ${state.annee} isolée ni ses voisines`:"Aucune colonne de la sélection dans la période affichée")
-    :"N'afficher que les colonnes par lesquelles la sélection est passée";
+  iso.title=state.isole?tr("sel.iso.titre.sortir")
+    :mort?(state.annee!=null?tr("sel.iso.titre.morte.annee",{annee:state.annee}):tr("sel.iso.titre.morte.periode"))
+    :tr("sel.iso.titre");
   renderLegend(!!lin);
 }
 
 function renderLegend(lin){
   const L=[];
-  L.push(`<span><svg width="30" height="10"><line x1="2" y1="5" x2="28" y2="5" stroke="currentColor" stroke-width="1.8"/></svg> changement d'équipe, coloré par poste — le fil bascule en son milieu quand le joueur change de poste</span>`);
-  L.push(`<span><span class="lg-half"><i></i><i></i></span> poste tenu par deux joueurs, chacun ciblable · <b>*</b> rotation ponctuelle (survol pour le nom)${apps.some(a=>a.doubt)?" · <b>?</b> à vérifier":""}</span>`);
-  L.push(`<span><span class="lg-res">Quarts · Demi · Finale</span> parcours de l'équipe · <b style="color:var(--bot)">★ Vainqueur</b></span>`);
+  L.push(`<span><svg width="30" height="10"><line x1="2" y1="5" x2="28" y2="5" stroke="currentColor" stroke-width="1.8"/></svg> ${tr("leg.fil")}</span>`);
+  L.push(`<span><span class="lg-half"><i></i><i></i></span> ${tr("leg.demi")}${apps.some(a=>a.doubt)?tr("leg.demi.doute"):""}</span>`);
+  // Les quatre libellés de parcours viennent de `results.json`, comme ceux de la carte : les
+  // réécrire ici en donnerait deux sources, et la légende finirait par ne plus nommer ce que
+  // les rangées affichent.
+  L.push(`<span><span class="lg-res">${["QF","SF","F"].map(parcours).join(" · ")}</span> ${tr("leg.parcours")} · <b style="color:var(--bot)">${parcours("W")}</b></span>`);
   // Dire « premier » et « dernier Worlds », et pas « début » ni « fin de carrière » : la
   // carte ne voit que les éditions, et un joueur encore actif n'a peut-être pas requalifié.
-  L.push(`<span><svg width="30" height="12"><line x1="10" y1="2" x2="20" y2="2" stroke="currentColor" stroke-width="2"/><line x1="15" y1="2" x2="15" y2="10" stroke="currentColor" stroke-width="2"/></svg> au survol d'un joueur ou au clic sur une équipe, les deux bouts du fil, posés sur la ligne entre deux éditions : premier et dernier Worlds du joueur</span>`);
-  if(state.showNat) L.push(`<span><span class="lg-nat">KR</span> nationalité · <span class="lg-nat" style="color:var(--accent);border-color:var(--accent)">KR</span> joueur importé</span>`);
-  if(state.showSen) L.push(`<span><span class="senbar"></span> 1er → 6e Worlds avec l'équipe</span>`);
-  L.push(`<span><span class="lg-step">Club</span> au survol d'un joueur ou au clic sur une équipe : où il était les années sans Worlds, et le fil passe par là</span>`);
-  L.push(`<span><svg width="30" height="10"><line x1="2" y1="5" x2="28" y2="5" stroke="currentColor" stroke-width="1.8" stroke-dasharray="3 4"/></svg> au survol, fil en pointillé : aucune partie professionnelle recensée sur l'intervalle</span>`);
-  if(hasOther) L.push(`<span>Autres équipes : joueurs des régions et des équipes masquées, et les clubs traversés qui n'ont pas de colonne</span>`);
-  if(lin) L.push(`<span>Arrivées et départs : club d'avant et club d'après</span>`);
-  if(state.annee!=null) L.push(`<span><b>Édition ${state.annee} isolée</b> : ses équipes, plus celles d'où viennent ses joueurs et où ils vont. Les deux rangées voisines sont estompées et ne montrent que ces arrivées et ces sorties. Cliquer une voisine y déplace l'isolement, cliquer ${state.annee} en sort.</span>`);
-  if(state.isole) L.push(`<span><b>Sélection isolée</b> : seules les colonnes par lesquelles elle est passée. « Tout afficher » revient à la carte entière en gardant la sélection ; le × la relâche ; Échap fait les deux. Sélectionner quelqu'un d'autre reporte l'isolement sur lui.${state.pinnedTeam?" Survoler un joueur n'allume que sa ligne, sans toucher aux colonnes.":""}</span>`);
-  L.push(`<span>Glisser pour se déplacer · molette ou pincer pour zoomer</span>`);
+  L.push(`<span><svg width="30" height="12"><line x1="10" y1="2" x2="20" y2="2" stroke="currentColor" stroke-width="2"/><line x1="15" y1="2" x2="15" y2="10" stroke="currentColor" stroke-width="2"/></svg> ${tr("leg.bouts")}</span>`);
+  if(state.showNat) L.push(`<span><span class="lg-nat">KR</span> ${tr("leg.nat")} · <span class="lg-nat" style="color:var(--accent);border-color:var(--accent)">KR</span> ${tr("leg.nat.imp")}</span>`);
+  if(state.showSen) L.push(`<span><span class="senbar"></span> ${tr("leg.sen",{de:ord(1),a:ord(6)})}</span>`);
+  L.push(`<span><span class="lg-step">${tr("leg.step.badge")}</span> ${tr("leg.step")}</span>`);
+  L.push(`<span><svg width="30" height="10"><line x1="2" y1="5" x2="28" y2="5" stroke="currentColor" stroke-width="1.8" stroke-dasharray="3 4"/></svg> ${tr("leg.void")}</span>`);
+  if(hasOther) L.push(`<span>${tr("leg.autres")}</span>`);
+  if(lin) L.push(`<span>${tr("leg.lineage")}</span>`);
+  if(state.annee!=null) L.push(`<span>${tr("leg.annee",{annee:state.annee})}</span>`);
+  if(state.isole) L.push(`<span>${tr("leg.iso")}${state.pinnedTeam?tr("leg.iso.survol"):""}</span>`);
+  L.push(`<span>${tr("leg.geste")}</span>`);
   $("legendBody").innerHTML=L.join("");
 }
 
@@ -1129,12 +1151,12 @@ function selectTeam(code){
 // région, au lieu d'être figé à la construction.
 function majStatsTeams(){
   document.querySelectorAll("#stats button[data-team]").forEach(b=>{
-    const t=byCode.get(b.dataset.team), pourquoi=t?sansColonne(t,true):"équipe absente du jeu de données";
+    const t=byCode.get(b.dataset.team), pourquoi=t?sansColonne(t,true):tr("stats.absente");
     // `aria-disabled` plutôt que l'attribut `disabled` : un bouton désactivé ne reçoit aucun
     // événement de souris dans plusieurs navigateurs, et n'afficherait donc pas le `title` qui
     // porte la raison du refus — tout l'intérêt du grisé. `selectTeam` refuse de son côté.
     b.setAttribute("aria-disabled",String(!!pourquoi));
-    b.title=pourquoi?`${t?t.name:b.dataset.team} · ${pourquoi}`:`Voir la colonne ${t.name} sur la carte`;
+    b.title=pourquoi?`${t?t.name:b.dataset.team} · ${pourquoi}`:tr("stats.voir",{nom:t.name});
   });
 }
 
@@ -1185,7 +1207,7 @@ function chercher(texte){
     return best;
   };
   return ENTREES.map(e=>({e,r:rang(e)})).filter(x=>x.r>=0)
-    .sort((a,b)=>a.r-b.r||a.e.nom.length-b.e.nom.length||a.e.nom.localeCompare(b.e.nom,"fr"))
+    .sort((a,b)=>a.r-b.r||a.e.nom.length-b.e.nom.length||a.e.nom.localeCompare(b.e.nom,lang()))
     .map(x=>x.e);
 }
 
@@ -1202,7 +1224,7 @@ function majListe(){
   // Deux groupes nommés plutôt qu'une liste plate : un `listbox` n'accepte que des `option`
   // et des `group`, et les deux catégories ne se lisent pas de la même façon — un pseudo se
   // reconnaît, un code d'équipe se devine.
-  for(const [kind,titre] of [["j","Joueurs"],["e","Équipes"]]){
+  for(const [kind,titre] of [["j",tr("rech.joueurs")],["e",tr("rech.equipes")]]){
     const tout=res.filter(e=>e.kind===kind);
     if(!tout.length) continue;
     h+=`<div role="group" aria-label="${titre}"><div class="lbl" aria-hidden="true">${titre}</div>`;
@@ -1219,10 +1241,10 @@ function majListe(){
         +(pourquoi?`<span class="hint">· ${pourquoi}</span>`:"")+`</div>`;
     }
     const reste=tout.length-MAX_GROUPE;
-    if(reste>0) h+=`<div class="reste" role="presentation">+ ${reste} autre${reste>1?"s":""} — précisez la recherche</div>`;
+    if(reste>0) h+=`<div class="reste" role="presentation">${trn("rech.reste",reste)}</div>`;
     h+=`</div>`;
   }
-  if(!options.length) h=`<div class="vide" role="presentation">Aucun joueur ni aucune équipe de ce nom.</div>`;
+  if(!options.length) h=`<div class="vide" role="presentation">${tr("rech.vide")}</div>`;
   qlist.innerHTML=h;
   qlist.hidden=false;
   q.setAttribute("aria-expanded","true");
@@ -1301,15 +1323,24 @@ function pill(container,label,color,on,onToggle,cls="pill"){
   b.onclick=()=>b.setAttribute("aria-pressed",onToggle());
   container.appendChild(b); return b;
 }
+// Les libellés que le JavaScript écrit une fois pour toutes — pilules de période, de seuil, de
+// mode, et les deux phrases de note chiffrées — ne peuvent pas passer par `data-i18n` : ils
+// n'existent pas dans le HTML. Chacun s'enregistre ici avec de quoi se réécrire, et le
+// changement de langue rejoue la liste. Tout le reste de l'interface est déjà reconstruit par
+// `render()` ou par `apply()`, qui repassent par `tr()` à chaque fois.
+const LIBELLES=[];
+const libelle=fn=>{LIBELLES.push(fn); fn();};
+const majLibelles=()=>LIBELLES.forEach(fn=>fn());
+
 // ---------- filtre de période ----------
 const yFrom=$("yFrom"), yTo=$("yTo");
 // La coupure tombe en 2020, année où la LMS cesse d'être une région majeure : c'est la
 // rupture la plus nette du jeu de données après 2015 — 38 % de joueurs communs entre 2019 et
 // 2020, et 7 organisations entrantes pour 7 sortantes.
 const ERAS=[
-  ["Tout",ALL_YEARS[0],ALL_YEARS.at(-1),`Les ${ALL_YEARS.length} éditions, de ${ALL_YEARS[0]} à ${ALL_YEARS.at(-1)}`],
-  ["Ère moderne",2020,ALL_YEARS.at(-1),"Depuis 2020 : quatre régions majeures, la LMS ayant fusionné dans la PCS"],
-  ["Ère historique",ALL_YEARS[0],2019,`${ALL_YEARS[0]} à 2019 : la LMS est encore une cinquième région majeure`],
+  ["ere.tout",ALL_YEARS[0],ALL_YEARS.at(-1)],
+  ["ere.moderne",2020,ALL_YEARS.at(-1)],
+  ["ere.historique",ALL_YEARS[0],2019],
 ];
 function remplirAnnees(){
   // La borne haute ne propose que des années ≥ borne basse, et réciproquement.
@@ -1323,10 +1354,14 @@ function setPeriode(from,to){
   state.pinnedTeam=null; state.hover=null;
   remplirAnnees(); render();
 }
-const eraBtns=ERAS.map(([label,from,to,aide])=>{
-  const texte=from===ALL_YEARS[0]&&to===ALL_YEARS.at(-1)?label:`${label} <span class="hint">${from===ALL_YEARS[0]?"→ "+to:from+" →"}</span>`;
-  const b=pill($("eras"),texte,null,false,()=>{setPeriode(from,to); return true;},"pill mode");
-  b.title=aide; return b;
+const eraBtns=ERAS.map(([cle,from,to])=>{
+  const b=pill($("eras"),"",null,false,()=>{setPeriode(from,to); return true;},"pill mode");
+  libelle(()=>{
+    const label=tr(cle);
+    b.innerHTML=from===ALL_YEARS[0]&&to===ALL_YEARS.at(-1)?label:`${label} <span class="hint">${from===ALL_YEARS[0]?"→ "+to:from+" →"}</span>`;
+    b.title=tr(`${cle}.titre`,{n:ALL_YEARS.length,de:ALL_YEARS[0],a:ALL_YEARS.at(-1)});
+  });
+  return b;
 });
 yFrom.addEventListener("change",()=>setPeriode(+yFrom.value,state.yearTo));
 yTo.addEventListener("change",()=>setPeriode(state.yearFrom,+yTo.value));
@@ -1349,7 +1384,7 @@ function majRegionPills(){
     const total=teams.filter(t=>t.region===r).length;
     const n=teams.filter(t=>t.region===r&&APPS.get(t.code)>=state.minApps).length;
     b.innerHTML=`<i style="background:${regionVar(r)}"></i>${r}`+(n<total?`<span class="cnt">${n}/${total}</span>`:"");
-    const compte=n<total?`${n} colonne${n>1?"s":""} sur ${total} au seuil de présence actuel`:`${total} colonne${total>1?"s":""}`;
+    const compte=n<total?trn("region.seuil",n,{total}):trn("region.compte",total);
     b.title=[LEAGUE_NAMES[r]||null,zoneDe(r),compte].filter(Boolean).join("\n");
   }
 }
@@ -1364,7 +1399,7 @@ function majRegionPills(){
 // une période est un intervalle, un nombre d'apparitions est un seuil, et une borne haute ne
 // répondrait à aucune question qu'on se pose.
 const presenceBtns=PRESENCE.map(n=>{
-  const b=pill($("presence"),n===1?"Toutes":`${n}+`,null,n===DEFAULT_MIN_APPS,()=>{
+  const b=pill($("presence"),`${n}+`,null,n===DEFAULT_MIN_APPS,()=>{
     state.minApps=n;
     presenceBtns.forEach(x=>x.setAttribute("aria-pressed",x===b));
     state.pinnedTeam=null; state.hover=null;
@@ -1372,8 +1407,19 @@ const presenceBtns=PRESENCE.map(n=>{
     return true;
   },"pill mode");
   const combien=teams.filter(t=>APPS.get(t.code)>=n).length;
-  b.title=n===1 ? `Les ${combien} équipes` : `${combien} équipes sur ${teams.length}, venues au moins ${n} fois`;
+  libelle(()=>{
+    if(n===1){ b.textContent=tr("presence.toutes"); b.title=tr("presence.toutes.titre",{n:combien}); }
+    else b.title=tr("presence.titre",{n:combien,total:teams.length,min:n});
+  });
   return b;
+});
+// Les deux comptes de la note sous le filtre : le nombre de colonnes à une seule apparition,
+// et le total. Calculés, et non écrits dans la page — une collecte les déplacerait.
+libelle(()=>{
+  $("presenceNote").textContent=tr("presence.note",{
+    n:teams.filter(t=>APPS.get(t.code)===1).length,total:teams.length});
+  $("statsNote").textContent=tr("stats.note",{
+    n:teams.length,de:ALL_YEARS[0],a:ALL_YEARS.at(-1)});
 });
 
 const teamsList=$("teamsList"), teamsSum=$("teamsSum");
@@ -1381,13 +1427,13 @@ function renderTeamList(){
   const dedans=teams.filter(t=>state.regions.has(t.region)), n=dedans.filter(t=>state.hiddenTeams.has(t.code)).length;
   // Restaurer le focus : le rendu complet de la liste l'effacerait à chaque case cochée.
   const actif=teamsList.contains(document.activeElement)?document.activeElement.dataset.team:null;
-  const aff=dedans.length-n, pl=x=>x>1?"s":"";
-  teamsSum.textContent=n?`${aff} équipe${pl(aff)} affichée${pl(aff)} sur ${dedans.length}`:`${dedans.length} équipe${pl(dedans.length)} affichée${pl(dedans.length)}`;
+  const aff=dedans.length-n;
+  teamsSum.textContent=n?trn("teams.affichees.sur",aff,{total:dedans.length}):trn("teams.affichees",dedans.length);
   let h="";
   REGIONS.filter(r=>state.regions.has(r)).forEach(r=>{
     const lot=dedans.filter(t=>t.region===r);
     h+=`<div class="tgrp"><div class="thd"><b><i style="background:${regionVar(r)}"></i>${r}</b>`
-      +`<span><button type="button" data-rg="${r}" data-on="1">Toutes</button><button type="button" data-rg="${r}">Aucune</button></span></div><div class="labs">`
+      +`<span><button type="button" data-rg="${r}" data-on="1">${tr("teams.toutes")}</button><button type="button" data-rg="${r}">${tr("teams.aucune")}</button></span></div><div class="labs">`
       +lot.map(t=>{
         // Une équipe sans aucune édition dans la période affichée n'a pas de colonne : la
         // case reste utile mais ne change rien tant que la période n'est pas élargie.
@@ -1395,11 +1441,13 @@ function renderTeamList(){
         // Une équipe sous le seuil de présence n'a pas de colonne non plus : sa case reste
         // cochée — ce n'est pas elle qui l'écarte — mais le libellé le dit.
         const sousSeuil=APPS.get(t.code)<state.minApps;
-        const pourquoi=vide?" · aucune édition dans la période affichée":sousSeuil?` · ${APPS.get(t.code)} apparition${APPS.get(t.code)>1?"s":""}, sous le seuil de présence`:"";
+        // Les deux refus énoncent la même règle que `sansColonne()`, et se lisent donc dans les
+        // mêmes termes : une seule chaîne par cause, un seul endroit où elle est écrite.
+        const pourquoi=vide?` · ${tr("refus.periode")}`:sousSeuil?` · ${trn("refus.seuil",APPS.get(t.code))}`:"";
         return `<label class="toggle tm${vide||sousSeuil?" vide":""}" title="${t.name}${pourquoi}"><input type="checkbox" data-team="${t.code}"${state.hiddenTeams.has(t.code)?"":" checked"}> ${shortName(t)}</label>`;
       }).join("")+`</div></div>`;
   });
-  if(state.hiddenTeams.size) h+=`<button type="button" class="pill mode" data-showall="1">Tout réafficher (${state.hiddenTeams.size})</button>`;
+  if(state.hiddenTeams.size) h+=`<button type="button" class="pill mode" data-showall="1">${tr("teams.reafficher",{n:state.hiddenTeams.size})}</button>`;
   teamsList.innerHTML=h;
   if(actif) teamsList.querySelector(`input[data-team="${actif}"]`)?.focus();
 }
@@ -1427,14 +1475,14 @@ teamsList.addEventListener("click",e=>{
   if(b.dataset.rg) setHidden(teams.filter(t=>t.region===b.dataset.rg).map(t=>t.code),!b.dataset.on);
 });
 
-const MODE_TIP={players:"Surligne tous les joueurs passés par l'équipe, avec toute leur carrière",lineage:"Ne garde que le club juste avant l'arrivée et le club juste après le départ"};
 // Le mode ne décide pas que de la surbrillance : isolement posé, il décide aussi des colonnes
 // gardées — toutes celles qu'ont traversées les joueurs de l'équipe, ou seulement les clubs
 // d'avant et d'après, 27 colonnes au pire contre 16. D'où `apresSelection()` et non `apply()` :
 // changer de mode change l'ensemble des colonnes, donc demande une remise en page.
-const modeBtns=[["players","Carrières complètes"],["lineage","Arrivées et départs"]].map(([m,l])=>{
-  const b=pill($("teamMode"),l,null,m==="players",()=>{state.teamMode=m; modeBtns.forEach(x=>x.setAttribute("aria-pressed",x===b)); apresSelection(); return true;},"pill mode");
-  b.title=MODE_TIP[m]; return b;
+const modeBtns=["players","lineage"].map(m=>{
+  const b=pill($("teamMode"),"",null,m==="players",()=>{state.teamMode=m; modeBtns.forEach(x=>x.setAttribute("aria-pressed",x===b)); apresSelection(); return true;},"pill mode");
+  libelle(()=>{ b.textContent=tr(`mode.${m}`); b.title=tr(`mode.${m}.titre`); });
+  return b;
 });
 [["optNat","showNat"],["optSen","showSen"]].forEach(([id,k])=>$(id).addEventListener("change",e=>{state[k]=e.target.checked; apply();}));
 
@@ -1451,7 +1499,10 @@ document.addEventListener("click",e=>{if(!modeTip.hidden&&!e.target.closest("#mo
 $("filters").querySelector(".dbody").addEventListener("scroll",closeTip,{passive:true});
 
 // ---------- statistiques ----------
-(function stats(){
+// Fonction et non plus bloc immédiat : les sept tableaux portent des titres et des notes, et un
+// changement de langue doit les réécrire. Les mesures sont recalculées avec — elles ne dépendent
+// d'aucun filtre, donc le coût est celui d'un seul passage sur 749 joueurs, une fois par bascule.
+function renderStats(){
   const plist=[...players.values()];
   // Toutes ces mesures comptent des **Worlds** : « le plus de Worlds », « d'un Worlds à
   // l'autre », « titulaires ». Une étape hors Worlds n'en est pas un, et la colonne qu'elle
@@ -1483,28 +1534,61 @@ $("filters").querySelector(".dbody").addEventListener("scroll",closeTip,{passive
     const s=apps.filter(a=>a.year===y&&a.team.region===r);
     imp[r][y]=s.length?{i:s.filter(isImport).length,n:s.length}:null;
   });});
-  let h=`<div class="st"><h3>Le plus de Worlds</h3><ol>${most.map(x=>`<li>${btn(x.p)}<span class="v">${x.n}</span></li>`).join("")}</ol></div>`;
-  h+=`<div class="st"><h3>Plus grands voyageurs aux Worlds</h3><p class="note">Nombre d'équipes différentes <b>avec lesquelles le joueur est allé aux Worlds</b></p><ol>${trav.map(x=>`<li>${btn(x.p)}<span class="v">${x.n} équipes</span></li>`).join("")}</ol></div>`;
-  h+=`<div class="st"><h3>Plus grands voyageurs, carrière entière</h3><p class="note">Tous les clubs traversés, Worlds ou non — les étapes hors Worlds et les clubs sans colonne compris. Entre parenthèses, la part faite aux Worlds.</p><ol>${carr.map(x=>`<li>${btn(x.p)}<span class="v">${x.n} clubs <small>(${x.w} aux Worlds)</small></span></li>`).join("")}</ol></div>`;
-  h+=`<div class="st"><h3>Rosters inchangés</h3><p class="note">Même cinq titulaires sur des Worlds consécutifs</p><ol>${stable.map(s=>`<li><span><button type="button" class="pl tl" data-team="${s.t.code}">${shortName(s.t)}</button> ${s.from}–${s.to}<br><span class="note">${s.names}</span></span><span class="v">${s.n} ans</span></li>`).join("")}</ol></div>`;
-  h+=`<div class="st"><h3>Flux entre régions</h3><p class="note">Changements d'équipe d'un Worlds à l'autre. Ligne : région quittée, colonne : région rejointe.</p><div class="tw"><table class="fl"><tr><th></th>${REGIONS.map(r=>`<th>→ ${r}</th>`).join("")}</tr>${REGIONS.map(a=>`<tr><th>${a}</th>${REGIONS.map(b=>`<td style="--a:${Math.round(flow[a][b]/fmax*70)}%">${flow[a][b]||"·"}</td>`).join("")}</tr>`).join("")}</table></div></div>`;
-  h+=`<div class="st"><h3>Joueurs importés</h3><p class="note">Titulaires dont la nationalité n'est pas celle de la région de l'équipe</p><div class="tw"><table class="fl"><tr><th></th>${ALL_YEARS.map(y=>`<th>${String(y).slice(2)}</th>`).join("")}</tr>${REGIONS.map(r=>`<tr><th>${r}</th>${ALL_YEARS.map(y=>{const c=imp[r][y]; return c?`<td style="--a:${Math.round(c.i/c.n*90)}%">${c.i}<small>/${c.n}</small></td>`:`<td class="na">–</td>`;}).join("")}</tr>`).join("")}</table></div></div>`;
-  const box=$("stats"); box.innerHTML=h;
-  // Deux raccourcis sur la même liste : un nom de joueur, un nom d'équipe. Le test sur
-  // `data-team` passe d'abord, le bouton d'équipe portant aussi la classe `.pl`.
-  box.addEventListener("click",e=>{
-    const te=e.target.closest("button[data-team]");
-    // Le tiroir ne se referme que si la sélection a bien eu lieu : sur un refus, l'entrée
-    // grisée doit rester sous les yeux avec sa raison.
-    if(te){ if(selectTeam(te.dataset.team)&&innerWidth<900) setDrawer("statsDrawer",false); return; }
-    const b=e.target.closest(".pl"); if(!b) return; if(innerWidth<900) setDrawer("statsDrawer",false); selectPlayer(b.dataset.id);
-  });
+  let h=`<div class="st"><h3>${tr("st.most")}</h3><ol>${most.map(x=>`<li>${btn(x.p)}<span class="v">${x.n}</span></li>`).join("")}</ol></div>`;
+  h+=`<div class="st"><h3>${tr("st.trav")}</h3><p class="note">${tr("st.trav.note")}</p><ol>${trav.map(x=>`<li>${btn(x.p)}<span class="v">${trn("st.trav.unite",x.n)}</span></li>`).join("")}</ol></div>`;
+  h+=`<div class="st"><h3>${tr("st.carr")}</h3><p class="note">${tr("st.carr.note")}</p><ol>${carr.map(x=>`<li>${btn(x.p)}<span class="v">${trn("st.carr.unite",x.n)} <small>${tr("st.carr.worlds",{n:x.w})}</small></span></li>`).join("")}</ol></div>`;
+  h+=`<div class="st"><h3>${tr("st.stable")}</h3><p class="note">${tr("st.stable.note")}</p><ol>${stable.map(s=>`<li><span><button type="button" class="pl tl" data-team="${s.t.code}">${shortName(s.t)}</button> ${s.from}–${s.to}<br><span class="note">${s.names}</span></span><span class="v">${trn("st.stable.unite",s.n)}</span></li>`).join("")}</ol></div>`;
+  h+=`<div class="st"><h3>${tr("st.flow")}</h3><p class="note">${tr("st.flow.note")}</p><div class="tw"><table class="fl"><tr><th></th>${REGIONS.map(r=>`<th>→ ${r}</th>`).join("")}</tr>${REGIONS.map(a=>`<tr><th>${a}</th>${REGIONS.map(b=>`<td style="--a:${Math.round(flow[a][b]/fmax*70)}%">${flow[a][b]||"·"}</td>`).join("")}</tr>`).join("")}</table></div></div>`;
+  h+=`<div class="st"><h3>${tr("st.imp")}</h3><p class="note">${tr("st.imp.note")}</p><div class="tw"><table class="fl"><tr><th></th>${ALL_YEARS.map(y=>`<th>${String(y).slice(2)}</th>`).join("")}</tr>${REGIONS.map(r=>`<tr><th>${r}</th>${ALL_YEARS.map(y=>{const c=imp[r][y]; return c?`<td style="--a:${Math.round(c.i/c.n*90)}%">${c.i}<small>/${c.n}</small></td>`:`<td class="na">–</td>`;}).join("")}</tr>`).join("")}</table></div></div>`;
+  $("stats").innerHTML=h;
   majStatsTeams();
-})();
+}
+// Deux raccourcis sur la même liste : un nom de joueur, un nom d'équipe. Le test sur
+// `data-team` passe d'abord, le bouton d'équipe portant aussi la classe `.pl`. L'écoute est
+// posée **une fois**, sur le conteneur que `renderStats()` ne remplace pas : sans ça, chaque
+// changement de langue en ajouterait une.
+$("stats").addEventListener("click",e=>{
+  const te=e.target.closest("button[data-team]");
+  // Le tiroir ne se referme que si la sélection a bien eu lieu : sur un refus, l'entrée
+  // grisée doit rester sous les yeux avec sa raison.
+  if(te){ if(selectTeam(te.dataset.team)&&innerWidth<900) setDrawer("statsDrawer",false); return; }
+  const b=e.target.closest(".pl"); if(!b) return; if(innerWidth<900) setDrawer("statsDrawer",false); selectPlayer(b.dataset.id);
+});
+
+// ---------- changement de langue ----------
+// Le sélecteur n'est qu'une bascule entre deux langues : il porte le code de celle d'arrivée.
+$("lang").onclick=()=>setLang(LANGS.find(l=>l!==lang()));
+// Ce que le dictionnaire ne peut pas atteindre seul. `appliquer()` a déjà réécrit le HTML
+// statique quand on arrive ici ; restent les libellés que le JavaScript écrit, les sept
+// tableaux de statistiques, la carte entière — en-têtes, axe, infobulles, légende, panneau de
+// détail —, et la liste de recherche si elle est ouverte sous le curseur.
+surChangement(()=>{
+  majLibelles();
+  renderStats();
+  render();
+  if(!qlist.hidden) majListe();
+});
 
 // ---------- démarrage ----------
 // La légende est fermée par défaut à toutes les largeurs (attribut `open` retiré du HTML) :
 // il n'y a donc plus de cas étroit à rattraper ici.
 remplirAnnees();
+renderStats();
 render();
 view.k=innerWidth<700?.7:.9; view.x=16; view.y=70; applyView();
+
+// Lien profond : `?q=` ouvre la carte sur un joueur ou une équipe déjà sélectionné. La portée
+// s'arrête là — sérialiser les filtres, la période et le zoom dans l'URL est une autre
+// fonctionnalité, et elle n'est pas demandée. La valeur passe par la **même** recherche que la
+// barre, donc un code d'équipe, un nom complet, un libellé court ou un pseudo d'époque marchent
+// tous, accents et casse indifférents ; rien ne se passe si elle ne trouve rien.
+{
+  const cherche=new URLSearchParams(location.search).get("q");
+  if(cherche?.trim()){
+    const trouve=chercher(cherche)[0];
+    if(trouve){
+      q.value=trouve.nom;
+      if(trouve.kind==="j") selectPlayer(trouve.id); else selectTeam(trouve.code);
+    }
+  }
+}

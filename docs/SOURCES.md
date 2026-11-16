@@ -643,12 +643,13 @@ c'est le territoire que la carte utilise réellement pour décider qu'un joueur 
 il est déjà arbitré région par région avec sa justification écrite, et il est déjà validé.
 La règle d'affichage se tire de la longueur de la liste :
 
-- **au plus trois pays, on les écrit**, en français, par `countryNames` — onze régions sur
-  quatorze : « Corée du Sud », « Chine, Taïwan et Hong Kong », « Thaïlande, Philippines et
-  Singapour » ;
+- **au plus trois pays, on les écrit**, dans la langue de l'interface, par `countryNames` —
+  onze régions sur quatorze : « Corée du Sud », « Chine, Taïwan et Hong Kong », « Thaïlande,
+  Philippines et Singapour » ;
 - **au-delà, un libellé court** — exactement trois régions, `LEC` (25 pays), `LCL` (8) et
   `LLA` (7) : « Europe », « espace post-soviétique », « Amérique latine ». Ces trois libellés
-  sont arbitrés dans `ZONES_ARBITREES`, en tête d'`assets/js/app.js`. Une région trop large qui
+  sont arbitrés dans `ZONES_ARBITREES`, en tête d'`assets/js/app.js`, qui porte leurs deux
+  graphies — l'arbitrage se lit d'un bloc plutôt que dispersé dans le dictionnaire. Une région trop large qui
   n'y figurerait pas n'affiche **pas** de zone : on n'invente pas le nom d'un territoire, pas
   plus qu'on n'abrège un nom d'équipe de soi-même.
 

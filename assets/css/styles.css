@@ -336,6 +336,10 @@ path.cap{stroke-width:2;opacity:0}
 .ibtn:hover{border-color:var(--muted)}
 .ibtn[aria-expanded="true"]{background:var(--fg);color:var(--panel);border-color:var(--fg)}
 .ibtn svg{width:16px;height:16px;flex:0 0 auto}
+/* Le sélecteur de langue porte un code de deux lettres, pas un mot : il tient en monospace,
+   et le garder à largeur fixe évite que la barre ne bouge d'un pixel à la bascule. */
+#lang span{font:600 12px var(--f-mono);letter-spacing:.04em}
+#lang{padding:0 9px;gap:5px}
 
 #zoom{right:max(14px,env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;overflow:hidden}
 #zoom button{width:38px;height:36px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600}
@@ -480,6 +484,10 @@ table.fl td.na{color:var(--muted);background:transparent}
   #bar h1{display:none}
   .ibtn span{display:none}
   .ibtn{padding:0 9px}
+  /* Deux exceptions à la ligne du dessus : le code de langue reste visible — deux lettres
+     tiennent toujours, et un globe seul ne dirait pas vers quelle langue on bascule. */
+  #lang span{display:inline}
+  #lang svg{display:none}
   .ylab{font-size:11px}
   #sel{width:calc(100vw - var(--YW) - 24px);bottom:calc(64px + env(safe-area-inset-bottom,0px))}
   /* Étroit, le panneau ne peut pas réserver 152 px : le bouton se resserre sur son texte. */
