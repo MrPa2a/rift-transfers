@@ -7,6 +7,12 @@
  *  2. the **scenario** — eight steps in three acts, each one driving the real map through the
  *     `pilote` object app.js hands over (`ETAPES`);
  *  3. the **dressing** — the card, the veil with its cut-outs, the closing banner.
+ *
+ * What earns a step: a behaviour that stays invisible until one happens to do it, **and** that
+ * changes how the map is read when missed. Anything with a visible affordance (buttons, drawers,
+ * the header's `×`) stays out, and so does what the legend already explains; gestures that do not
+ * warrant a whole step go to the final recap, which the About panel repeats. Five to seven steps,
+ * one interaction each: past that, a tour is skimmed rather than read.
  * The landing page's looping hero (demo.js) reuses 1 and the pilot, never 3.
  *
  * No displayed text is written here: every string lives in i18n.js, and the names of the
@@ -16,10 +22,10 @@
 import { t, surChangement } from "./i18n.js";
 
 // ---------- 1. subjects ----------
-// Editorial choices, settled in the plan, not roster data: the anchor column of act 1, the
-// player whose thread shows the signs, the player whose career shows the gestures. What a
-// collection run can break is the **promise of the step** — so each one is checked against what
-// its step announces, and replaced by a computed fallback when the check fails.
+// Editorial choices, not roster data: the anchor column of act 1, the player whose thread shows
+// the signs, the player whose career shows the gestures. What a collection run can break is the
+// **promise of the step** — so each one is checked against what its step announces, and replaced
+// by a computed fallback when the check fails.
 const SUJETS = { ancre: "FNC", signes: "bwipo", carriere: "impact" };
 
 const mondiaux = (p) => p.apps.filter((a) => !a.step);

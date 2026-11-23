@@ -1,9 +1,10 @@
 # Sources et méthode
 
-> **This document is in French** — the only one in this repository. It is the working
-> reference for how the data is selected and verified, and a nuance lost in translation
-> would cost more here than anywhere else. An English summary follows; everything else in
-> the repository is in English.
+> **This document is in French** — the only French document in this repository. It is the
+> working reference for how the data is selected and verified, and a nuance lost in
+> translation would cost more here than anywhere else. An English summary follows. The few
+> other things that stay French, and why, are listed in
+> [CONTRIBUTING.md](../CONTRIBUTING.md#languages).
 
 **English summary.** Every lineup on the map comes from a single source: Leaguepedia's
 `ScoreboardPlayers` table, fetched through `Special:CargoExport`. A row shows the players who

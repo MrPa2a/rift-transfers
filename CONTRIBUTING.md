@@ -103,14 +103,29 @@ Sources per year, with what each one made it possible to check. See also [docs/S
 
 ## Code
 
-The site is HTML, CSS and JavaScript with no framework and no build step: two pages — the landing page `index.html` and the map `map/index.html` —, three stylesheets — `base.css` (fonts and colour tokens, shared), `styles.css` (the map), `landing.css` —, and the modules of `assets/js/` — `app.js`, `i18n.js`, `tour.js`, `report.js`, `demo.js` (the landing page's live hero: the map itself, framed with `?demo`), `landing.js`. Keep it that simple for as long as possible. There is no runtime dependency, and the fonts live in the repository; the one third-party call is the Cloudflare Web Analytics script, which only counts visits — nothing on the site may depend on it.
+The site is HTML, CSS and JavaScript with no framework and no build step: two pages — the landing page `index.html` and the map `map/index.html` —, three stylesheets — `base.css` (fonts and colour tokens, shared), `styles.css` (the map), `landing.css` —, and the modules of `assets/js/` — `app.js`, `i18n.js`, `tour.js`, `report.js`, `demo.js` (the landing page's live hero: the map itself, framed with `?demo`), `landing.js`. Keep it that simple for as long as possible. There is no runtime dependency, and the fonts live in the repository; the one third-party call is the Cloudflare Web Analytics script, which only counts visits — nothing on the site may depend on it. The landing page's hero is the live map, never a video or an animated capture: a recording would stay in the git history forever, even once deleted, and would go stale at the first change to the interface.
 
 The interface is **bilingual**, and no displayed text is written in JavaScript: everything goes through `assets/js/i18n.js`, where each key carries its two spellings side by side — the only form in which a string missing in one language shows at a glance. In the page, `data-i18n` fills a text, `data-i18n-html` a rich text, `data-i18n-attr="title:key;aria-label:key"` attributes. A label that JavaScript writes once and for all is registered through `libelle()`, so that switching languages rewrites it without reloading the page.
 
 The map's HTML leaves its translated elements empty. The **landing page** does not: it is the part of the site search engines index, so it also writes its English text in the HTML, next to the key. That second copy is checked — `npm run validate` runs `scripts/validate-i18n.mjs`, which refuses a key missing from the dictionary, a dictionary entry missing a language, and any gap between a page's static English and the dictionary's. Change a landing string in both places, or the check fails.
 
-Code identifiers are in French (`GRAPHIES_ARBITREES`, `libelle()`…), and they stay so: [docs/SOURCES.md](docs/SOURCES.md) refers to them by name. Comments are in English.
+## Languages
+
+The repository is bilingual on purpose, and the rule is written down so that it does not look accidental: **if a visitor can come across it without looking for it, it is in English.** A new file follows the same rule.
+
+| Surface | Language | Why |
+|---|---|---|
+| Interface of both pages (`assets/js/i18n.js`) | English and French | The entry point. The language comes from `?lang=`, then the visitor's saved choice, then the browser's languages, then English — never from geolocation, which would be a third-party call |
+| Labels derived from the data (`countryNames`, `results.labels`) | English and French | They are shown in the interface; `npm run validate` requires both. `leagueNames` are proper nouns and are not translated |
+| `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md` | English | Entry points |
+| Issue and pull request templates, file names included | English | A template's file name shows in the issue's URL — hence `data-correction.yml` |
+| Code comments, validator and console messages | English | Read by contributors |
+| Context block of the pre-filled issues (`assets/js/report.js`) | English only | Read on GitHub by the maintainer; a single wording keeps reports comparable |
+| Code identifiers (`GRAPHIES_ARBITREES`, `libelle()`…) | French | [docs/SOURCES.md](docs/SOURCES.md) refers to them by name; renaming them would gain a visitor nothing and risk regressions |
+| [docs/SOURCES.md](docs/SOURCES.md) | French, with an English summary at the top | The working reference for the method, where a nuance lost in translation would cost the most. The only French document |
+| The collection report of `fetch-worlds.mjs`, its runtime messages and the `$comment` fields it writes | French | The report lives in `.fetch-worlds/`, which git ignores, and `docs/SOURCES.md` cites its sections. The `$comment` fields of `data/*.json` mirror these outputs, and stay French with them: translating one side only would break the correspondence the copy procedure relies on |
+| Commit messages | French | The history is never rewritten: French messages are no problem, a force-push on a repository deployed from `main` would be. Yours can be in English |
 
 ## Commit messages
 
-Short and explicit, for instance `data: Rekkles ADC for Fnatic in 2020` or `feat: nationality filter`.
+Short and explicit, for instance `data: Rekkles ADC for Fnatic in 2020` or `feat: nationality filter`. The existing history is in French and stays so; write yours in English or in French.
