@@ -50,6 +50,7 @@ The site has to be served by a web server: opening `map/index.html` straight fro
 ```
 index.html              # root: redirects to /map/
 map/index.html          # the map
+sitemap.xml             # the map's three language variants, for search engines
 assets/css/styles.css   # styles (light and dark themes)
 assets/js/app.js        # data loading and map rendering
 assets/js/i18n.js       # French / English dictionary of the interface

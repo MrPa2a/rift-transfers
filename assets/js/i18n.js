@@ -662,6 +662,24 @@ function appliquerEntete() {
   poser('meta[property="og:image:alt"]', t("page.og.image.alt"));
 }
 
+// The canonical names the URL **variant**, not the language being displayed: a `/map/` read in
+// French is still the x-default, and a `?q=` deep link folds back onto its variant. Its address
+// is read from the hreflang links of the <head>, so that the public URL is written in one place.
+// Injected here because the three variants share one HTML file (see map/index.html); a page with
+// no hreflang links — the local root, say — simply gets none.
+function poserCanonique() {
+  const demande = new URLSearchParams(location.search).get("lang");
+  const cible = document.querySelector(`link[rel="alternate"][hreflang="${LANGS.includes(demande) ? demande : "x-default"}"]`);
+  if (!cible) return;
+  let lien = document.querySelector('link[rel="canonical"]');
+  if (!lien) {
+    lien = document.createElement("link");
+    lien.rel = "canonical";
+    document.head.append(lien);
+  }
+  lien.href = cible.href;
+}
+
 const abonnes = new Set();
 // A language change does not reload the page: the map is a tool one has already set up —
 // period, filters, zoom, selection — and a reload would give all that back. Subscribers rebuild
@@ -678,10 +696,12 @@ export function setLang(nouvelle) {
   const url = new URL(location.href);
   url.searchParams.set("lang", nouvelle);
   history.replaceState(null, "", url);
+  poserCanonique();
   appliquerEntete();
   appliquer(document);
   abonnes.forEach((fn) => fn());
 }
 
+poserCanonique();
 appliquerEntete();
 appliquer(document);

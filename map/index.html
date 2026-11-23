@@ -32,6 +32,70 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:locale:alternate" content="fr_FR">
   <meta name="twitter:card" content="summary_large_image">
+  <!-- Language variants, for search engines. Without a build step the language rides on `?lang=`
+       rather than on /en/ and /fr/ paths: legitimate, provided each variant says so. `/map/`
+       picks the language from the browser, hence x-default; the two `?lang=` URLs are the fixed
+       variants. The set is the same on every variant, as hreflang requires — which a static
+       <head> gives for free.
+
+       The canonical is **not** written here: it has to name the variant being viewed, and the
+       three variants share this one file. `i18n.js` adds it at load time, reading its URL from
+       the links below, and Google's guidance is to inject it only if the HTML has none — two
+       conflicting canonicals are worse than one late one. -->
+  <link rel="alternate" hreflang="x-default" href="https://mrpa2a.github.io/rift-transfers/map/">
+  <link rel="alternate" hreflang="en" href="https://mrpa2a.github.io/rift-transfers/map/?lang=en">
+  <link rel="alternate" hreflang="fr" href="https://mrpa2a.github.io/rift-transfers/map/?lang=fr">
+  <!-- Structured data, in English like the other metas. Two entities: the map as an application,
+       and the data it publishes as a Dataset — which is literally what the project is, and what
+       Google Dataset Search indexes. No offers or rating: the application rich result would
+       require a rating, and there is none to give. No figures either (120 teams, 749 players):
+       they would go stale at the next collection run, where the years cannot. The data licence is
+       the one its sources impose, as stated in the README and the About panel. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "@id": "https://mrpa2a.github.io/rift-transfers/map/#app",
+        "name": "Rift Transfers",
+        "url": "https://mrpa2a.github.io/rift-transfers/map/",
+        "description": "Interactive map of the rosters of every team that came to the 2011–2026 League of Legends World Championships: follow each player from one team to the next.",
+        "applicationCategory": "ReferenceApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript.",
+        "inLanguage": ["en", "fr"],
+        "isAccessibleForFree": true,
+        "image": "https://mrpa2a.github.io/rift-transfers/assets/og-image.png",
+        "license": "https://github.com/MrPa2a/rift-transfers/blob/main/LICENSE",
+        "creator": { "@id": "https://github.com/MrPa2a#person" },
+        "about": { "@id": "https://mrpa2a.github.io/rift-transfers/map/#dataset" }
+      },
+      {
+        "@type": "Dataset",
+        "@id": "https://mrpa2a.github.io/rift-transfers/map/#dataset",
+        "name": "League of Legends World Championship rosters, 2011–2026",
+        "description": "Starting lineups of every team that played the League of Legends World Championship, from 2011 to 2026, with each player's role, nationality and handle at the time, each team's region in the year of the edition, its placement, and the teams a player went through between two Worlds appearances. Every lineup is derived from Leaguepedia's game records by written selection rules; nothing is typed in from memory.",
+        "url": "https://mrpa2a.github.io/rift-transfers/map/",
+        "sameAs": "https://github.com/MrPa2a/rift-transfers/tree/main/data",
+        "keywords": ["League of Legends", "esports", "World Championship", "Worlds", "rosters", "lineups", "player transfers"],
+        "temporalCoverage": "2011/2026",
+        "measurementTechnique": "Derived from Leaguepedia's ScoreboardPlayers game records by four written selection rules, documented in docs/SOURCES.md.",
+        "isBasedOn": { "@type": "WebSite", "name": "Leaguepedia", "url": "https://lol.fandom.com/" },
+        "license": "https://creativecommons.org/licenses/by-sa/3.0/",
+        "isAccessibleForFree": true,
+        "creator": { "@type": "Person", "@id": "https://github.com/MrPa2a#person", "name": "MrPa2a", "url": "https://github.com/MrPa2a" },
+        "distribution": [
+          { "@type": "DataDownload", "name": "Teams and lineups", "encodingFormat": "application/json", "contentUrl": "https://mrpa2a.github.io/rift-transfers/data/teams.json" },
+          { "@type": "DataDownload", "name": "Players and nationalities", "encodingFormat": "application/json", "contentUrl": "https://mrpa2a.github.io/rift-transfers/data/players.json" },
+          { "@type": "DataDownload", "name": "Placements", "encodingFormat": "application/json", "contentUrl": "https://mrpa2a.github.io/rift-transfers/data/results.json" },
+          { "@type": "DataDownload", "name": "Careers between Worlds appearances", "encodingFormat": "application/json", "contentUrl": "https://mrpa2a.github.io/rift-transfers/data/careers.json" },
+          { "@type": "DataDownload", "name": "Sources", "encodingFormat": "application/json", "contentUrl": "https://mrpa2a.github.io/rift-transfers/data/sources.json" }
+        ]
+      }
+    ]
+  }
+  </script>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/barlow-condensed-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>

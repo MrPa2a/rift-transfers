@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The three URLs of the map, and nothing else: `?q=` deep links are views of the same page, and
+  their canonical folds them back onto their language variant.
+
+  `/map/` picks the language from the browser (the x-default of hreflang); `?lang=en` and
+  `?lang=fr` are the two fixed variants. The hreflang set itself lives in the <head> of
+  map/index.html — one place, not two to keep in step.
+
+  No <lastmod>: without a build step it would go stale at the first commit that forgets it, and a
+  wrong date is worse than none.
+
+  This file is not announced by a robots.txt: crawlers only read the one at the root of the host,
+  mrpa2a.github.io/robots.txt, which this repository does not serve. It is submitted by hand in
+  Google Search Console and Bing Webmaster Tools.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://mrpa2a.github.io/rift-transfers/map/</loc></url>
+  <url><loc>https://mrpa2a.github.io/rift-transfers/map/?lang=en</loc></url>
+  <url><loc>https://mrpa2a.github.io/rift-transfers/map/?lang=fr</loc></url>
+</urlset>
