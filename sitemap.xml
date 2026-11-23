@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  The three URLs of the map, and nothing else: `?q=` deep links are views of the same page, and
-  their canonical folds them back onto their language variant.
+  The site's two pages, each in its three language variants: the landing page at the root, the map
+  under /map/. `?q=` deep links are views of the map, and their canonical folds them back onto their
+  language variant.
 
-  `/map/` picks the language from the browser (the x-default of hreflang); `?lang=en` and
-  `?lang=fr` are the two fixed variants. The hreflang set itself lives in the <head> of
-  map/index.html — one place, not two to keep in step.
+  The bare URL of each page picks the language from the browser (the x-default of hreflang);
+  `?lang=en` and `?lang=fr` are the two fixed variants. The hreflang sets themselves live in the
+  <head> of index.html and of map/index.html — one place per page, not two to keep in step.
 
   No <lastmod>: without a build step it would go stale at the first commit that forgets it, and a
   wrong date is worse than none.
@@ -15,6 +16,9 @@
   Google Search Console and Bing Webmaster Tools.
 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://mrpa2a.github.io/rift-transfers/</loc></url>
+  <url><loc>https://mrpa2a.github.io/rift-transfers/?lang=en</loc></url>
+  <url><loc>https://mrpa2a.github.io/rift-transfers/?lang=fr</loc></url>
   <url><loc>https://mrpa2a.github.io/rift-transfers/map/</loc></url>
   <url><loc>https://mrpa2a.github.io/rift-transfers/map/?lang=en</loc></url>
   <url><loc>https://mrpa2a.github.io/rift-transfers/map/?lang=fr</loc></url>

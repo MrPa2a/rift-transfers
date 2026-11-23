@@ -14,6 +14,16 @@ import { t as tr, tn as trn, ord, lang, setLang, LANGS, surChangement } from "./
 import { installerVisite, recapitulatif } from "./tour.js";
 import { urlRapport } from "./report.js";
 
+// ---------- demo mode ----------
+// The landing page's live hero is this very map, framed with `?demo` and driven by
+// assets/js/demo.js through the same `pilote` as the guided tour. Only when framed: a `?demo` link
+// opened on its own is an ordinary map. Demo mode answers no pointer, writes nothing to
+// `localStorage` — the guided tour is not installed, or it would mark the visitor's first visit
+// to the map as already done. Its theme is the visitor's, like the landing page's: the hero fades
+// the map into the page, and the two backgrounds have to be the same colour.
+const DEMO = new URLSearchParams(location.search).has("demo") && window.parent !== window;
+if (DEMO) document.documentElement.classList.add("demo");
+
 // ---------- data loading ----------
 const ROLES = ["top", "jgl", "mid", "bot", "sup"];           // internal keys (CSS classes)
 const ROLE_KEYS = ["top", "jungle", "mid", "bot", "support"]; // JSON keys
@@ -733,6 +743,10 @@ function render(){
 // ---------- navigation: panning and zooming ----------
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function clampView(){
+  // The landing page's travelling shots keep their subject in the middle of the frame, even on the
+  // first or the last column — where the overscroll margin below would stop the camera short. The
+  // hero fades the map's edges into the page anyway.
+  if(DEMO) return;
   // Overscroll margin proportional to the viewport: one must be able to push the first column
   // past the filter drawer, which hides ~302 px (360 px minus the 58 px of the year rail). The
   // 320 px floor keeps that promise on a short window, where min(w,h)*0.5 would fall below the
@@ -1644,7 +1658,7 @@ surChangement(()=>{
 // What the guided tour may do to the map, and nothing more. Every gesture goes through the
 // function the interface itself calls — `selectPlayer`, `isolerAnnee`, `setPresence`… —, so a
 // scripted step and a click can never diverge. The tour's cards and veil live in tour.js; this
-// object knows nothing about them, and the landing page's looping hero is meant to reuse it alone.
+// object knows nothing about them, and the landing page's looping hero (demo.js) reuses it alone.
 //
 // Pills and checkboxes keep their own pressed state, set by their handler: a script that changes
 // `state` behind their back must therefore resynchronise them, or the drawer would contradict the
@@ -1722,6 +1736,23 @@ const pilote={
   cadrerEquipe(code){ const c=cols.find(c=>c.t&&c.t.code===code); if(c) cadrerColonne(c.t,c); },
   toutCadrer:fitAll,
   nbColonnes:()=>cols.filter(c=>!c.other).length,
+  // Free camera, for the landing page's travelling shots: put the map point (x, y) at the centre of
+  // the viewport, at zoom k, at once. On whole pixels — a camera moved every frame by fractions of
+  // a pixel makes one-pixel lines and borders shimmer. Any framing still under way is dropped.
+  viser(x,y,k){
+    cancelAnimationFrame(anim); cibleVue=null;
+    view.k=clamp(k,KMIN,KMAX); view.x=Math.round(vp.clientWidth/2-x*view.k); view.y=Math.round(vp.clientHeight/2-y*view.k);
+    applyView();
+  },
+
+  // Geometry in map coordinates — those of `viser`, and of the threads' SVG: the centre of each of a
+  // player's chips, of each of a team's editions, of each column of an edition.
+  pointsJoueur:id=>(nodesByPlayer.get(id)||[]).filter(n=>!n.other).map(n=>({x:n.x+n.w/2,y:n.y+CH/2})),
+  pointsEquipe(code){
+    const c=cols.find(c=>c.t&&c.t.code===code); if(!c) return [];
+    return YEARS.filter(y=>c.t.years[y]).map(y=>({x:c.x+c.w/2,y:yTop(y)+2.5*STEP}));
+  },
+  pointsAnnee:y=>YEARS.includes(y)?cols.filter(c=>c.t&&c.t.years[y]).map(c=>({x:c.x+c.w/2,y:yTop(y)+2.5*STEP})):[],
 
   // Geometry on screen, for whoever has to point at something.
   // The whole map: headers, year axis and viewport.
@@ -1764,7 +1795,7 @@ view.k=innerWidth<700?.7:.9; view.x=16; view.y=70; applyView();
 // not being asked for. The value goes through the **same** search as the bar, so a team code, a
 // full name, a short label or a period handle all work, accents and case notwithstanding;
 // nothing happens if it finds nothing.
-{
+if(!DEMO){
   const cherche=new URLSearchParams(location.search).get("q");
   if(cherche?.trim()){
     const trouve=chercher(cherche)[0];
@@ -1776,5 +1807,6 @@ view.k=innerWidth<700?.7:.9; view.x=16; view.y=70; applyView();
 }
 
 // Guided tour: installed last, once the map is drawn and framed — it never opens on an empty
-// screen.
-installerVisite(pilote);
+// screen. In demo mode the landing page's scenes take its place, loaded only there.
+if(DEMO) (await import("./demo.js")).installerDemo(pilote);
+else installerVisite(pilote);

@@ -1,163 +1,6 @@
-/* Self-hosted fonts (Fontsource, SIL OFL 1.1 licence — see assets/fonts/). */
-/* barlow-latin-ext-400-normal */
-@font-face {
-  font-family: 'Barlow';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 400;
-  src: url(../fonts/barlow-latin-ext-400-normal.woff2) format('woff2');
-  unicode-range: U+0100-02AF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
-}
-/* barlow-latin-400-normal */
-@font-face {
-  font-family: 'Barlow';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 400;
-  src: url(../fonts/barlow-latin-400-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
-}
-/* barlow-latin-ext-500-normal */
-@font-face {
-  font-family: 'Barlow';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 500;
-  src: url(../fonts/barlow-latin-ext-500-normal.woff2) format('woff2');
-  unicode-range: U+0100-02AF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
-}
-/* barlow-latin-500-normal */
-@font-face {
-  font-family: 'Barlow';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 500;
-  src: url(../fonts/barlow-latin-500-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
-}
-/* barlow-latin-ext-600-normal */
-@font-face {
-  font-family: 'Barlow';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 600;
-  src: url(../fonts/barlow-latin-ext-600-normal.woff2) format('woff2');
-  unicode-range: U+0100-02AF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
-}
-/* barlow-latin-600-normal */
-@font-face {
-  font-family: 'Barlow';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 600;
-  src: url(../fonts/barlow-latin-600-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
-}
-/* barlow-condensed-latin-ext-500-normal */
-@font-face {
-  font-family: 'Barlow Condensed';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 500;
-  src: url(../fonts/barlow-condensed-latin-ext-500-normal.woff2) format('woff2');
-  unicode-range: U+0100-02AF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
-}
-/* barlow-condensed-latin-500-normal */
-@font-face {
-  font-family: 'Barlow Condensed';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 500;
-  src: url(../fonts/barlow-condensed-latin-500-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
-}
-/* barlow-condensed-latin-ext-600-normal */
-@font-face {
-  font-family: 'Barlow Condensed';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 600;
-  src: url(../fonts/barlow-condensed-latin-ext-600-normal.woff2) format('woff2');
-  unicode-range: U+0100-02AF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
-}
-/* barlow-condensed-latin-600-normal */
-@font-face {
-  font-family: 'Barlow Condensed';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 600;
-  src: url(../fonts/barlow-condensed-latin-600-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
-}
-/* barlow-condensed-latin-ext-700-normal */
-@font-face {
-  font-family: 'Barlow Condensed';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 700;
-  src: url(../fonts/barlow-condensed-latin-ext-700-normal.woff2) format('woff2');
-  unicode-range: U+0100-02AF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
-}
-/* barlow-condensed-latin-700-normal */
-@font-face {
-  font-family: 'Barlow Condensed';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 700;
-  src: url(../fonts/barlow-condensed-latin-700-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
-}
-/* jetbrains-mono-latin-ext-500-normal */
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 500;
-  src: url(../fonts/jetbrains-mono-latin-ext-500-normal.woff2) format('woff2');
-  unicode-range: U+0100-02AF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
-}
-/* jetbrains-mono-latin-500-normal */
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 500;
-  src: url(../fonts/jetbrains-mono-latin-500-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
-}
-
 /* Rift Transfers — full-screen, map-like workspace:
-   teams as columns, Worlds editions as rows, floating tools and side drawers. */
-:root{
-  --bg:#f3f4f7; --panel:#ffffff; --fg:#161a24; --muted:#5d6475; --line:#d9dce4; --chip:#ffffff; --absent:#e8eaf0;
-  --accent:#1f5bd6; --sen:#0f8f86;
-  --top:#c4472f; --jgl:#2f8a4c; --mid:#2c63c9; --bot:#c98a12; --sup:#8a45b8;
-  --lck:#1f5bd6; --lpl:#c8322a; --lec:#0f8f86; --lcs:#5a4bd1; --lms:#b06a12;
-  /* The nine minor regions. A region colour only serves two dots set against a text label —
-     the column header and the filter pill — never a column background nor a line: it is enough
-     that two families adjacent in the column order are not mistaken for each other. */
-  --lcp:#1683a8; --ljl:#b8336b; --vcs:#4d8a1b; --gpl:#8a7414; --lco:#8a3fb0;
-  --tcl:#c25a1f; --lcl:#5c6b8a; --cblol:#2c8a6a; --lla:#a8338a;
-  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
-  --f-body:"Barlow",system-ui,-apple-system,sans-serif;
-  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
-}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0f121a; --panel:#171b26; --fg:#e8ebf2; --muted:#949bad; --line:#2a3040; --chip:#1c2130; --absent:#151924;
-  --accent:#6f9bff; --sen:#3fc7bb;
-  --top:#ec7a5f; --jgl:#5cc07a; --mid:#6e9cf3; --bot:#e7b444; --sup:#bb83e3;
-  --lck:#6f9bff; --lpl:#ef6a60; --lec:#3fc7bb; --lcs:#9a8cf5; --lms:#e0a53a;
-  --lcp:#4fb9e0; --ljl:#f07aa4; --vcs:#8fcf52; --gpl:#d4b93f; --lco:#c08ae6;
-  --tcl:#f09050; --lcl:#9aa8c8; --cblol:#48c69e; --lla:#e07ac8;
-  color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0f121a; --panel:#171b26; --fg:#e8ebf2; --muted:#949bad; --line:#2a3040; --chip:#1c2130; --absent:#151924;
-  --accent:#6f9bff; --sen:#3fc7bb;
-  --top:#ec7a5f; --jgl:#5cc07a; --mid:#6e9cf3; --bot:#e7b444; --sup:#bb83e3;
-  --lck:#6f9bff; --lpl:#ef6a60; --lec:#3fc7bb; --lcs:#9a8cf5; --lms:#e0a53a;
-  --lcp:#4fb9e0; --ljl:#f07aa4; --vcs:#8fcf52; --gpl:#d4b93f; --lco:#c08ae6;
-  --tcl:#f09050; --lcl:#9aa8c8; --cblol:#48c69e; --lla:#e07ac8;
-  color-scheme:dark}
+   teams as columns, Worlds editions as rows, floating tools and side drawers.
+   The fonts and the colour tokens it relies on live in base.css, loaded first. */
 
 
 /* --dw: width of the filter drawer. It also serves as the offset for the left-hand floating
@@ -564,3 +407,26 @@ kbd{display:inline-block;min-width:1.5em;padding:0 4px;border:1px solid var(--li
 /* Animations too: the Isolate button's ring and the tour card's fade are decoration, nothing is
    lost without them. */
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- demo mode ----------
+   The landing page's live hero: this map framed with ?demo (assets/js/demo.js). It answers no
+   pointer — the landing page lays a link over it, which opens the real map. */
+.demo body{pointer-events:none}
+/* The floating interface — bar, zoom, legend, detail panel — fades out with the poster: the hero
+   shows the map bare, the way a camera would film it. */
+.demo .float{display:none!important}
+/* The travelling shots (demo.js): everything a shot lights up is timed to the camera. A thread
+   draws itself — pathLength="1" makes it a single dash of length 1, slid from 1 to 0 —, a lit chip
+   or a thread end fades in; --t is when, --d how long. Shots are joined by a cut through the page's
+   own background, so that in the hero the map dissolves into the landing page and comes back. */
+.demo #world path.l.trace{stroke-dasharray:1 1;stroke-dashoffset:1;animation:trace var(--d,1.6s) linear var(--t,0s) forwards}
+.demo #world .apparait{animation:apparait .45s ease-out var(--t,0s) backwards}
+/* Drawn from its far end instead: the dash starts beyond the path and slides back onto it. */
+.demo #world path.l.trace.inverse{stroke-dashoffset:-1}
+@keyframes trace{to{stroke-dashoffset:0}}
+@keyframes apparait{from{opacity:0}}
+.demo-rideau{position:fixed;inset:0;z-index:100;background:var(--bg);opacity:0;transition:opacity .3s ease;pointer-events:none}
+.demo-rideau.on{opacity:1}
+/* The camera's angle tilts the whole page (demo.js): the body is then the box the fixed panels
+   are laid out in, and its default margin would shift them all. */
+.demo body{margin:0;transform-origin:50% 50%}

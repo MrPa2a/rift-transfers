@@ -1,0 +1,200 @@
+/* Rift Transfers — landing page (index.html).
+   The fonts and the colour tokens come from base.css, shared with the map: the illustrations are
+   drawn in the map's own role and region colours, light or dark. */
+
+/* Text on the accent: white on the light theme's deep blue, near-black on the dark theme's pale
+   one — white on #6f9bff would not reach a readable contrast. */
+:root{--on-accent:#ffffff;--card-shadow:0 1px 2px rgba(20,26,40,.06),0 8px 24px -12px rgba(20,26,40,.18);--max:1180px}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--on-accent:#0b1020;--card-shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6)}}
+:root[data-theme="dark"]{--on-accent:#0b1020;--card-shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6)}
+
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 17px/1.6 var(--f-body);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+img,svg{display:block;max-width:100%}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+[hidden]{display:none!important}
+.muted{color:var(--muted)}
+
+/* ---------- top bar ---------- */
+.top{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px max(16px,calc((100vw - var(--max))/2));padding-top:max(10px,env(safe-area-inset-top));
+  background:var(--bg);background:color-mix(in srgb,var(--bg) 84%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font:700 21px/1 var(--f-display);letter-spacing:.01em;white-space:nowrap}
+.brand img{border-radius:7px}
+.nav{display:flex;align-items:center;gap:4px}
+.nav-link{padding:8px 10px;border-radius:8px;color:var(--muted);text-decoration:none;font:500 15px var(--f-body);transition:color .15s,background .15s}
+.nav-link:hover{color:var(--fg);background:var(--absent)}
+.lang{height:36px;min-width:40px;padding:0 9px;margin:0 6px 0 2px;border:1px solid var(--line);border-radius:8px;background:var(--panel);cursor:pointer;font:600 13px var(--f-mono);letter-spacing:.04em}
+.lang:hover{border-color:var(--muted)}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:13px 22px;border-radius:11px;background:var(--accent);color:var(--on-accent);
+  font:600 16.5px/1.2 var(--f-body);text-decoration:none;white-space:nowrap;
+  box-shadow:0 1px 0 rgba(255,255,255,.15) inset,0 8px 20px -8px color-mix(in srgb,var(--accent) 70%,transparent);transition:transform .15s,box-shadow .15s,filter .15s}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.07);box-shadow:0 1px 0 rgba(255,255,255,.15) inset,0 12px 26px -8px color-mix(in srgb,var(--accent) 75%,transparent)}
+.btn svg{transition:transform .15s}
+.btn:hover svg{transform:translateX(2px)}
+.btn-small{padding:9px 14px;border-radius:9px;font-size:14.5px;box-shadow:none}
+/* The hero's two ways in stand side by side: same height, so that their tops and bottoms line up. */
+:root{--cta-h:52px}
+.btn-main{height:var(--cta-h);padding:0 24px}
+
+/* ---------- hero ---------- */
+.hero{padding:clamp(32px,5vw,60px) 16px 0;text-align:center}
+.hero-text{max-width:880px;margin:0 auto}
+.eyebrow{margin:0 0 16px;font:600 12.5px/1.4 var(--f-body);letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+h1{margin:0 0 20px;font:700 clamp(38px,6.2vw,70px)/1.02 var(--f-display);letter-spacing:-.005em;text-wrap:balance}
+.lead{max-width:720px;margin:0 auto 30px;font-size:clamp(17px,1.9vw,19.5px);color:var(--muted);text-wrap:pretty}
+.actions{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:center;gap:18px 26px}
+.search{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left}
+.search label{font-size:13.5px;color:var(--muted)}
+.field{display:flex;height:var(--cta-h);border:1px solid var(--line);border-radius:11px;background:var(--panel);overflow:hidden;box-shadow:var(--card-shadow);transition:border-color .15s}
+.field:focus-within{border-color:var(--accent)}
+.field input[type="search"]{width:min(300px,62vw);height:100%;padding:0 14px;border:0;background:transparent;color:inherit;font:inherit;font-size:16px;line-height:normal;outline:none}
+/* No drop-down arrow: the suggestions open as one types anyway, and next to the clear button —
+   which only shows once there is text — it made two controls fighting for one corner. */
+.field input::-webkit-calendar-picker-indicator,.field input::-webkit-list-button{display:none!important}
+.field input::placeholder{color:var(--muted);opacity:.8}
+.field button{padding:0 18px;border:0;border-left:1px solid var(--line);background:transparent;font:600 15px var(--f-body);cursor:pointer;transition:background .15s}
+.field button:hover{background:var(--absent)}
+
+/* ---------- the hero's 3D scene ----------
+   No frame: the map is set into the page. The zone runs the full width of the window and fades out
+   on all four sides through a mask, so that the map dissolves into the page's own background —
+   which is why the live map follows the page's theme, light or dark. landing.js feeds two
+   variables, on scroll only: `--rx` / `--sc` lay the zone back while it sits low on the screen,
+   flat once it has risen; `--par` drifts the glow behind. Nothing else moves it: every change of its
+   transform resamples the live map inside, and its one-pixel lines would shimmer. Under reduced
+   motion none is set: the zone lies flat. */
+/* Clipped across only: the near edge of the laid-back zone is wider than the window. */
+.hero-scene{position:relative;width:100vw;margin:clamp(4px,1.5vw,20px) calc(50% - 50vw) 0;overflow-x:clip;perspective:1400px;perspective-origin:50% 0}
+.hero-glow{position:absolute;inset:6% 12% 10%;z-index:0;pointer-events:none;filter:blur(64px);opacity:.35;
+  background:radial-gradient(36% 46% at 18% 46%,var(--top),transparent 72%),radial-gradient(34% 44% at 50% 28%,var(--mid),transparent 72%),radial-gradient(34% 46% at 84% 52%,var(--sup),transparent 72%),radial-gradient(30% 40% at 60% 80%,var(--jgl),transparent 72%);
+  transform:translate3d(0,var(--par,0px),0)}
+/* Entrance: the zone rises from the page, laid back, once. Opacity flattens 3D while it runs,
+   which is invisible at that point and over as soon as it ends. */
+.hero-rise{position:relative;z-index:1;transform-style:preserve-3d;animation:lever 1.5s cubic-bezier(.16,1,.3,1) .1s both}
+@keyframes lever{from{opacity:0;transform:translateY(90px) rotateX(34deg)}to{opacity:1;transform:none}}
+.hero-stage{position:relative;transform-origin:50% 35%;transform:rotateX(var(--rx,0deg)) scale(var(--sc,1));
+  transition:transform .7s cubic-bezier(.2,.7,.2,1)}
+/* The fade: two gradients, one across and one down, kept where both are opaque. */
+.hero-screen{position:relative;height:clamp(420px,70vh,760px);overflow:hidden;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 20%,#000 80%,transparent),linear-gradient(180deg,transparent,#000 16%,#000 78%,transparent);
+  -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(90deg,transparent,#000 20%,#000 80%,transparent),linear-gradient(180deg,transparent,#000 16%,#000 78%,transparent);
+  mask-composite:intersect}
+.hero-poster{width:100%;height:100%;object-fit:cover}
+/* The poster is a capture of the dark map. On a light page it is shown inverted, hues turned back
+   round: an approximation of the light map, close enough for the second it stands in for it —
+   and better than a dark patch fading into a light page. */
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .hero-poster{filter:invert(1) hue-rotate(180deg)}}
+:root[data-theme="light"] .hero-poster{filter:invert(1) hue-rotate(180deg)}
+/* The live map lays itself out at the zone's own size, never scaled: a scaled frame would be
+   resampled, and its thin lines with it. */
+.hero-live{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;opacity:0;transition:opacity 1.1s ease;pointer-events:none}
+.hero-stage.vivant .hero-live{opacity:1}
+/* Under the zone, what the shot shows. */
+.hero-caption{position:relative;z-index:1;display:flex;align-items:baseline;justify-content:center;gap:10px;margin:18px auto 0;padding:0 8px;min-height:1.6em;font-size:14.5px;color:var(--muted)}
+.hero-caption .live{display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;font:600 11px/1 var(--f-body);letter-spacing:.14em;text-transform:uppercase;color:var(--fg)}
+.hero-caption .live::before{content:"";width:7px;height:7px;border-radius:50%;background:#e5484d;animation:pouls 2s infinite}
+#captionText{transition:opacity .3s}
+#captionText.change{opacity:0}
+@keyframes pouls{0%{box-shadow:0 0 0 0 rgba(229,72,77,.55)}70%{box-shadow:0 0 0 7px rgba(229,72,77,0)}100%{box-shadow:0 0 0 0 rgba(229,72,77,0)}}
+.hero-link{position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;text-decoration:none;cursor:pointer;
+  background:transparent}
+.hero-link span{padding:11px 20px;border-radius:999px;background:var(--accent);color:var(--on-accent);font:600 15.5px var(--f-body);
+  box-shadow:0 12px 30px -8px rgba(0,0,0,.55);opacity:0;transform:translateY(8px) scale(.96);transition:opacity .2s,transform .2s}
+.hero-link:hover span{opacity:1;transform:none}
+
+
+/* ---------- sections ---------- */
+.section{max-width:var(--max);margin:0 auto;padding:clamp(72px,9vw,104px) 16px 0}
+h2{margin:0 0 12px;font:700 clamp(30px,4vw,44px)/1.08 var(--f-display)}
+.intro{max-width:680px;margin:0 0 34px;color:var(--muted)}
+
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.card{padding:16px 16px 22px;border:1px solid var(--line);border-radius:16px;background:var(--panel);box-shadow:var(--card-shadow)}
+.card h3{margin:20px 4px 8px;font:700 23px/1.12 var(--f-display)}
+.card p{margin:0 4px;font-size:15.5px;line-height:1.58;color:var(--muted)}
+
+/* The diagrams: the map's grammar in its own colours — chip, role stripe, header, greyed cell,
+   thread, thread end. */
+.ill{width:100%;height:auto;padding:14px 12px;border-radius:11px;background:var(--bg);overflow:visible}
+.ill .c{fill:var(--chip);stroke:var(--line);stroke-width:.8}
+.ill .n{fill:var(--muted);opacity:.5}
+.ill .s.top,.ill .g-top{fill:var(--top);stop-color:var(--top)}
+.ill .s.jgl,.ill .g-jgl{fill:var(--jgl);stop-color:var(--jgl)}
+.ill .s.mid{fill:var(--mid)}
+.ill .s.bot{fill:var(--bot)}
+.ill .s.sup{fill:var(--sup)}
+.ill .h{fill:var(--panel);stroke:var(--line);stroke-width:.8}
+.ill .tn{fill:var(--fg);opacity:.7}
+.ill .rg.lck{fill:var(--lck)} .ill .rg.lpl{fill:var(--lpl)} .ill .rg.lec{fill:var(--lec)} .ill .rg.lcs{fill:var(--lcs)}
+.ill .abs{fill:var(--absent);stroke:var(--line);stroke-width:.8;stroke-dasharray:3 2}
+.ill .yr{font:500 9px var(--f-mono);fill:var(--muted)}
+.ill .mk{font:700 13px var(--f-body);fill:var(--fg)}
+.ill .run text{font:600 11px var(--f-body);fill:var(--bot)}
+.ill .dim{opacity:.38}
+.ill .on .c{stroke:var(--accent);stroke-width:1.4}
+.ill .t{fill:none;stroke-width:2.4;stroke-linecap:round}
+.ill .t.top{stroke:var(--top)}
+.ill .t.jgl{stroke:var(--jgl)}
+.ill .void{stroke-dasharray:2.5 4}
+.ill .end{fill:none;stroke:var(--fg);stroke-width:2.2;stroke-linecap:round}
+.ill .hl-col{fill:none;stroke:var(--accent);stroke-width:1.3;stroke-dasharray:4 3}
+.ill .hl-row{fill:var(--accent);opacity:.09}
+
+/* ---------- figures ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:28px 0 0}
+.stat{display:flex;flex-direction:column;padding:20px 20px 18px;border:1px solid var(--line);border-top:3px solid var(--c,var(--accent));border-radius:14px;background:var(--panel);box-shadow:var(--card-shadow)}
+.stat:nth-child(1){--c:var(--top)} .stat:nth-child(2){--c:var(--jgl)} .stat:nth-child(3){--c:var(--mid)} .stat:nth-child(4){--c:var(--bot)}
+.stat dt{order:2;font:600 15px/1.3 var(--f-body)}
+.stat dd{margin:0}
+.stat .num{order:1;margin-bottom:6px;font:700 clamp(42px,5vw,58px)/1 var(--f-display);font-variant-numeric:tabular-nums}
+.stat .sub{order:3;margin-top:3px;font-size:13.5px;color:var(--muted)}
+.records{display:flex;flex-wrap:wrap;gap:6px 26px;margin:22px 0 0;font-size:15.5px}
+.records b{font-weight:600}
+.note{margin:10px 0 0;font-size:13.5px;color:var(--muted)}
+
+/* ---------- method ---------- */
+.method-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:clamp(28px,4vw,56px);margin-top:22px;align-items:start}
+.prose p{max-width:70ch;margin:0 0 16px}
+.prose b{font-weight:600}
+.links{display:flex;flex-direction:column;gap:12px;margin:0;padding:0;list-style:none}
+.links li{padding:15px 18px;border:1px solid var(--line);border-radius:13px;background:var(--panel);box-shadow:var(--card-shadow);font-size:15px}
+.links a{font-weight:600;color:var(--accent);text-decoration:none}
+.links a:hover{text-decoration:underline;text-underline-offset:3px}
+
+/* ---------- closing call to action and footer ---------- */
+.end{max-width:var(--max);margin:clamp(72px,9vw,104px) auto 0;padding:clamp(44px,6vw,64px) 16px;text-align:center;border-top:1px solid var(--line)}
+.end-title{margin:0 0 24px;font:700 clamp(26px,3.4vw,38px)/1.15 var(--f-display);text-wrap:balance}
+.foot{padding:28px 16px calc(36px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--panel)}
+.foot ul{display:flex;flex-wrap:wrap;gap:8px 28px;max-width:var(--max);margin:0 auto;padding:0;list-style:none;font-size:13.5px;color:var(--muted)}
+.foot a{color:var(--fg);text-underline-offset:3px}
+
+/* ---------- narrow screens ---------- */
+@media (max-width:900px){
+  .cards{grid-template-columns:minmax(0,1fr);max-width:560px}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .method-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:700px){
+  .nav-link{display:none}
+  .actions{flex-direction:column;align-items:stretch;gap:20px}
+  .search,.field{width:100%}
+  .field input[type="search"]{width:100%;min-width:0;flex:1}
+  .hero-screen{height:auto;aspect-ratio:1200/630}
+  .hero-glow{filter:blur(32px)}
+}
+@media (max-width:380px){
+  .brand span{display:none}
+  .stat{padding:16px 14px 14px}
+}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  *{transition:none!important;animation:none!important}
+}

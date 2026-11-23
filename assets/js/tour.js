@@ -7,7 +7,7 @@
  *  2. the **scenario** — eight steps in three acts, each one driving the real map through the
  *     `pilote` object app.js hands over (`ETAPES`);
  *  3. the **dressing** — the card, the veil with its cut-outs, the closing banner.
- * The landing page's looping hero is meant to reuse 1 and the pilot, never 3.
+ * The landing page's looping hero (demo.js) reuses 1 and the pilot, never 3.
  *
  * No displayed text is written here: every string lives in i18n.js, and the names of the
  * subjects arrive as parameters read from the data — never in the dictionary, where they would

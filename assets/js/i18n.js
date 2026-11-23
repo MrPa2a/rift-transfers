@@ -50,6 +50,121 @@ const T = {
     en: "The Rift Transfers map with Fnatic selected: coloured threads follow its players to other teams, season after season.",
   },
 
+  // ---------- landing page (index.html) ----------
+  // The one page whose English text is **also** written in the HTML: it is the indexable part of
+  // the site, and a crawler that does not run the script must still read it. Two copies of the
+  // same string, then — which is why `npm run validate` (scripts/validate-i18n.mjs) refuses the
+  // slightest gap between that page's static text and the English column here. Keys the landing
+  // shares with the map ("about.*", "page.og.image.alt") are reused, not restated.
+  "landing.title": {
+    fr: "Rift Transfers · Rosters et transferts des Worlds de League of Legends, 2011–2026",
+    en: "Rift Transfers · League of Legends Worlds rosters and transfers, 2011–2026",
+  },
+  "landing.description": {
+    fr: "Tous les rosters des Worlds de League of Legends depuis 2011 sur une seule carte interactive, avec le parcours de chaque joueur d'une équipe à l'autre.",
+    en: "Every League of Legends Worlds roster since 2011 on one interactive map, with each player's path from one team to the next.",
+  },
+  "landing.nav.aria": { fr: "Navigation principale", en: "Main navigation" },
+  "landing.nav.methode": { fr: "Méthode", en: "Method" },
+  "landing.cta": { fr: "Ouvrir la carte", en: "Open the map" },
+  "landing.eyebrow": {
+    fr: "Championnat du monde de League of Legends · 2011–2026",
+    en: "League of Legends World Championship · 2011–2026",
+  },
+  "landing.h1": {
+    fr: "Tous les rosters des Worlds depuis 2011, et les parcours qui les relient.",
+    en: "Every Worlds roster since 2011, and the paths between them.",
+  },
+  "landing.lead": {
+    fr: "Une carte interactive de toutes les équipes venues aux Worlds de League of Legends. Chaque équipe est une colonne, chaque Worlds une rangée, et chaque joueur un fil coloré par poste : suis une carrière d'une équipe à l'autre, ou la vie d'une équipe le long de sa colonne.",
+    en: "An interactive map of every team that has played the League of Legends World Championship. Each team is a column, each Worlds a row, and each player a thread coloured by role: follow a career from one team to the next, or a team's life down its column.",
+  },
+  // The field submits to map/?q=, which the map reads through the same search as its own bar.
+  "landing.q.label": { fr: "Ou va droit à un joueur ou une équipe", en: "Or go straight to a player or a team" },
+  "landing.q.placeholder": { fr: "Un pseudo, une équipe, un code…", en: "A handle, a team, a code…" },
+  "landing.q.go": { fr: "Y aller", en: "Go" },
+  // Caption of the live hero, one per shot of assets/js/demo.js. As in the guided tour, no name is
+  // written here: subjects arrive as parameters read from the data.
+  "landing.live": { fr: "Carte en direct", en: "Live map" },
+  "landing.scene.equipe": {
+    fr: "{equipe}, épinglée et isolée : toutes les équipes par lesquelles ses joueurs sont passés",
+    en: "{equipe}, pinned and isolated: every team its players have been through",
+  },
+  // The name leads, never after "de": French elides before a vowel ("d'Impact"), and the name is
+  // only known at run time.
+  "landing.scene.carriere": {
+    fr: "{joueur}, carrière isolée : {n} Worlds, {k} équipes",
+    en: "{joueur}, career isolated: {n} Worlds, {k} teams",
+  },
+  "landing.scene.annee": {
+    fr: "L'édition {annee} isolée, avec les équipes d'où viennent ses joueurs et où ils vont",
+    en: "The {annee} edition isolated, with the teams its players came from and went to",
+  },
+  "landing.lire.titre": { fr: "Comment ça se lit", en: "How to read it" },
+  "landing.lire.intro": {
+    fr: "Trois choses à savoir, et la carte se lit d'elle-même. À ta première venue, une visite guidée montre le reste sur la vraie carte.",
+    en: "Three things to know, and the map reads itself. On your first visit, a guided tour shows the rest on the real map.",
+  },
+  "landing.lire.1.titre": { fr: "Une colonne par équipe, une rangée par Worlds", en: "One column per team, one row per Worlds" },
+  "landing.lire.1.texte": {
+    fr: "Chaque équipe venue au moins une fois aux Worlds a sa colonne, de 2011 en haut à la dernière édition en bas. Une rangée porte les joueurs qui ont réellement joué ces Worlds pour l'équipe, pas le roster de la saison. Une case grisée : l'équipe n'y était pas, et aucun roster n'est deviné.",
+    en: "Every team that has played at least one Worlds has its column, from 2011 at the top to the latest edition at the bottom. A row holds the players who actually played that Worlds for the team, not the season's roster. A greyed-out cell: the team was not there, and no roster is guessed.",
+  },
+  "landing.lire.2.titre": { fr: "Un fil par joueur", en: "One thread per player" },
+  "landing.lire.2.texte": {
+    fr: "Un fil relie les apparitions d'un joueur, d'une équipe à l'autre. Sa couleur dit le poste, et bascule en son milieu quand le joueur en change. Ses deux bouts marquent le premier et le dernier Worlds ; entre les deux, le survol montre où il était les années sans Worlds.",
+    en: "A thread links a player's appearances, from one team to the next. Its colour gives the role, and switches at its midpoint when the player changes role. Its two ends mark the first and last Worlds; in between, hovering shows where they were in the years without Worlds.",
+  },
+  "landing.lire.3.titre": { fr: "Quelques signes", en: "A few signs" },
+  "landing.lire.3.texte": {
+    fr: "Deux demi-cases : un poste partagé entre deux joueurs. Un astérisque : une rotation ponctuelle. Un fil en pointillé : aucune partie professionnelle recensée sur l'intervalle. Au-dessus d'une rangée : jusqu'où l'équipe est allée.",
+    en: "Two half-cells: a role shared between two players. An asterisk: an occasional rotation. A dotted thread: no professional game on record over the interval. Above a row: how far the team went.",
+  },
+  // Figures: computed by assets/js/landing.js from data/teams.json, never written down — they
+  // would go stale at the next collection run. Being computed, they are not indexed either: they
+  // are there for the hook, not for search engines.
+  "landing.chiffres.titre": { fr: "En chiffres", en: "In figures" },
+  "landing.chiffres.editions.one": { fr: "édition des Worlds", en: "Worlds edition" },
+  "landing.chiffres.editions.other": { fr: "éditions des Worlds", en: "Worlds editions" },
+  "landing.chiffres.periode": { fr: "de {de} à {a}", en: "{de} to {a}" },
+  "landing.chiffres.equipes.one": { fr: "équipe", en: "team" },
+  "landing.chiffres.equipes.other": { fr: "équipes", en: "teams" },
+  "landing.chiffres.regions.one": { fr: "dans {n} région", en: "in {n} region" },
+  "landing.chiffres.regions.other": { fr: "dans {n} régions", en: "across {n} regions" },
+  "landing.chiffres.joueurs.one": { fr: "joueur", en: "player" },
+  "landing.chiffres.joueurs.other": { fr: "joueurs", en: "players" },
+  "landing.chiffres.joueurs.detail": { fr: "titulaires et rotations", en: "starters and rotations" },
+  "landing.chiffres.changements.one": { fr: "changement d'équipe", en: "team change" },
+  "landing.chiffres.changements.other": { fr: "changements d'équipe", en: "team changes" },
+  "landing.chiffres.changements.detail": { fr: "d'un Worlds à l'autre", en: "from one Worlds to the next" },
+  // Same measures, and same wording, as the "Most Worlds" and "Biggest travellers" tables of the
+  // statistics drawer.
+  "landing.chiffres.record.plus": { fr: "Le plus de Worlds : {noms}, {n}", en: "Most Worlds: {noms}, {n}" },
+  "landing.chiffres.record.equipes": { fr: "Le plus d'équipes aux Worlds : {noms}, {n}", en: "Most teams at Worlds: {noms}, {n}" },
+  "landing.chiffres.note": {
+    fr: "Calculés à l'ouverture de la page depuis les fichiers de données, comme les statistiques de la carte.",
+    en: "Computed when the page opens, from the data files, like the map's statistics.",
+  },
+  "landing.methode.titre": { fr: "Méthode et sources", en: "Method and sources" },
+  "landing.methode.region": {
+    fr: "La région d'une rangée est la ligue où l'équipe jouait réellement l'année de l'édition, et non celle de son organisation aujourd'hui. Un joueur s'affiche sous le pseudo qu'il portait cette année-là, sans que son fil se coupe.",
+    en: "A row's region is the league the team actually played in the year of the edition, not the one its organisation belongs to today. A player shows under the handle they bore that year, without their thread breaking.",
+  },
+  "landing.methode.entre": {
+    fr: "Entre deux Worlds, la carte dit où était un joueur : le ou les clubs où il a le plus joué cette année-là, d'après les mêmes feuilles de match. Quand aucune partie professionnelle n'est recensée, elle dit exactement cela — jamais « fin de carrière », jamais « sans club ».",
+    en: "Between two Worlds, the map says where a player was: the club, or clubs, where they played most that year, from the same game records. Where no professional game is on record, it says exactly that — never “retired”, never “no team”.",
+  },
+  "landing.methode.verif": {
+    fr: "Les données sont de simples fichiers JSON, publiés avec le code et contrôlés à chaque modification ; les sources de chaque édition y sont listées. Une erreur se signale avec une source, et ne se corrige jamais de mémoire.",
+    en: "The data is plain JSON files, published with the code and checked on every change; each edition's sources are listed alongside. An error is reported with a source, and never corrected from memory.",
+  },
+  "landing.methode.limites": {
+    fr: "Pas encore inclus : le MSI, et les coéquipiers d'un joueur pendant ses années hors Worlds.",
+    en: "Not included yet: MSI, and a player's team-mates during their years outside Worlds.",
+  },
+  "landing.lien.donnees": { fr: "Les fichiers de données, sur GitHub", en: "The data files, on GitHub" },
+  "landing.fin.titre": { fr: "Toute l'histoire des Worlds, sur une seule carte.", en: "The whole history of Worlds, on one map." },
+
   // ---------- bar, axis, floating tools ----------
   "coin.annee": { fr: "ANNÉE", en: "YEAR" },
   "vp.aria": {
@@ -598,7 +713,11 @@ const T = {
 // to `localStorage` — without which a link shared in English would change the default language
 // of whoever follows it.
 const lu = (cle) => { try { return localStorage.getItem(cle); } catch { return null; } };
+// Outside a browser — scripts/validate-i18n.mjs reads the dictionary from Node — there is neither
+// a URL nor a document: the module then only resolves to the default language and touches nothing.
+const NAVIGATEUR = typeof document !== "undefined";
 function resoudre() {
+  if (!NAVIGATEUR) return DEFAUT;
   const demande = new URLSearchParams(location.search).get("lang");
   if (LANGS.includes(demande)) return demande;
   const garde = lu(CLE_STOCKAGE);
@@ -647,19 +766,18 @@ export function appliquer(racine = document) {
   });
 }
 
-// Document head: the declared language, the description and the sharing metas. `og:title` does
-// not move — it is the name of the project.
+// Document head: the declared language and the two locale metas, which are codes and not text.
+// The description, the sharing metas and — on the landing page — the title say which key they
+// carry through `data-i18n-attr` / `data-i18n`, like the rest of the page: each page has its
+// own, and `appliquer()` rewrites them with everything else.
 function appliquerEntete() {
   document.documentElement.lang = langue;
   const poser = (selecteur, valeur) => {
     const el = document.querySelector(selecteur);
     if (el) el.setAttribute("content", valeur);
   };
-  poser('meta[name="description"]', t("page.description"));
-  poser('meta[property="og:description"]', t("page.og.description"));
   poser('meta[property="og:locale"]', LOCALES[langue]);
   poser('meta[property="og:locale:alternate"]', LOCALES[LANGS.find((l) => l !== langue)]);
-  poser('meta[property="og:image:alt"]', t("page.og.image.alt"));
 }
 
 // The canonical names the URL **variant**, not the language being displayed: a `/map/` read in
@@ -702,6 +820,12 @@ export function setLang(nouvelle) {
   abonnes.forEach((fn) => fn());
 }
 
-poserCanonique();
-appliquerEntete();
-appliquer(document);
+// The dictionary itself, read-only, for scripts/validate-i18n.mjs: every key in both languages, and
+// the landing page's static English text identical to its column here.
+export const DICTIONNAIRE = T;
+
+if (NAVIGATEUR) {
+  poserCanonique();
+  appliquerEntete();
+  appliquer(document);
+}

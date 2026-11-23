@@ -10,7 +10,7 @@ Open an issue with the "Data correction" template: team, year, what is wrong, wh
 
 1. Fork the repository and create a branch (`fix/fnc-2020-bot`, for instance).
 2. Edit the relevant file in `data/`.
-3. Run `npm run validate`: the command must print "Data valid."
+3. Run `npm run validate`: the command must print "Data valid." and "Interface text valid."
 4. Check it visually with `npm run dev`.
 5. Add the source to `data/sources.json` and open a pull request.
 
@@ -103,9 +103,11 @@ Sources per year, with what each one made it possible to check. See also [docs/S
 
 ## Code
 
-The site is HTML, CSS and JavaScript with no framework and no build step: `map/index.html`, `assets/css/styles.css`, and the modules of `assets/js/` — `app.js`, `i18n.js`, `tour.js`, `report.js`. Keep it that simple for as long as possible. There is no runtime dependency, and the fonts live in the repository; the one third-party call is the Cloudflare Web Analytics script, which only counts visits — nothing on the site may depend on it.
+The site is HTML, CSS and JavaScript with no framework and no build step: two pages — the landing page `index.html` and the map `map/index.html` —, three stylesheets — `base.css` (fonts and colour tokens, shared), `styles.css` (the map), `landing.css` —, and the modules of `assets/js/` — `app.js`, `i18n.js`, `tour.js`, `report.js`, `demo.js` (the landing page's live hero: the map itself, framed with `?demo`), `landing.js`. Keep it that simple for as long as possible. There is no runtime dependency, and the fonts live in the repository; the one third-party call is the Cloudflare Web Analytics script, which only counts visits — nothing on the site may depend on it.
 
-The interface is **bilingual**, and no displayed text is written in `app.js` or in `index.html`: everything goes through `assets/js/i18n.js`, where each key carries its two spellings side by side — the only form in which a string missing in one language shows at a glance. In the page, `data-i18n` fills a text, `data-i18n-html` a rich text, `data-i18n-attr="title:key;aria-label:key"` attributes. A label that JavaScript writes once and for all is registered through `libelle()`, so that switching languages rewrites it without reloading the page.
+The interface is **bilingual**, and no displayed text is written in JavaScript: everything goes through `assets/js/i18n.js`, where each key carries its two spellings side by side — the only form in which a string missing in one language shows at a glance. In the page, `data-i18n` fills a text, `data-i18n-html` a rich text, `data-i18n-attr="title:key;aria-label:key"` attributes. A label that JavaScript writes once and for all is registered through `libelle()`, so that switching languages rewrites it without reloading the page.
+
+The map's HTML leaves its translated elements empty. The **landing page** does not: it is the part of the site search engines index, so it also writes its English text in the HTML, next to the key. That second copy is checked — `npm run validate` runs `scripts/validate-i18n.mjs`, which refuses a key missing from the dictionary, a dictionary entry missing a language, and any gap between a page's static English and the dictionary's. Change a landing string in both places, or the check fails.
 
 Code identifiers are in French (`GRAPHIES_ARBITREES`, `libelle()`…), and they stay so: [docs/SOURCES.md](docs/SOURCES.md) refers to them by name. Comments are in English.
 

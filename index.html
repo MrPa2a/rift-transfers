@@ -1,53 +1,228 @@
 <!doctype html>
 <!--
-  Redirect to /map/, pending the landing page that will take this place. The root must never be
-  an empty page: a link already shared to the root has to lead to the map.
+  Landing page: what the project is, for someone who has never seen it, and the map one click away.
 
-  The path is relative — "map/" and not "/map/" — because the site is served from
-  /rift-transfers/ on GitHub Pages and from / in local development.
+  Unlike the map, this page writes its English text **in the HTML**: it is the part of the site
+  search engines index, and a crawler that does not run the script must still read it. Each string
+  also carries its key, and assets/js/i18n.js rewrites it in the visitor's language — the
+  dictionary keeps both languages side by side, and `npm run validate` refuses the slightest gap
+  between the English here and the English there. What only JavaScript can produce — the figures,
+  the live hero — is written by assets/js/landing.js and is not meant to be indexed.
+
+  Every URL is relative: the site is served from /rift-transfers/ on GitHub Pages and from / in
+  local development. Link previews and structured data are the exception — they need the public
+  address, written out in full.
 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <base href="./">
-  <title>Rift Transfers</title>
-  <meta name="description" content="Interactive map of the rosters of every team that came to the 2011–2026 League of Legends World Championships.">
-  <!-- An instant refresh is read by Google as a permanent redirect, and the canonical says the
-       same thing: whatever this URL earns goes to the map. No `noindex` alongside — it would
-       contradict the canonical, and Google advises against mixing the two. -->
-  <meta http-equiv="refresh" content="0; url=map/">
-  <link rel="canonical" href="https://mrpa2a.github.io/rift-transfers/map/">
-  <!-- Link previews do not follow the redirect: a link shared to the root needs its own card,
-       the same as the map's. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title data-i18n="landing.title">Rift Transfers · League of Legends Worlds rosters and transfers, 2011–2026</title>
+  <meta name="description" data-i18n-attr="content:landing.description" content="Every League of Legends Worlds roster since 2011 on one interactive map, with each player's path from one team to the next.">
+  <meta name="theme-color" content="#171b26" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <!-- Link previews: the same card as the map's, pointing here. `og:title` is the project's name on
+       both pages. -->
   <meta property="og:title" content="Rift Transfers">
-  <meta property="og:description" content="League of Legends Worlds rosters since 2011, and every player's transfers.">
+  <meta property="og:description" data-i18n-attr="content:page.og.description" content="League of Legends Worlds rosters since 2011, and every player's transfers.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Rift Transfers">
-  <meta property="og:url" content="https://mrpa2a.github.io/rift-transfers/map/">
+  <meta property="og:url" content="https://mrpa2a.github.io/rift-transfers/">
   <meta property="og:image" content="https://mrpa2a.github.io/rift-transfers/assets/og-image.png">
+  <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="The Rift Transfers map with Fnatic selected: coloured threads follow its players to other teams, season after season.">
+  <meta property="og:image:alt" data-i18n-attr="content:page.og.image.alt" content="The Rift Transfers map with Fnatic selected: coloured threads follow its players to other teams, season after season.">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="fr_FR">
   <meta name="twitter:card" content="summary_large_image">
+  <!-- Language variants, on the map's pattern: `/` picks the language from the browser, hence
+       x-default; the two `?lang=` URLs are the fixed variants. The canonical is not written here:
+       i18n.js adds it at load time, naming the variant being viewed (see map/index.html). -->
+  <link rel="alternate" hreflang="x-default" href="https://mrpa2a.github.io/rift-transfers/">
+  <link rel="alternate" hreflang="en" href="https://mrpa2a.github.io/rift-transfers/?lang=en">
+  <link rel="alternate" hreflang="fr" href="https://mrpa2a.github.io/rift-transfers/?lang=fr">
+  <!-- Structured data. The site, and the Dataset it publishes — described here rather than on the
+       map, since this is the page that carries the method as real text. One copy only: the map's
+       WebApplication points at it by its @id. No figures (120 teams, 749 players): they would go
+       stale at the next collection run, where the years cannot. The data licence is the one its
+       sources impose. No SearchAction: Google no longer shows a sitelinks search box. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://mrpa2a.github.io/rift-transfers/#website",
+        "name": "Rift Transfers",
+        "url": "https://mrpa2a.github.io/rift-transfers/",
+        "description": "Every League of Legends Worlds roster since 2011 on one interactive map, with each player's path from one team to the next.",
+        "inLanguage": ["en", "fr"],
+        "image": "https://mrpa2a.github.io/rift-transfers/assets/og-image.png",
+        "creator": { "@id": "https://github.com/MrPa2a#person" },
+        "hasPart": { "@id": "https://mrpa2a.github.io/rift-transfers/map/#app" }
+      },
+      {
+        "@type": "Dataset",
+        "@id": "https://mrpa2a.github.io/rift-transfers/#dataset",
+        "name": "League of Legends World Championship rosters, 2011–2026",
+        "description": "Starting lineups of every team that played the League of Legends World Championship, from 2011 to 2026, with each player's role, nationality and handle at the time, each team's region in the year of the edition, its placement, and the teams a player went through between two Worlds appearances. Every lineup is derived from Leaguepedia's game records by written selection rules; nothing is typed in from memory.",
+        "url": "https://mrpa2a.github.io/rift-transfers/",
+        "sameAs": "https://github.com/MrPa2a/rift-transfers/tree/main/data",
+        "keywords": ["League of Legends", "esports", "World Championship", "Worlds", "rosters", "lineups", "player transfers"],
+        "temporalCoverage": "2011/2026",
+        "measurementTechnique": "Derived from Leaguepedia's ScoreboardPlayers game records by four written selection rules, documented in docs/SOURCES.md.",
+        "isBasedOn": { "@type": "WebSite", "name": "Leaguepedia", "url": "https://lol.fandom.com/" },
+        "license": "https://creativecommons.org/licenses/by-sa/3.0/",
+        "isAccessibleForFree": true,
+        "creator": { "@type": "Person", "@id": "https://github.com/MrPa2a#person", "name": "MrPa2a", "url": "https://github.com/MrPa2a" },
+        "distribution": [
+          { "@type": "DataDownload", "name": "Teams and lineups", "encodingFormat": "application/json", "contentUrl": "https://mrpa2a.github.io/rift-transfers/data/teams.json" },
+          { "@type": "DataDownload", "name": "Players and nationalities", "encodingFormat": "application/json", "contentUrl": "https://mrpa2a.github.io/rift-transfers/data/players.json" },
+          { "@type": "DataDownload", "name": "Placements", "encodingFormat": "application/json", "contentUrl": "https://mrpa2a.github.io/rift-transfers/data/results.json" },
+          { "@type": "DataDownload", "name": "Careers between Worlds appearances", "encodingFormat": "application/json", "contentUrl": "https://mrpa2a.github.io/rift-transfers/data/careers.json" },
+          { "@type": "DataDownload", "name": "Sources", "encodingFormat": "application/json", "contentUrl": "https://mrpa2a.github.io/rift-transfers/data/sources.json" }
+        ]
+      }
+    ]
+  }
+  </script>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <style>
-    html { color-scheme: light dark; }
-    body {
-      margin: 0; min-height: 100vh; display: grid; place-items: center;
-      font: 400 1rem/1.6 system-ui, sans-serif; text-align: center; padding: 1.5rem;
-      background: #ffffff; color: #171b26;
-    }
-    @media (prefers-color-scheme: dark) { body { background: #171b26; color: #e7e9ee; } }
-    a { color: inherit; }
-  </style>
+  <link rel="preload" href="assets/fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/barlow-condensed-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/landing.css">
+  <script type="module" src="assets/js/landing.js"></script>
 </head>
 <body>
-  <p>Rift Transfers — <a href="map/">open the map</a>.</p>
-  <script>
-    // The refresh tag is enough, but it loses the query string and the fragment: we carry them
-    // over when JavaScript is available, so that a deep link shared to the root arrives whole.
-    location.replace("map/" + location.search + location.hash);
-  </script>
+<header class="top">
+  <a class="brand" href="./"><img src="assets/favicon.svg" alt="" width="28" height="28"><span>Rift Transfers</span></a>
+  <nav class="nav" data-i18n-attr="aria-label:landing.nav.aria" aria-label="Main navigation">
+    <a class="nav-link" href="#read" data-i18n="landing.lire.titre">How to read it</a>
+    <a class="nav-link" href="#method" data-i18n="landing.nav.methode">Method</a>
+    <a class="nav-link" href="https://github.com/MrPa2a/rift-transfers">GitHub</a>
+    <!-- Same toggle as the map's: it carries the code of the language being switched **to**.
+         Hidden until the script runs — without it, there is nothing to switch. -->
+    <button class="lang" id="lang" type="button" hidden data-i18n-attr="title:btn.lang.titre;aria-label:btn.lang.titre" title="Passer en français" aria-label="Passer en français"><span data-i18n="btn.lang.code">FR</span></button>
+    <a class="btn btn-small" href="map/" data-carte data-i18n="landing.cta">Open the map</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-text">
+      <p class="eyebrow" data-i18n="landing.eyebrow">League of Legends World Championship · 2011–2026</p>
+      <h1 data-i18n="landing.h1">Every Worlds roster since 2011, and the paths between them.</h1>
+      <p class="lead" data-i18n="landing.lead">An interactive map of every team that has played the League of Legends World Championship. Each team is a column, each Worlds a row, and each player a thread coloured by role: follow a career from one team to the next, or a team's life down its column.</p>
+      <div class="actions">
+        <a class="btn btn-main" href="map/" data-carte><span data-i18n="landing.cta">Open the map</span><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        <!-- A plain form: it reaches map/?q= without any script, and the map reads that value
+             through the same search as its own bar — handle, period handle, code, team name. -->
+        <form class="search" action="map/" method="get" role="search">
+          <label for="lq" data-i18n="landing.q.label">Or go straight to a player or a team</label>
+          <div class="field">
+            <input id="lq" name="q" type="search" list="lqNoms" autocomplete="off" spellcheck="false" required data-i18n-attr="placeholder:landing.q.placeholder" placeholder="A handle, a team, a code…">
+            <input type="hidden" name="lang" disabled>
+            <button type="submit" data-i18n="landing.q.go">Go</button>
+          </div>
+          <datalist id="lqNoms"></datalist>
+        </form>
+      </div>
+    </div>
+
+    <!-- The hero shows the real map, never a recording. First the poster — the very image link
+         previews use, so not one byte more —; then, on a wide screen that has not asked for reduced
+         motion or reduced data, landing.js lays the live map over it once the page is idle: the map
+         itself, framed with ?demo and replaying four scenes (assets/js/demo.js).
+
+         No frame: the zone runs the full width of the window and fades into the page on every side
+         (landing.css). It rises from the page, lies back while low on the screen and lies flat as it
+         is scrolled into view (landing.js). The link over it is a pointer convenience — the buttons
+         above are the way in for the keyboard. -->
+    <div class="hero-scene">
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="hero-rise">
+        <div class="hero-stage" id="stage">
+          <div class="hero-screen" id="screen">
+            <img class="hero-poster" src="assets/og-image.png" width="1200" height="630" fetchpriority="high" decoding="async" data-i18n-attr="alt:page.og.image.alt" alt="The Rift Transfers map with Fnatic selected: coloured threads follow its players to other teams, season after season.">
+            <a class="hero-link" href="map/" data-carte tabindex="-1" aria-hidden="true"><span data-i18n="landing.cta">Open the map</span></a>
+          </div>
+        </div>
+      </div>
+      <p class="hero-caption" id="caption" hidden><span class="live" data-i18n="landing.live">Live map</span> <span id="captionText"></span></p>
+    </div>
+  </section>
+
+  <section class="section" id="read" aria-labelledby="readTitle">
+    <h2 id="readTitle" data-i18n="landing.lire.titre">How to read it</h2>
+    <p class="intro" data-i18n="landing.lire.intro">Three things to know, and the map reads itself. On your first visit, a guided tour shows the rest on the real map.</p>
+    <!-- Three diagrams, act 1 of the guided tour. Drawn, not captured: no name, no roster — only
+         the map's grammar, in its own colours, light or dark. -->
+    <div class="cards">
+      <article class="card">
+        <svg class="ill" viewBox="0 0 300 264" aria-hidden="true" focusable="false"><rect class="hl-row" x="0" y="107" width="300" height="76" rx="4"/><text class="yr" x="2" y="70">2017</text><text class="yr" x="2" y="148">2018</text><text class="yr" x="2" y="226">2019</text><g class="hd"><rect class="h" x="34" y="1" width="82" height="21" rx="3"/><rect class="rg lck" x="40" y="6" width="10" height="2.5" rx="1"/><rect class="tn" x="40" y="12" width="26" height="5" rx="1"/></g><g class="hd"><rect class="h" x="122" y="1" width="82" height="21" rx="3"/><rect class="rg lpl" x="128" y="6" width="10" height="2.5" rx="1"/><rect class="tn" x="128" y="12" width="26" height="5" rx="1"/></g><g class="hd"><rect class="h" x="210" y="1" width="82" height="21" rx="3"/><rect class="rg lec" x="216" y="6" width="10" height="2.5" rx="1"/><rect class="tn" x="216" y="12" width="26" height="5" rx="1"/></g><g class="ch"><rect class="c" x="37" y="32" width="76" height="12" rx="2"/><rect class="s top" x="37" y="32" width="3" height="12" rx="1"/><rect class="n" x="44" y="37" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="37" y="46.5" width="76" height="12" rx="2"/><rect class="s jgl" x="37" y="46.5" width="3" height="12" rx="1"/><rect class="n" x="44" y="51.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="37" y="61" width="76" height="12" rx="2"/><rect class="s mid" x="37" y="61" width="3" height="12" rx="1"/><rect class="n" x="44" y="66" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="37" y="75.5" width="76" height="12" rx="2"/><rect class="s bot" x="37" y="75.5" width="3" height="12" rx="1"/><rect class="n" x="44" y="80.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="37" y="90" width="76" height="12" rx="2"/><rect class="s sup" x="37" y="90" width="3" height="12" rx="1"/><rect class="n" x="44" y="95" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="37" y="110" width="76" height="12" rx="2"/><rect class="s top" x="37" y="110" width="3" height="12" rx="1"/><rect class="n" x="44" y="115" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="37" y="124.5" width="76" height="12" rx="2"/><rect class="s jgl" x="37" y="124.5" width="3" height="12" rx="1"/><rect class="n" x="44" y="129.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="37" y="139" width="76" height="12" rx="2"/><rect class="s mid" x="37" y="139" width="3" height="12" rx="1"/><rect class="n" x="44" y="144" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="37" y="153.5" width="76" height="12" rx="2"/><rect class="s bot" x="37" y="153.5" width="3" height="12" rx="1"/><rect class="n" x="44" y="158.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="37" y="168" width="76" height="12" rx="2"/><rect class="s sup" x="37" y="168" width="3" height="12" rx="1"/><rect class="n" x="44" y="173" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="37" y="188" width="76" height="12" rx="2"/><rect class="s top" x="37" y="188" width="3" height="12" rx="1"/><rect class="n" x="44" y="193" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="37" y="202.5" width="76" height="12" rx="2"/><rect class="s jgl" x="37" y="202.5" width="3" height="12" rx="1"/><rect class="n" x="44" y="207.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="37" y="217" width="76" height="12" rx="2"/><rect class="s mid" x="37" y="217" width="3" height="12" rx="1"/><rect class="n" x="44" y="222" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="37" y="231.5" width="76" height="12" rx="2"/><rect class="s bot" x="37" y="231.5" width="3" height="12" rx="1"/><rect class="n" x="44" y="236.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="37" y="246" width="76" height="12" rx="2"/><rect class="s sup" x="37" y="246" width="3" height="12" rx="1"/><rect class="n" x="44" y="251" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="125" y="32" width="76" height="12" rx="2"/><rect class="s top" x="125" y="32" width="3" height="12" rx="1"/><rect class="n" x="132" y="37" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="125" y="46.5" width="76" height="12" rx="2"/><rect class="s jgl" x="125" y="46.5" width="3" height="12" rx="1"/><rect class="n" x="132" y="51.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="125" y="61" width="76" height="12" rx="2"/><rect class="s mid" x="125" y="61" width="3" height="12" rx="1"/><rect class="n" x="132" y="66" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="125" y="75.5" width="76" height="12" rx="2"/><rect class="s bot" x="125" y="75.5" width="3" height="12" rx="1"/><rect class="n" x="132" y="80.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="125" y="90" width="76" height="12" rx="2"/><rect class="s sup" x="125" y="90" width="3" height="12" rx="1"/><rect class="n" x="132" y="95" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="125" y="110" width="76" height="12" rx="2"/><rect class="s top" x="125" y="110" width="3" height="12" rx="1"/><rect class="n" x="132" y="115" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="125" y="124.5" width="76" height="12" rx="2"/><rect class="s jgl" x="125" y="124.5" width="3" height="12" rx="1"/><rect class="n" x="132" y="129.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="125" y="139" width="76" height="12" rx="2"/><rect class="s mid" x="125" y="139" width="3" height="12" rx="1"/><rect class="n" x="132" y="144" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="125" y="153.5" width="76" height="12" rx="2"/><rect class="s bot" x="125" y="153.5" width="3" height="12" rx="1"/><rect class="n" x="132" y="158.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="125" y="168" width="76" height="12" rx="2"/><rect class="s sup" x="125" y="168" width="3" height="12" rx="1"/><rect class="n" x="132" y="173" width="28" height="2" rx="1"/></g><rect class="abs" x="125" y="188" width="76" height="70" rx="3"/><rect class="n" x="149" y="222" width="28" height="2" rx="1"/><rect class="abs" x="213" y="32" width="76" height="70" rx="3"/><rect class="n" x="237" y="66" width="28" height="2" rx="1"/><g class="ch"><rect class="c" x="213" y="110" width="76" height="12" rx="2"/><rect class="s top" x="213" y="110" width="3" height="12" rx="1"/><rect class="n" x="220" y="115" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="213" y="124.5" width="76" height="12" rx="2"/><rect class="s jgl" x="213" y="124.5" width="3" height="12" rx="1"/><rect class="n" x="220" y="129.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="213" y="139" width="76" height="12" rx="2"/><rect class="s mid" x="213" y="139" width="3" height="12" rx="1"/><rect class="n" x="220" y="144" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="213" y="153.5" width="76" height="12" rx="2"/><rect class="s bot" x="213" y="153.5" width="3" height="12" rx="1"/><rect class="n" x="220" y="158.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="213" y="168" width="76" height="12" rx="2"/><rect class="s sup" x="213" y="168" width="3" height="12" rx="1"/><rect class="n" x="220" y="173" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="213" y="188" width="76" height="12" rx="2"/><rect class="s top" x="213" y="188" width="3" height="12" rx="1"/><rect class="n" x="220" y="193" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="213" y="202.5" width="76" height="12" rx="2"/><rect class="s jgl" x="213" y="202.5" width="3" height="12" rx="1"/><rect class="n" x="220" y="207.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="213" y="217" width="76" height="12" rx="2"/><rect class="s mid" x="213" y="217" width="3" height="12" rx="1"/><rect class="n" x="220" y="222" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="213" y="231.5" width="76" height="12" rx="2"/><rect class="s bot" x="213" y="231.5" width="3" height="12" rx="1"/><rect class="n" x="220" y="236.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="213" y="246" width="76" height="12" rx="2"/><rect class="s sup" x="213" y="246" width="3" height="12" rx="1"/><rect class="n" x="220" y="251" width="28" height="2" rx="1"/></g><rect class="hl-col" x="32" y="0" width="86" height="261" rx="5"/></svg>
+        <h3 data-i18n="landing.lire.1.titre">One column per team, one row per Worlds</h3>
+        <p data-i18n="landing.lire.1.texte">Every team that has played at least one Worlds has its column, from 2011 at the top to the latest edition at the bottom. A row holds the players who actually played that Worlds for the team, not the season's roster. A greyed-out cell: the team was not there, and no roster is guessed.</p>
+      </article>
+      <article class="card">
+        <svg class="ill" viewBox="0 0 300 276" aria-hidden="true" focusable="false"><defs><linearGradient id="illTopJgl" x1="0" y1="0" x2="0" y2="1"><stop class="g-top" offset=".5"/><stop class="g-jgl" offset=".5"/></linearGradient></defs><text class="yr" x="2" y="74">2017</text><text class="yr" x="2" y="152">2018</text><text class="yr" x="2" y="230">2019</text><g class="hd"><rect class="h" x="44" y="1" width="82" height="21" rx="3"/><rect class="rg lec" x="50" y="6" width="10" height="2.5" rx="1"/><rect class="tn" x="50" y="12" width="26" height="5" rx="1"/></g><g class="hd"><rect class="h" x="180" y="1" width="82" height="21" rx="3"/><rect class="rg lcs" x="186" y="6" width="10" height="2.5" rx="1"/><rect class="tn" x="186" y="12" width="26" height="5" rx="1"/></g><path class="t top" d="M85 29V120"/><path class="t" stroke="url(#illTopJgl)" d="M85 120C85 170 221 162.5 221 212.5"/><path class="t jgl" d="M221 212.5V268"/><path class="end" d="M78 29H92M214 268H228"/><g class="ch on"><rect class="c" x="47" y="36" width="76" height="12" rx="2"/><rect class="s top" x="47" y="36" width="3" height="12" rx="1"/><rect class="n" x="54" y="41" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="47" y="50.5" width="76" height="12" rx="2"/><rect class="s jgl" x="47" y="50.5" width="3" height="12" rx="1"/><rect class="n" x="54" y="55.5" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="47" y="65" width="76" height="12" rx="2"/><rect class="s mid" x="47" y="65" width="3" height="12" rx="1"/><rect class="n" x="54" y="70" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="47" y="79.5" width="76" height="12" rx="2"/><rect class="s bot" x="47" y="79.5" width="3" height="12" rx="1"/><rect class="n" x="54" y="84.5" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="47" y="94" width="76" height="12" rx="2"/><rect class="s sup" x="47" y="94" width="3" height="12" rx="1"/><rect class="n" x="54" y="99" width="28" height="2" rx="1"/></g><g class="ch on"><rect class="c" x="47" y="114" width="76" height="12" rx="2"/><rect class="s top" x="47" y="114" width="3" height="12" rx="1"/><rect class="n" x="54" y="119" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="47" y="128.5" width="76" height="12" rx="2"/><rect class="s jgl" x="47" y="128.5" width="3" height="12" rx="1"/><rect class="n" x="54" y="133.5" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="47" y="143" width="76" height="12" rx="2"/><rect class="s mid" x="47" y="143" width="3" height="12" rx="1"/><rect class="n" x="54" y="148" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="47" y="157.5" width="76" height="12" rx="2"/><rect class="s bot" x="47" y="157.5" width="3" height="12" rx="1"/><rect class="n" x="54" y="162.5" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="47" y="172" width="76" height="12" rx="2"/><rect class="s sup" x="47" y="172" width="3" height="12" rx="1"/><rect class="n" x="54" y="177" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="47" y="192" width="76" height="12" rx="2"/><rect class="s top" x="47" y="192" width="3" height="12" rx="1"/><rect class="n" x="54" y="197" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="47" y="206.5" width="76" height="12" rx="2"/><rect class="s jgl" x="47" y="206.5" width="3" height="12" rx="1"/><rect class="n" x="54" y="211.5" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="47" y="221" width="76" height="12" rx="2"/><rect class="s mid" x="47" y="221" width="3" height="12" rx="1"/><rect class="n" x="54" y="226" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="47" y="235.5" width="76" height="12" rx="2"/><rect class="s bot" x="47" y="235.5" width="3" height="12" rx="1"/><rect class="n" x="54" y="240.5" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="47" y="250" width="76" height="12" rx="2"/><rect class="s sup" x="47" y="250" width="3" height="12" rx="1"/><rect class="n" x="54" y="255" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="183" y="36" width="76" height="12" rx="2"/><rect class="s top" x="183" y="36" width="3" height="12" rx="1"/><rect class="n" x="190" y="41" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="183" y="50.5" width="76" height="12" rx="2"/><rect class="s jgl" x="183" y="50.5" width="3" height="12" rx="1"/><rect class="n" x="190" y="55.5" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="183" y="65" width="76" height="12" rx="2"/><rect class="s mid" x="183" y="65" width="3" height="12" rx="1"/><rect class="n" x="190" y="70" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="183" y="79.5" width="76" height="12" rx="2"/><rect class="s bot" x="183" y="79.5" width="3" height="12" rx="1"/><rect class="n" x="190" y="84.5" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="183" y="94" width="76" height="12" rx="2"/><rect class="s sup" x="183" y="94" width="3" height="12" rx="1"/><rect class="n" x="190" y="99" width="28" height="2" rx="1"/></g><rect class="abs" x="183" y="114" width="76" height="70" rx="3"/><rect class="n" x="207" y="148" width="28" height="2" rx="1"/><g class="ch dim"><rect class="c" x="183" y="192" width="76" height="12" rx="2"/><rect class="s top" x="183" y="192" width="3" height="12" rx="1"/><rect class="n" x="190" y="197" width="28" height="2" rx="1"/></g><g class="ch on"><rect class="c" x="183" y="206.5" width="76" height="12" rx="2"/><rect class="s jgl" x="183" y="206.5" width="3" height="12" rx="1"/><rect class="n" x="190" y="211.5" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="183" y="221" width="76" height="12" rx="2"/><rect class="s mid" x="183" y="221" width="3" height="12" rx="1"/><rect class="n" x="190" y="226" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="183" y="235.5" width="76" height="12" rx="2"/><rect class="s bot" x="183" y="235.5" width="3" height="12" rx="1"/><rect class="n" x="190" y="240.5" width="28" height="2" rx="1"/></g><g class="ch dim"><rect class="c" x="183" y="250" width="76" height="12" rx="2"/><rect class="s sup" x="183" y="250" width="3" height="12" rx="1"/><rect class="n" x="190" y="255" width="28" height="2" rx="1"/></g></svg>
+        <h3 data-i18n="landing.lire.2.titre">One thread per player</h3>
+        <p data-i18n="landing.lire.2.texte">A thread links a player's appearances, from one team to the next. Its colour gives the role, and switches at its midpoint when the player changes role. Its two ends mark the first and last Worlds; in between, hovering shows where they were in the years without Worlds.</p>
+      </article>
+      <article class="card">
+        <svg class="ill" viewBox="0 0 300 268" aria-hidden="true" focusable="false"><text class="yr" x="2" y="74">2017</text><text class="yr" x="2" y="152">2018</text><text class="yr" x="2" y="230">2019</text><g class="hd"><rect class="h" x="44" y="1" width="82" height="21" rx="3"/><rect class="rg lck" x="50" y="6" width="10" height="2.5" rx="1"/><rect class="tn" x="50" y="12" width="26" height="5" rx="1"/></g><g class="hd"><rect class="h" x="180" y="1" width="82" height="21" rx="3"/><rect class="rg lpl" x="186" y="6" width="10" height="2.5" rx="1"/><rect class="tn" x="186" y="12" width="26" height="5" rx="1"/></g><path class="t top void" d="M47 42C31 42 31 198 47 198"/><g class="run"><text x="93" y="33" text-anchor="end">★</text><rect class="n" x="95" y="30" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="47" y="36" width="76" height="12" rx="2"/><rect class="s top" x="47" y="36" width="3" height="12" rx="1"/><rect class="n" x="54" y="41" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="47" y="50.5" width="76" height="12" rx="2"/><rect class="s jgl" x="47" y="50.5" width="3" height="12" rx="1"/><rect class="n" x="54" y="55.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="47" y="65" width="37" height="12" rx="2"/><rect class="s mid" x="47" y="65" width="3" height="12" rx="1"/><rect class="n" x="54" y="70" width="21" height="2" rx="1"/></g><g class="ch"><rect class="c" x="86" y="65" width="37" height="12" rx="2"/><rect class="s mid" x="86" y="65" width="3" height="12" rx="1"/><rect class="n" x="93" y="70" width="21" height="2" rx="1"/></g><g class="ch"><rect class="c" x="47" y="79.5" width="76" height="12" rx="2"/><rect class="s bot" x="47" y="79.5" width="3" height="12" rx="1"/><rect class="n" x="54" y="84.5" width="28" height="2" rx="1"/><text class="mk" x="119" y="90" text-anchor="end">*</text></g><g class="ch"><rect class="c" x="47" y="94" width="76" height="12" rx="2"/><rect class="s sup" x="47" y="94" width="3" height="12" rx="1"/><rect class="n" x="54" y="99" width="28" height="2" rx="1"/></g><rect class="abs" x="47" y="114" width="76" height="70" rx="3"/><rect class="n" x="71" y="148" width="28" height="2" rx="1"/><g class="ch"><rect class="c" x="47" y="192" width="76" height="12" rx="2"/><rect class="s top" x="47" y="192" width="3" height="12" rx="1"/><rect class="n" x="54" y="197" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="47" y="206.5" width="76" height="12" rx="2"/><rect class="s jgl" x="47" y="206.5" width="3" height="12" rx="1"/><rect class="n" x="54" y="211.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="47" y="221" width="76" height="12" rx="2"/><rect class="s mid" x="47" y="221" width="3" height="12" rx="1"/><rect class="n" x="54" y="226" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="47" y="235.5" width="76" height="12" rx="2"/><rect class="s bot" x="47" y="235.5" width="3" height="12" rx="1"/><rect class="n" x="54" y="240.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="47" y="250" width="76" height="12" rx="2"/><rect class="s sup" x="47" y="250" width="3" height="12" rx="1"/><rect class="n" x="54" y="255" width="28" height="2" rx="1"/></g><rect class="abs" x="183" y="36" width="76" height="70" rx="3"/><rect class="n" x="207" y="70" width="28" height="2" rx="1"/><g class="run"><rect class="n" x="231" y="108" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="183" y="114" width="76" height="12" rx="2"/><rect class="s top" x="183" y="114" width="3" height="12" rx="1"/><rect class="n" x="190" y="119" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="183" y="128.5" width="76" height="12" rx="2"/><rect class="s jgl" x="183" y="128.5" width="3" height="12" rx="1"/><rect class="n" x="190" y="133.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="183" y="143" width="76" height="12" rx="2"/><rect class="s mid" x="183" y="143" width="3" height="12" rx="1"/><rect class="n" x="190" y="148" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="183" y="157.5" width="76" height="12" rx="2"/><rect class="s bot" x="183" y="157.5" width="3" height="12" rx="1"/><rect class="n" x="190" y="162.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="183" y="172" width="76" height="12" rx="2"/><rect class="s sup" x="183" y="172" width="3" height="12" rx="1"/><rect class="n" x="190" y="177" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="183" y="192" width="76" height="12" rx="2"/><rect class="s top" x="183" y="192" width="3" height="12" rx="1"/><rect class="n" x="190" y="197" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="183" y="206.5" width="76" height="12" rx="2"/><rect class="s jgl" x="183" y="206.5" width="3" height="12" rx="1"/><rect class="n" x="190" y="211.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="183" y="221" width="76" height="12" rx="2"/><rect class="s mid" x="183" y="221" width="3" height="12" rx="1"/><rect class="n" x="190" y="226" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="183" y="235.5" width="76" height="12" rx="2"/><rect class="s bot" x="183" y="235.5" width="3" height="12" rx="1"/><rect class="n" x="190" y="240.5" width="28" height="2" rx="1"/></g><g class="ch"><rect class="c" x="183" y="250" width="37" height="12" rx="2"/><rect class="s sup" x="183" y="250" width="3" height="12" rx="1"/><rect class="n" x="190" y="255" width="21" height="2" rx="1"/></g><g class="ch"><rect class="c" x="222" y="250" width="37" height="12" rx="2"/><rect class="s sup" x="222" y="250" width="3" height="12" rx="1"/><rect class="n" x="229" y="255" width="21" height="2" rx="1"/></g></svg>
+        <h3 data-i18n="landing.lire.3.titre">A few signs</h3>
+        <p data-i18n="landing.lire.3.texte">Two half-cells: a role shared between two players. An asterisk: an occasional rotation. A dotted thread: no professional game on record over the interval. Above a row: how far the team went.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- Computed by landing.js from data/teams.json, with the statistics drawer's own definitions:
+       hidden until then, and absent without the script. -->
+  <section class="section figures" id="figures" aria-labelledby="figTitle" hidden>
+    <h2 id="figTitle" data-i18n="landing.chiffres.titre">In figures</h2>
+    <dl class="stats" id="stats"></dl>
+    <p class="records" id="records"></p>
+    <p class="note" data-i18n="landing.chiffres.note">Computed when the page opens, from the data files, like the map's statistics.</p>
+  </section>
+
+  <section class="section method" id="method" aria-labelledby="methodTitle">
+    <h2 id="methodTitle" data-i18n="landing.methode.titre">Method and sources</h2>
+    <div class="method-grid">
+      <div class="prose">
+        <p data-i18n-html="about.methode">Each row shows the players who <b>actually played</b> that Worlds for the team, not the season's roster, drawn from a single source: Leaguepedia's game records. Four written rules turn those games into a lineup — who holds a role, when a role is shared, how a player is spelled — and the years outside Worlds come from the same source under a fifth. <b>Nothing is typed in from memory</b>: a script recomputes the whole dataset on every collection run and reports the slightest divergence, which makes it reproducible.</p>
+        <p data-i18n="landing.methode.region">A row's region is the league the team actually played in the year of the edition, not the one its organisation belongs to today. A player shows under the handle they bore that year, without their thread breaking.</p>
+        <p data-i18n="landing.methode.entre">Between two Worlds, the map says where a player was: the club, or clubs, where they played most that year, from the same game records. Where no professional game is on record, it says exactly that — never “retired”, never “no team”.</p>
+        <p data-i18n="landing.methode.verif">The data is plain JSON files, published with the code and checked on every change; each edition's sources are listed alongside. An error is reported with a source, and never corrected from memory.</p>
+        <p class="muted" data-i18n="landing.methode.limites">Not included yet: MSI, and a player's team-mates during their years outside Worlds.</p>
+      </div>
+      <ul class="links">
+        <li><a href="https://github.com/MrPa2a/rift-transfers/blob/main/docs/SOURCES.md" data-i18n="about.sources.lien">Method and sources, year by year</a> <span class="muted" data-i18n="about.sources.langue">(in French, with an English summary at the top)</span></li>
+        <li><a href="https://github.com/MrPa2a/rift-transfers/tree/main/data" data-i18n="landing.lien.donnees">The data files, on GitHub</a></li>
+        <li><a href="https://github.com/MrPa2a/rift-transfers/issues/new/choose" data-i18n="about.donnees">Report a data error</a></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="end">
+    <p class="end-title" data-i18n="landing.fin.titre">The whole history of Worlds, on one map.</p>
+    <a class="btn btn-main" href="map/" data-carte><span data-i18n="landing.cta">Open the map</span><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+  </section>
+</main>
+
+<footer class="foot">
+  <ul>
+    <li><span data-i18n="about.licence.code">Code under the licence</span> <a href="https://github.com/MrPa2a/rift-transfers/blob/main/LICENSE">MIT</a></li>
+    <li data-i18n="about.licence.donnees">Data compiled from Leaguepedia and Liquipedia, which keep their licence: CC BY-SA 3.0.</li>
+    <li><a href="https://github.com/MrPa2a/rift-transfers" data-i18n="about.depot">Source code and data, on GitHub</a></li>
+    <li><a href="https://github.com/MrPa2a/rift-transfers/issues/new/choose" data-i18n="about.signaler.titre">Report a problem</a></li>
+    <li data-i18n="about.riot">Fan project, not affiliated with Riot Games. League of Legends is a trademark of Riot Games, Inc.</li>
+    <li data-i18n="about.audience">Visits counted with Cloudflare Web Analytics: no cookies, no personal data.</li>
+  </ul>
+</footer>
+
+<!-- Audience measurement: Cloudflare Web Analytics, the site's one call to a third party, as on
+     the map. No cookie, no local storage, no personal data; the token is public by design. -->
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "5c18838c338542daa28d7e3d3eeaffee"}'></script>
 </body>
 </html>

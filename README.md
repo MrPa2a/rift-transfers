@@ -2,7 +2,7 @@
 
 Interactive map of the rosters of **every** team that played the League of Legends **World Championship, 2011 → 2026**. Each team is a column, each Worlds a row, and each player a thread coloured by role: follow a career from one team to the next, or a team's life down its column.
 
-**[Open the map](https://mrpa2a.github.io/rift-transfers/map/)** — in English or French.
+**[Open the map](https://mrpa2a.github.io/rift-transfers/map/)** — in English or French — or start from [the presentation page](https://mrpa2a.github.io/rift-transfers/).
 
 ![The Rift Transfers map with Fnatic selected: coloured threads follow its players to other teams, season after season](assets/og-image.png)
 
@@ -39,8 +39,8 @@ Nothing is typed in from memory: every lineup is derived from a single source, L
 Requires Node.js 18 or later. Nothing to install.
 
 ```bash
-npm run dev        # http://localhost:5173 — the root redirects to /map/
-npm run validate   # checks the data's consistency
+npm run dev        # http://localhost:5173 — the presentation page; the map is at /map/
+npm run validate   # checks the data's consistency, then the interface text
 ```
 
 The site has to be served by a web server: opening `map/index.html` straight from disk cannot load the JSON files.
@@ -48,18 +48,23 @@ The site has to be served by a web server: opening `map/index.html` straight fro
 ## Structure
 
 ```
-index.html              # root: redirects to /map/
+index.html              # presentation page, with the live map as its hero
 map/index.html          # the map
-sitemap.xml             # the map's three language variants, for search engines
-assets/css/styles.css   # styles (light and dark themes)
+sitemap.xml             # both pages in their three language variants, for search engines
+assets/css/base.css     # fonts and colour tokens, light and dark, shared by both pages
+assets/css/styles.css   # the map's styles
+assets/css/landing.css  # the presentation page's styles
 assets/js/app.js        # data loading and map rendering
 assets/js/i18n.js       # French / English dictionary of the interface
 assets/js/tour.js       # guided tour
 assets/js/report.js     # GitHub issues pre-filled from the map
+assets/js/demo.js       # the presentation page's live hero, played by the map itself
+assets/js/landing.js    # the presentation page: language, figures, live hero
 data/                   # JSON data and sources
 docs/SOURCES.md         # method and sources
 scripts/serve.mjs       # dependency-free development server
 scripts/validate-data.mjs   # data consistency
+scripts/validate-i18n.mjs   # interface text: both languages, and the presentation page's English
 scripts/fetch-worlds.mjs    # collects the starters from Leaguepedia
 ```
 

@@ -10,14 +10,15 @@
   <title>Rift Transfers</title>
   <!-- The interface text lives in assets/js/i18n.js, and `data-i18n` says which string goes
        where: a string is written only once, in both languages side by side. The metas, for their
-       part, carry their **English** version hard-coded — it is the site's default language, and
-       it is what a crawler that does not run the script reads. `i18n.js` rewrites them at load
-       time as on a language change. -->
-  <meta name="description" content="Interactive map of the rosters of every team that came to the 2011–2026 League of Legends World Championships: follow each player from one team to the next.">
+       part, also carry their **English** version hard-coded — it is the site's default language,
+       and it is what a crawler that does not run the script reads. `data-i18n-attr` names their
+       key, `i18n.js` rewrites them at load time as on a language change, and `npm run validate`
+       refuses any gap between the two copies. -->
+  <meta name="description" data-i18n-attr="content:page.description" content="Interactive map of the rosters of every team that came to the 2011–2026 League of Legends World Championships: follow each player from one team to the next.">
   <meta name="theme-color" content="#171b26" media="(prefers-color-scheme: dark)">
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <meta property="og:title" content="Rift Transfers">
-  <meta property="og:description" content="League of Legends Worlds rosters since 2011, and every player's transfers.">
+  <meta property="og:description" data-i18n-attr="content:page.og.description" content="League of Legends Worlds rosters since 2011, and every player's transfers.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Rift Transfers">
   <!-- Link previews (Reddit, Discord, X, Slack…) never run the script and need absolute URLs:
@@ -28,7 +29,7 @@
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="The Rift Transfers map with Fnatic selected: coloured threads follow its players to other teams, season after season.">
+  <meta property="og:image:alt" data-i18n-attr="content:page.og.image.alt" content="The Rift Transfers map with Fnatic selected: coloured threads follow its players to other teams, season after season.">
   <meta property="og:locale" content="en_US">
   <meta property="og:locale:alternate" content="fr_FR">
   <meta name="twitter:card" content="summary_large_image">
@@ -45,60 +46,35 @@
   <link rel="alternate" hreflang="x-default" href="https://mrpa2a.github.io/rift-transfers/map/">
   <link rel="alternate" hreflang="en" href="https://mrpa2a.github.io/rift-transfers/map/?lang=en">
   <link rel="alternate" hreflang="fr" href="https://mrpa2a.github.io/rift-transfers/map/?lang=fr">
-  <!-- Structured data, in English like the other metas. Two entities: the map as an application,
-       and the data it publishes as a Dataset — which is literally what the project is, and what
-       Google Dataset Search indexes. No offers or rating: the application rich result would
-       require a rating, and there is none to give. No figures either (120 teams, 749 players):
-       they would go stale at the next collection run, where the years cannot. The data licence is
-       the one its sources impose, as stated in the README and the About panel. -->
+  <!-- Structured data, in English like the other metas. This page is the application; what it
+       publishes, the Dataset, is described once, on the landing page — the page that carries the
+       method as real text — and referred to here by its @id. No offers or rating: the application
+       rich result would require a rating, and there is none to give. No figures either (120 teams,
+       749 players): they would go stale at the next collection run. -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "WebApplication",
-        "@id": "https://mrpa2a.github.io/rift-transfers/map/#app",
-        "name": "Rift Transfers",
-        "url": "https://mrpa2a.github.io/rift-transfers/map/",
-        "description": "Interactive map of the rosters of every team that came to the 2011–2026 League of Legends World Championships: follow each player from one team to the next.",
-        "applicationCategory": "ReferenceApplication",
-        "operatingSystem": "Any",
-        "browserRequirements": "Requires JavaScript.",
-        "inLanguage": ["en", "fr"],
-        "isAccessibleForFree": true,
-        "image": "https://mrpa2a.github.io/rift-transfers/assets/og-image.png",
-        "license": "https://github.com/MrPa2a/rift-transfers/blob/main/LICENSE",
-        "creator": { "@id": "https://github.com/MrPa2a#person" },
-        "about": { "@id": "https://mrpa2a.github.io/rift-transfers/map/#dataset" }
-      },
-      {
-        "@type": "Dataset",
-        "@id": "https://mrpa2a.github.io/rift-transfers/map/#dataset",
-        "name": "League of Legends World Championship rosters, 2011–2026",
-        "description": "Starting lineups of every team that played the League of Legends World Championship, from 2011 to 2026, with each player's role, nationality and handle at the time, each team's region in the year of the edition, its placement, and the teams a player went through between two Worlds appearances. Every lineup is derived from Leaguepedia's game records by written selection rules; nothing is typed in from memory.",
-        "url": "https://mrpa2a.github.io/rift-transfers/map/",
-        "sameAs": "https://github.com/MrPa2a/rift-transfers/tree/main/data",
-        "keywords": ["League of Legends", "esports", "World Championship", "Worlds", "rosters", "lineups", "player transfers"],
-        "temporalCoverage": "2011/2026",
-        "measurementTechnique": "Derived from Leaguepedia's ScoreboardPlayers game records by four written selection rules, documented in docs/SOURCES.md.",
-        "isBasedOn": { "@type": "WebSite", "name": "Leaguepedia", "url": "https://lol.fandom.com/" },
-        "license": "https://creativecommons.org/licenses/by-sa/3.0/",
-        "isAccessibleForFree": true,
-        "creator": { "@type": "Person", "@id": "https://github.com/MrPa2a#person", "name": "MrPa2a", "url": "https://github.com/MrPa2a" },
-        "distribution": [
-          { "@type": "DataDownload", "name": "Teams and lineups", "encodingFormat": "application/json", "contentUrl": "https://mrpa2a.github.io/rift-transfers/data/teams.json" },
-          { "@type": "DataDownload", "name": "Players and nationalities", "encodingFormat": "application/json", "contentUrl": "https://mrpa2a.github.io/rift-transfers/data/players.json" },
-          { "@type": "DataDownload", "name": "Placements", "encodingFormat": "application/json", "contentUrl": "https://mrpa2a.github.io/rift-transfers/data/results.json" },
-          { "@type": "DataDownload", "name": "Careers between Worlds appearances", "encodingFormat": "application/json", "contentUrl": "https://mrpa2a.github.io/rift-transfers/data/careers.json" },
-          { "@type": "DataDownload", "name": "Sources", "encodingFormat": "application/json", "contentUrl": "https://mrpa2a.github.io/rift-transfers/data/sources.json" }
-        ]
-      }
-    ]
+    "@type": "WebApplication",
+    "@id": "https://mrpa2a.github.io/rift-transfers/map/#app",
+    "name": "Rift Transfers",
+    "url": "https://mrpa2a.github.io/rift-transfers/map/",
+    "description": "Interactive map of the rosters of every team that came to the 2011–2026 League of Legends World Championships: follow each player from one team to the next.",
+    "applicationCategory": "ReferenceApplication",
+    "operatingSystem": "Any",
+    "browserRequirements": "Requires JavaScript.",
+    "inLanguage": ["en", "fr"],
+    "isAccessibleForFree": true,
+    "image": "https://mrpa2a.github.io/rift-transfers/assets/og-image.png",
+    "license": "https://github.com/MrPa2a/rift-transfers/blob/main/LICENSE",
+    "creator": { "@type": "Person", "@id": "https://github.com/MrPa2a#person", "name": "MrPa2a", "url": "https://github.com/MrPa2a" },
+    "isPartOf": { "@id": "https://mrpa2a.github.io/rift-transfers/#website" },
+    "about": { "@id": "https://mrpa2a.github.io/rift-transfers/#dataset" }
   }
   </script>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/barlow-condensed-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/styles.css">
   <script type="module" src="assets/js/app.js"></script>
 </head>
@@ -272,8 +248,22 @@
 </div>
 
 <!-- Audience measurement: Cloudflare Web Analytics, the site's one call to a third party. No
-     cookie, no local storage, no personal data; the token below is public by design. Only this
-     page carries it — the root redirects here at once and would count every visit twice. -->
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "5c18838c338542daa28d7e3d3eeaffee"}'></script>
+     cookie, no local storage, no personal data; the token below is public by design. The landing
+     page carries the same tag.
+
+     Here it is added by a script rather than written as a tag, for one reason: the landing page's
+     live hero is this very page, framed with `?demo` (assets/js/demo.js). Counted, every visit to
+     the landing would also count as a visit to the map. Same attributes as the plain tag, and the
+     same test as app.js — `?demo` only counts when the page is framed, so a shared `?demo` link
+     is still an ordinary, counted visit. -->
+<script>
+  if (!(new URLSearchParams(location.search).has("demo") && window.parent !== window)) {
+    const s = document.createElement("script");
+    s.type = "module";
+    s.src = "https://static.cloudflareinsights.com/beacon.min.js";
+    s.setAttribute("data-cf-beacon", '{"token": "5c18838c338542daa28d7e3d3eeaffee"}');
+    document.body.append(s);
+  }
+</script>
 </body>
 </html>
