@@ -87,6 +87,10 @@ const T = {
     fr: "Aucune colonne de la sélection dans la période affichée",
     en: "No column of the selection within the displayed period",
   },
+  "sel.indice": {
+    fr: "Clique pour épingler ce joueur : le bouton « {iso} » apparaîtra ici, pour ne garder que ses colonnes.",
+    en: "Click to pin this player: an “{iso}” button will appear here, to keep only their columns.",
+  },
 
   // ---------- filter drawer ----------
   "drawer.fermer": { fr: "Fermer", en: "Close" },
@@ -403,6 +407,124 @@ const T = {
   "rech.vide": {
     fr: "Aucun joueur ni aucune équipe de ce nom.",
     en: "No player or team by that name.",
+  },
+
+  // ---------- guided tour ----------
+  // No string here names a player, a team or a year: the tour's subjects are checked against the
+  // data and may be replaced by a fallback, so their names always arrive as parameters. The labels
+  // of other controls — {iso}, {tout}, {filtre}, {autres} — are passed in from their own keys.
+  "tour.btn.titre": { fr: "Visite guidée", en: "Guided tour" },
+  "tour.aria": { fr: "Visite guidée de la carte", en: "Guided tour of the map" },
+  "tour.fermer": { fr: "Fermer la visite", en: "Close the tour" },
+  "tour.suivant": { fr: "Suivant", en: "Next" },
+  "tour.precedent": { fr: "Précédent", en: "Back" },
+  "tour.passer": { fr: "Passer cet acte", en: "Skip this act" },
+  "tour.commencer": { fr: "Commencer", en: "Start" },
+  "tour.plusTard": { fr: "Plus tard", en: "Later" },
+  "tour.terminer": { fr: "Terminer", en: "Finish" },
+  "tour.recommencer": { fr: "Recommencer", en: "Start over" },
+  "tour.reprendre.etape": { fr: "Reprendre à l'étape {i}", en: "Resume at step {i}" },
+  "tour.pied": {
+    fr: "Relançable à tout moment par <kbd>?</kbd>",
+    en: "Replay it any time with <kbd>?</kbd>",
+  },
+  "tour.progres": { fr: "Acte {acte} · {nom} · {i} / {total}", en: "Act {acte} · {nom} · {i} / {total}" },
+  "tour.acte.1": { fr: "Lire", en: "Read" },
+  "tour.acte.2": { fr: "Interroger", en: "Query" },
+  "tour.acte.3": { fr: "Dégrossir", en: "Narrow down" },
+  "tour.intro.titre": { fr: "Lire la carte en une minute", en: "Read the map in a minute" },
+  "tour.intro.corps": {
+    fr: "{n} étapes en trois actes : lire, interroger, dégrossir. La visite manipule la vraie carte, et tout revient comme avant quand tu la quittes.",
+    en: "{n} steps in three acts: read, query, narrow down. The tour drives the real map, and everything goes back the way it was when you leave.",
+  },
+  "tour.reprise.titre": { fr: "Reprendre la visite ?", en: "Resume the tour?" },
+  "tour.reprise.corps": {
+    fr: "Tu l'avais quittée à l'étape {i} sur {total}.",
+    en: "You left it at step {i} of {total}.",
+  },
+  "tour.ferme": { fr: "Visite fermée", en: "Tour closed" },
+  "tour.ferme.reprendre": { fr: "Reprendre", en: "Resume" },
+
+  "tour.s1.titre": { fr: "Une colonne, une équipe", en: "One column, one team" },
+  "tour.s1.corps": {
+    fr: "Chaque colonne est une équipe — ici <b>{equipe}</b>, venue {n} fois aux Worlds. Chaque rangée est une édition, de {de} en haut à {a} en bas. Chaque case est un titulaire, et un fil coloré relie les apparitions d'un même joueur : sa couleur dit son poste.",
+    en: "Each column is a team — here <b>{equipe}</b>, at Worlds {n} times. Each row is an edition, from {de} at the top to {a} at the bottom. Each cell is a starter, and a coloured thread links one player's appearances: its colour gives their role.",
+  },
+  "tour.s1.geste": {
+    fr: "Fais glisser la carte pour te déplacer ; la molette zoome.",
+    en: "Drag the map to move around; the wheel zooms.",
+  },
+  "tour.s2.titre": { fr: "Suivre un fil", en: "Following a thread" },
+  "tour.s2.corps": {
+    fr: "<b>{joueur}</b> a changé de poste, {de} puis {vers} : son fil bascule de couleur en son milieu. Ses deux bouts, posés entre deux éditions, marquent son premier et son dernier Worlds.",
+    en: "<b>{joueur}</b> changed role, {de} then {vers}: their thread switches colour at its midpoint. Its two ends, set between two editions, mark their first and last Worlds.",
+  },
+  // Only used when the fallback subject never played for the anchor team: the camera moves, and
+  // the step says so.
+  "tour.s2.ailleurs": {
+    fr: " La carte se déplace : {joueur} n'a jamais joué les Worlds avec {equipe}.",
+    en: " The map moves: {joueur} never played Worlds for {equipe}.",
+  },
+  "tour.s2.geste": {
+    fr: "Clique une autre case pour lire un autre fil.",
+    en: "Click another cell to read another thread.",
+  },
+  "tour.s3.titre": { fr: "Les autres signes", en: "The other signs" },
+  "tour.s3.corps": {
+    fr: "La légende dit le reste : en pointillé, aucune partie professionnelle recensée sur l'intervalle ; deux demi-cases, un poste partagé, et <b>*</b> une rotation ponctuelle ; une case grisée, une équipe absente des Worlds ; au-dessus de la rangée, le parcours de l'équipe.",
+    en: "The legend says the rest: dotted, no professional game on record over the interval; two half-cells, a shared role, and <b>*</b> an occasional rotation; a greyed-out cell, a team absent from Worlds; above the row, the team's run.",
+  },
+  "tour.s3.geste": {
+    fr: "Elle reste à portée, repliée en bas à gauche.",
+    en: "It stays within reach, folded at the bottom left.",
+  },
+  "tour.s4.titre": { fr: "Une carrière, d'un geste", en: "A career in one gesture" },
+  "tour.s4.corps": {
+    fr: "Survoler une case isole la carrière d'un joueur ; un clic l'épingle et ouvre ce panneau. <b>{joueur}</b> : {n} Worlds avec {k} équipes, et ses années hors Worlds en cases rayées — un club sans colonne, comme {club} en {annee}, s'inscrit dans « {autres} ». Un clic sur l'en-tête d'une colonne fait de même pour une équipe.",
+    en: "Hovering a cell isolates a player's career; a click pins it and opens this panel. <b>{joueur}</b>: {n} Worlds with {k} teams, and their years outside Worlds as hatched cells — a club with no column, like {club} in {annee}, appears under “{autres}”. Clicking a column header does the same for a team.",
+  },
+  "tour.s4.geste": {
+    fr: "À toi : clique un autre joueur, ou l'en-tête d'une équipe.",
+    en: "Your turn: click another player, or a team's header.",
+  },
+  "tour.s5.titre": { fr: "Une édition, d'un clic", en: "An edition in one click" },
+  "tour.s5.corps": {
+    fr: "Un clic sur une année de l'axe isole son édition : {annee} ne garde que ses équipes, plus celles d'où viennent ses joueurs et où ils vont. Les deux rangées voisines s'estompent et ne montrent que ces arrivées et ces départs. <b>Pour en sortir</b> : reclique {annee}, ou <kbd>Échap</kbd>.",
+    en: "Clicking a year on the axis isolates its edition: {annee} keeps only its teams, plus those its players come from and go to. The two neighbouring rows dim and show only those arrivals and departures. <b>To leave</b>: click {annee} again, or press <kbd>Esc</kbd>.",
+  },
+  "tour.s5.geste": {
+    fr: "Clique une année voisine : l'isolement s'y déplace.",
+    en: "Click a neighbouring year: the isolation moves there.",
+  },
+  "tour.s6.titre": { fr: "Isoler une sélection", en: "Isolating a selection" },
+  "tour.s6.corps": {
+    fr: "Le bouton <b>{iso}</b> du panneau ne garde que les colonnes par lesquelles la sélection est passée : {n} pour {joueur}. Quatre sorties : « {tout} » rend la carte en gardant la sélection ; le × la relâche ; <kbd>Échap</kbd> fait les deux ; sélectionner quelqu'un d'autre y reporte l'isolement.",
+    en: "The panel's <b>{iso}</b> button keeps only the columns the selection has passed through: {n} for {joueur}. Four ways out: “{tout}” gives the map back while keeping the selection; the × releases it; <kbd>Esc</kbd> does both; selecting someone else carries the isolation over to them.",
+  },
+  "tour.s6.geste": {
+    fr: "Essaie « {tout} », puis « {iso} » à nouveau.",
+    en: "Try “{tout}”, then “{iso}” again.",
+  },
+  "tour.s7.titre": { fr: "Dégrossir la carte", en: "Thinning the map out" },
+  "tour.s7.corps": {
+    fr: "Le filtre « {filtre} » ne garde que les équipes venues souvent : {n} colonnes sur {total} à partir de {min} apparitions. Les joueurs des équipes écartées ne disparaissent pas : ils passent dans la colonne « {autres} », tout à droite.",
+    en: "The “{filtre}” filter keeps only the teams that came often: {n} of {total} columns from {min} appearances up. Players from the teams set aside do not vanish: they move into the “{autres}” column, far right.",
+  },
+  "tour.s7.geste": { fr: "Essaie les autres seuils.", en: "Try the other thresholds." },
+  "tour.s8.titre": { fr: "Aller droit au but", en: "Straight to the point" },
+  "tour.s8.corps": {
+    fr: "La barre cherche les joueurs <b>et</b> les équipes — sous un pseudo, même d'époque, un code, un nom ou un libellé court, accents et casse indifférents. Choisir un résultat y emmène la carte : ici, {cible}.",
+    en: "The bar searches players <b>and</b> teams — by handle, period handles included, code, name or short label, accents and case ignored. Picking a result takes the map there: here, {cible}.",
+  },
+  "tour.s8.geste": { fr: "Tape un nom.", en: "Type a name." },
+
+  // ---------- gesture summary ----------
+  // The end of the tour, and the block the "About" panel reuses as is (`recapitulatif()` in
+  // tour.js): the gestures with no affordance that are not worth a step of their own.
+  "recap.titre": { fr: "Gestes à connaître", en: "Gestures worth knowing" },
+  "recap.html": {
+    fr: "<ul class=\"recap\"><li><b>Équipe isolée</b> : survoler une case n'allume que la ligne de ce joueur, sans toucher aux colonnes.</li><li><b>Clic sur une équipe</b> : deux modes, « {modeA} » ou « {modeB} », à choisir dans les filtres — leur <kbd>?</kbd> les explique.</li><li><b>Pilule de région</b>, dans les filtres : son survol donne le nom de la ligue et sa zone.</li><li><kbd>Maj</kbd> + molette : défilement horizontal · <kbd>Ctrl</kbd> + molette, ou pincer : zoom.</li><li><b>Clavier</b>, sur la carte : <kbd>+</kbd> <kbd>−</kbd> zooment, les flèches déplacent, <kbd>Échap</kbd> libère un isolement.</li><li>Le bouton <kbd>?</kbd> relance la visite guidée.</li></ul>",
+    en: "<ul class=\"recap\"><li><b>Isolated team</b>: hovering a cell lights up that player's line alone, leaving the columns untouched.</li><li><b>Clicking a team</b>: two modes, “{modeA}” or “{modeB}”, chosen in the filters — their <kbd>?</kbd> explains them.</li><li><b>Region pill</b>, in the filters: hovering it gives the league's name and its area.</li><li><kbd>Shift</kbd> + wheel: horizontal scrolling · <kbd>Ctrl</kbd> + wheel, or pinch: zoom.</li><li><b>Keyboard</b>, on the map: <kbd>+</kbd> <kbd>−</kbd> zoom, the arrows pan, <kbd>Esc</kbd> releases an isolation.</li><li>The <kbd>?</kbd> button replays the guided tour.</li></ul>",
   },
 
   // ---------- loading error ----------

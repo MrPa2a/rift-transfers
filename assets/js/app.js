@@ -9,6 +9,9 @@
 // Throughout this file `t` is already the variable for a team — hence `tr` and `trn` for
 // translating, rather than a hundred-line rename that would gain nothing.
 import { t as tr, tn as trn, ord, lang, setLang, LANGS, surChangement } from "./i18n.js";
+// The guided tour gets the map through the `pilote` object built at the bottom of this file, and
+// through nothing else: the import only goes one way.
+import { installerVisite } from "./tour.js";
 
 // ---------- data loading ----------
 const ROLES = ["top", "jgl", "mid", "bot", "sup"];           // internal keys (CSS classes)
@@ -284,13 +287,16 @@ const APPS=new Map(teams.map(t=>[t.code,Object.keys(t.years).length]));
 const PRESENCE=[1,2,3,5];
 const DEFAULT_MIN_APPS=1;
 
-const state={roles:new Set(ROLES),regions:new Set(REGIONS),hiddenTeams:new Set(),minApps:DEFAULT_MIN_APPS,showNat:false,showSen:false,teamMode:"players",pinned:null,pinnedTeam:null,hover:null,
+// The state the map opens on, as a function: the guided tour starts every step from it, and each
+// call must hand out fresh `Set`s, never shared ones.
+const etatDefaut=()=>({roles:new Set(ROLES),regions:new Set(REGIONS),hiddenTeams:new Set(),minApps:DEFAULT_MIN_APPS,showNat:false,showSen:false,teamMode:"players",pinned:null,pinnedTeam:null,hover:null,
   yearFrom:ALL_YEARS[0],yearTo:ALL_YEARS.at(-1),
   // The two isolations. They do not replace the selection: hovering and plain clicking keep
   // exactly their former behaviour — highlighting, no reflow. They are two further gestures,
   // and each has its own control: the year axis for `annee`, a button in the detail panel for
   // `isole`.
-  annee:null, isole:false};
+  annee:null, isole:false});
+const state=etatDefaut();
 // A column is displayed if its region is, **and** if it reaches the presence threshold, **and**
 // if the team is not hidden one by one: the three filters compound, each acting inside the
 // subset already kept by the previous ones. A team ruled out by any of the three spills into
@@ -706,7 +712,9 @@ function render(){
       :mort?tr("rail.morte",{annee:y})
       :state.annee!=null?tr("rail.deplacer",{annee:y})
       :tr("rail.isoler",{annee:y});
-    return `<button type="button" class="ylab${on?" iso":""}" data-y="${yTop(y)+2.5*STEP}" data-year="${y}" aria-pressed="${on}" aria-disabled="${mort}" title="${aide}">${y}${y===ONGOING_YEAR?`<small>${tr("rail.ongoing")}</small>`:""}</button>`;
+    // The year sits in its own span: it carries the dotted underline that announces the click,
+    // and "ONGOING" underneath must not inherit it.
+    return `<button type="button" class="ylab${on?" iso":""}" data-y="${yTop(y)+2.5*STEP}" data-year="${y}" aria-pressed="${on}" aria-disabled="${mort}" title="${aide}"><span>${y}</span>${y===ONGOING_YEAR?`<small>${tr("rail.ongoing")}</small>`:""}</button>`;
   }).join("");
   // One case the entry check does not see is left: the isolated edition has taken the pinned
   // team's column away. The selection falls, and if an isolation followed it, the reduction just
@@ -747,13 +755,18 @@ function zoomAt(px,py,f){
   view.x=px-(px-view.x)*r; view.y=py-(py-view.y)*r; view.k=k2; applyView();
 }
 let anim=null;
+// Where the running animation is heading, `null` once it has landed. A snapshot taken mid-flight
+// — the guided tour opening while a `?q=` framing is still under way — must record the view the
+// user is about to get, not a frame of the transition.
+let cibleVue=null;
 function animateTo(t){
   cancelAnimationFrame(anim);
+  cibleVue={...t};
   const s={...view}, t0=performance.now(), d=matchMedia("(prefers-reduced-motion: reduce)").matches?0:320;
   const step=now=>{
     const p=d?Math.min(1,(now-t0)/d):1, e=1-Math.pow(1-p,3);
     view.x=s.x+(t.x-s.x)*e; view.y=s.y+(t.y-s.y)*e; view.k=s.k+(t.k-s.k)*e; applyView();
-    if(p<1) anim=requestAnimationFrame(step);
+    if(p<1) anim=requestAnimationFrame(step); else cibleVue=null;
   };
   anim=requestAnimationFrame(step);
 }
@@ -1033,7 +1046,11 @@ function apply(){
     // player may simply not have qualified again, and the source's coverage has its limits.
     const vu=SEEN.get(p.id);
     const bornes=vu?`<br><span class="hint">${tr("detail.bornes",{de:vu[0],a:vu[1]})}</span>`:"";
-    out.innerHTML=`<b class="nm">${p.name}</b>${nat?`<span class="hint">${pays(nat)} · </span>`:""}${chaine}${bornes}`;
+    // On a mere hover, the panel announces the Isolate button before it exists: it only appears
+    // once a selection is pinned, and nothing used to prepare for it — one came across it by
+    // chance. A team pinned underneath is excluded: its button is already there.
+    const indice=hover&&!pinned&&!pinnedTeam?`<br><span class="indice">${tr("sel.indice",{iso:tr("sel.iso")})}</span>`:"";
+    out.innerHTML=`<b class="nm">${p.name}</b>${nat?`<span class="hint">${pays(nat)} · </span>`:""}${chaine}${bornes}${indice}`;
   } else if(lin){
     const t=teams.find(t=>t.code===pinnedTeam);
     out.innerHTML=`<b class="nm">${t.name}</b><span class="hint">${tr("mode.lineage")}</span><br>${tr("detail.lineage.depuis")}${fmtFlow(lin.from)}<br>${tr("detail.lineage.vers")}${fmtFlow(lin.to)} <span class="hint">${tr("detail.lineage.debut",{n:lin.debut})}</span>`;
@@ -1049,6 +1066,9 @@ function apply(){
   // The button only makes sense on a **settled** selection: isolating on hover would rearrange
   // the map as the mouse goes by. It is a toggle, hence `aria-pressed` and not an action.
   const iso=$("selIso"), pose=!!pinned||!!pinnedTeam;
+  // Its appearance is marked, once: a short ring that says "something new, here". Restarting the
+  // animation takes removing the class and forcing a reflow before putting it back.
+  if(iso.hidden&&pose){ iso.classList.remove("annonce"); void iso.offsetWidth; iso.classList.add("annonce"); }
   iso.hidden=!pose;
   sel.classList.toggle("avec-iso",pose);
   iso.setAttribute("aria-pressed",String(state.isole));
@@ -1309,6 +1329,8 @@ document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>setDrawer(b.d
 // Escape, at the head of the existing cascade: isolation first, then the tooltip, then the
 // drawers. A single press gives back the whole map — two levels for two isolations would have to
 // be guessed at, whereas "Escape undoes what I have just done" does not.
+// During the guided tour this whole cascade is suspended: tour.js catches Escape first, in the
+// capture phase, and gives it its own two-press meaning.
 document.addEventListener("keydown",e=>{
   if(e.key!=="Escape") return;
   if(toutMontrer()) return;
@@ -1365,7 +1387,7 @@ const eraBtns=ERAS.map(([cle,from,to])=>{
 yFrom.addEventListener("change",()=>setPeriode(+yFrom.value,state.yearTo));
 yTo.addEventListener("change",()=>setPeriode(state.yearFrom,+yTo.value));
 
-ROLES.forEach(r=>pill($("roles"),ROLE_NAME[r],`var(--${r})`,true,()=>{state.roles.has(r)?state.roles.delete(r):state.roles.add(r); apply(); return state.roles.has(r);}));
+const roleBtns=new Map(ROLES.map(r=>[r,pill($("roles"),ROLE_NAME[r],`var(--${r})`,true,()=>{state.roles.has(r)?state.roles.delete(r):state.roles.add(r); apply(); return state.roles.has(r);})]));
 const regionBtns=new Map(REGIONS.map(r=>[r,pill($("regions"),r,regionVar(r),true,()=>{
   if(state.regions.has(r)){ if(state.regions.size===1) return true; state.regions.delete(r); } else state.regions.add(r);
   render(); return state.regions.has(r);
@@ -1396,14 +1418,16 @@ function majRegionPills(){
 // Presence threshold: "at least N Worlds appearances". One bound, not two — a period is an
 // interval, a number of appearances is a threshold, and an upper bound would answer no question
 // anybody asks.
+// A function rather than the pill's own handler: the guided tour sets the threshold too, and it
+// must go through the same path as the click.
+function setPresence(n){
+  state.minApps=n;
+  presenceBtns.forEach((x,i)=>x.setAttribute("aria-pressed",PRESENCE[i]===n));
+  state.pinnedTeam=null; state.hover=null;
+  render();
+}
 const presenceBtns=PRESENCE.map(n=>{
-  const b=pill($("presence"),`${n}+`,null,n===DEFAULT_MIN_APPS,()=>{
-    state.minApps=n;
-    presenceBtns.forEach(x=>x.setAttribute("aria-pressed",x===b));
-    state.pinnedTeam=null; state.hover=null;
-    render();
-    return true;
-  },"pill mode");
+  const b=pill($("presence"),`${n}+`,null,n===DEFAULT_MIN_APPS,()=>{ setPresence(n); return true; },"pill mode");
   const combien=teams.filter(t=>APPS.get(t.code)>=n).length;
   libelle(()=>{
     if(n===1){ b.textContent=tr("presence.toutes"); b.title=tr("presence.toutes.titre",{n:combien}); }
@@ -1568,6 +1592,117 @@ surChangement(()=>{
   if(!qlist.hidden) majListe();
 });
 
+// ---------- pilot: driving the map from a script ----------
+// What the guided tour may do to the map, and nothing more. Every gesture goes through the
+// function the interface itself calls — `selectPlayer`, `isolerAnnee`, `setPresence`… —, so a
+// scripted step and a click can never diverge. The tour's cards and veil live in tour.js; this
+// object knows nothing about them, and the landing page's looping hero is meant to reuse it alone.
+//
+// Pills and checkboxes keep their own pressed state, set by their handler: a script that changes
+// `state` behind their back must therefore resynchronise them, or the drawer would contradict the
+// map.
+function synchroniserControles(){
+  roleBtns.forEach((b,r)=>b.setAttribute("aria-pressed",state.roles.has(r)));
+  regionBtns.forEach((b,r)=>b.setAttribute("aria-pressed",state.regions.has(r)));
+  presenceBtns.forEach((b,i)=>b.setAttribute("aria-pressed",PRESENCE[i]===state.minApps));
+  modeBtns.forEach((b,i)=>b.setAttribute("aria-pressed",["players","lineage"][i]===state.teamMode));
+  $("optNat").checked=state.showNat; $("optSen").checked=state.showSen;
+  remplirAnnees();
+}
+// Screen rectangle clipped to the viewport, or `null` if nothing of it is on screen.
+function dansVp(r){
+  const v=vp.getBoundingClientRect();
+  const o={left:Math.max(r.left,v.left),top:Math.max(r.top,v.top),right:Math.min(r.right,v.right),bottom:Math.min(r.bottom,v.bottom)};
+  return o.right-o.left>2&&o.bottom-o.top>2?o:null;
+}
+const versEcran=(x,y)=>{ const v=vp.getBoundingClientRect(); return {x:v.left+view.x+x*view.k,y:v.top+view.y+y*view.k}; };
+const pilote={
+  // Read-only access to the data, for whoever has to choose what to show.
+  donnees:{teams,players,annees:ALL_YEARS,presence:PRESENCE,nomPoste:r=>ROLE_NAME[r]},
+
+  // Snapshot and restoration. `state` is flat — three `Set`s and scalars —, plus the view, the
+  // drawers, the legend and the search field: that is all a visitor can have set up.
+  capturer(){
+    return {
+      state:{...state,roles:new Set(state.roles),regions:new Set(state.regions),hiddenTeams:new Set(state.hiddenTeams),hover:null},
+      view:{...(cibleVue||view)},
+      filtres:$("filters").classList.contains("open"),stats:$("statsDrawer").classList.contains("open"),
+      legende:$("legend").open,q:q.value,
+    };
+  },
+  restaurer(s){
+    Object.assign(state,s.state,{roles:new Set(s.state.roles),regions:new Set(s.state.regions),hiddenTeams:new Set(s.state.hiddenTeams)});
+    q.value=s.q; fermerListe(); closeTip();
+    setDrawer("filters",s.filtres); setDrawer("statsDrawer",s.stats); $("legend").open=s.legende;
+    synchroniserControles(); render();
+    // A framing may still be under way: it would overwrite the restored view on its next frame.
+    cancelAnimationFrame(anim); cibleVue=null;
+    Object.assign(view,s.view); applyView();
+  },
+  // The map as it opens: default filters, no selection, no isolation, drawers and legend closed.
+  // The view is left alone — framing is each caller's business.
+  reinitialiser(){
+    Object.assign(state,etatDefaut());
+    q.value=""; fermerListe(); closeTip();
+    setDrawer("filters",false); setDrawer("statsDrawer",false); $("legend").open=false;
+    synchroniserControles(); render();
+  },
+
+  // Gestures.
+  survoler(id){ state.pinned=null; state.pinnedTeam=null; state.hover=id; apresSelection(); },
+  selectionnerJoueur:selectPlayer,
+  selectionnerEquipe:selectTeam,
+  isolerAnnee,
+  basculerIsolement,
+  toutMontrer,
+  isolationActive:()=>state.isole||state.annee!=null,
+  // What is selected and isolated right now — the visitor may have changed it since the script did.
+  etat:()=>({joueur:state.pinned||state.hover,equipe:state.pinnedTeam,annee:state.annee,isole:state.isole}),
+  fixerPresence:setPresence,
+  ouvrirTiroir:(id,ouvert)=>setDrawer(id,ouvert),
+  ouvrirLegende:ouverte=>{ $("legend").open=ouverte; },
+  // Typing into the search bar, then picking a result — by its player id or team code when given,
+  // otherwise the active entry, the one Enter would take.
+  saisir(texte){ q.value=texte; majListe(); },
+  valider(cle){
+    const i=cle!=null?options.findIndex(o=>!o.mort&&(o.kind==="j"?o.id===cle:o.code===cle)):-1;
+    choisir(i>=0?i:actif);
+  },
+
+  // Framing.
+  cadrerJoueur,
+  cadrerEquipe(code){ const c=cols.find(c=>c.t&&c.t.code===code); if(c) cadrerColonne(c.t,c); },
+  toutCadrer:fitAll,
+  nbColonnes:()=>cols.filter(c=>!c.other).length,
+
+  // Geometry on screen, for whoever has to point at something.
+  // The whole map: headers, year axis and viewport.
+  rectCarte(){
+    const h=hdr.getBoundingClientRect(), v=vp.getBoundingClientRect();
+    return {left:Math.min(rail.getBoundingClientRect().left,v.left),top:h.top,right:v.right,bottom:v.bottom};
+  },
+  rectColonne(code){
+    const c=cols.find(c=>c.t&&c.t.code===code); if(!c) return null;
+    const a=versEcran(c.x,0), h=hdr.getBoundingClientRect();
+    const r=dansVp({left:a.x,right:a.x+c.w*view.k,top:-Infinity,bottom:Infinity});
+    return r&&{...r,top:h.top};
+  },
+  rectAnnee(y){
+    if(!YEARS.includes(y)) return null;
+    const a=versEcran(0,yTop(y)-24), b=versEcran(0,yTop(y)+5*STEP+4);
+    const r=dansVp({left:-Infinity,right:Infinity,top:a.y,bottom:b.y});
+    return r&&{...r,left:rail.getBoundingClientRect().left};
+  },
+  rectJoueur(id){
+    let r=null;
+    world.querySelectorAll(`.chip[data-p="${CSS.escape(id)}"]`).forEach(el=>{
+      const b=el.getBoundingClientRect(); if(!b.width) return;
+      r=r?{left:Math.min(r.left,b.left),top:Math.min(r.top,b.top),right:Math.max(r.right,b.right),bottom:Math.max(r.bottom,b.bottom)}:{left:b.left,top:b.top,right:b.right,bottom:b.bottom};
+    });
+    return r&&dansVp(r);
+  },
+};
+
 // ---------- start-up ----------
 // The legend is closed by default at every width (the `open` attribute removed from the HTML):
 // there is therefore no narrow case left to catch up on here.
@@ -1591,3 +1726,7 @@ view.k=innerWidth<700?.7:.9; view.x=16; view.y=70; applyView();
     }
   }
 }
+
+// Guided tour: installed last, once the map is drawn and framed — it never opens on an empty
+// screen.
+installerVisite(pilote);

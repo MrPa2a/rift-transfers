@@ -53,6 +53,10 @@
        would not say what one is switching to. -->
   <button class="ibtn" id="lang" type="button" data-i18n-attr="title:btn.lang.titre;aria-label:btn.lang.titre">
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="8" cy="8" r="6.2"/><path d="M1.8 8h12.4M8 1.8c1.7 1.7 2.6 3.9 2.6 6.2S9.7 12.5 8 14.2C6.3 12.5 5.4 10.3 5.4 8S6.3 3.5 8 1.8Z"/></svg><span data-i18n="btn.lang.code"></span></button>
+  <!-- Replays the guided tour (assets/js/tour.js), which also opens by itself on a first visit.
+       The glyph is a symbol, like the zoom buttons' + and −, not text to translate; it sits in a
+       <b> rather than a <span> so that it survives the narrow layout, which hides button labels. -->
+  <button class="ibtn" id="tourBtn" type="button" data-i18n-attr="title:tour.btn.titre;aria-label:tour.btn.titre"><b aria-hidden="true">?</b></button>
 </div>
 
 <div id="zoom" class="float">

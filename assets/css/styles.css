@@ -201,14 +201,19 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .th:hover .hide,.th .hide:focus-visible{opacity:1;pointer-events:auto}
 .th .hide:hover{background:var(--line);color:var(--fg)}
 /* The year axis is clickable: a year isolates its edition. The button keeps the look of the
-   former label — it is a landmark before being a control — and only announces itself on hover
-   and when pressed. */
+   former label — it is a landmark before being a control —, but it must not wait for a lucky
+   hover to say it is one: at rest, a dotted underline, the usual sign of something to click; on
+   hover, the accent colour and a bar on the edge of the axis, the side the map isolates from. */
 .ylab{position:absolute;left:0;right:0;text-align:center;font:500 13px var(--f-mono);color:var(--muted);transform:translateY(-50%);
-  background:none;border:none;padding:4px 0;cursor:pointer;border-radius:6px}
-.ylab:hover{color:var(--fg);background:var(--absent)}
+  background:none;border:none;padding:4px 0;cursor:pointer;border-radius:6px;transition:color .12s,background .12s}
+.ylab>span{text-decoration:underline dotted;text-decoration-color:color-mix(in srgb,var(--muted) 60%,transparent);text-underline-offset:3px}
+.ylab:hover{color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);box-shadow:inset 3px 0 0 var(--accent)}
+.ylab:hover>span{text-decoration-color:currentColor}
 .ylab[aria-disabled="true"]{opacity:.35;cursor:default}
-.ylab[aria-disabled="true"]:hover{color:var(--muted);background:none}
-.ylab.iso{color:var(--panel);background:var(--fg);font-weight:700}
+.ylab[aria-disabled="true"]>span{text-decoration:none}
+.ylab[aria-disabled="true"]:hover{color:var(--muted);background:none;box-shadow:none}
+.ylab.iso{color:var(--panel);background:var(--fg);font-weight:700;box-shadow:none}
+.ylab.iso>span{text-decoration:none}
 .ylab small{display:block;font:600 9px var(--f-body);letter-spacing:.1em;margin-top:2px}
 
 .colbg{position:absolute;top:0;border-left:1px solid var(--line)}
@@ -378,6 +383,11 @@ path.cap{stroke-width:2;opacity:0}
    selection by mere hover does not show the button and keeps the full width.
    `min-width` freezes the box so that "Isolate" and "Show all" do not make it jump. */
 #sel.avec-iso{padding-right:152px}
+/* On a mere hover, the panel announces the button a click will bring; when it does appear, a
+   short ring marks the spot, twice and no more. */
+#sel .indice{color:var(--accent);font-size:12.5px}
+@keyframes annonce{from{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 60%,transparent)}to{box-shadow:0 0 0 9px transparent}}
+#selIso.annonce{animation:annonce 1s ease-out 2}
 
 /* ---------- drawers ---------- */
 .drawer{position:fixed;top:0;bottom:0;z-index:40;width:var(--dw);background:var(--panel);box-shadow:var(--shadow);display:flex;flex-direction:column;transition:transform .22s ease;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -471,6 +481,47 @@ table.fl td.na{color:var(--muted);background:transparent}
   body.fopen #bar,body.fopen #legend{transform:translateX(calc(var(--dw) + 12px - max(12px,env(safe-area-inset-left,0px))))}
 }
 
+/* ---------- guided tour (assets/js/tour.js) ---------- */
+/* The veil sits above everything, drawers included, but captures nothing: the map under it stays
+   alive, it is the subject. Its cut-outs are drawn by tour.js in an SVG mask, the accent ring
+   repeating their outline. The card sits above the veil. */
+:root{--tour-voile:rgba(14,18,30,.5)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--tour-voile:rgba(0,0,0,.62)}}
+:root[data-theme="dark"]{--tour-voile:rgba(0,0,0,.62)}
+.tour-voile{position:fixed;inset:0;width:100%;height:100%;z-index:70;pointer-events:none}
+.tour-voile[hidden]{display:none}
+.tour-voile .ombre{fill:var(--tour-voile)}
+.tour-voile .anneau rect{fill:none;stroke:var(--accent);stroke-width:4}
+.tour{position:fixed;left:0;top:0;z-index:80;width:min(360px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;
+  background:var(--panel);color:var(--fg);border:1px solid var(--accent);border-radius:12px;box-shadow:var(--shadow);
+  padding:14px 16px 12px;font-size:13.5px;line-height:1.45;animation:tour-entree .18s ease-out}
+@keyframes tour-entree{from{opacity:0}to{opacity:1}}
+.tour-prog{margin:0 30px 4px 0;font:600 10.5px var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.tour h2{margin:0 30px 6px 0;font:700 21px/1.1 var(--f-display)}
+.tour-corps ul{margin:4px 0 0;padding-left:18px}
+.tour-corps li+li{margin-top:4px}
+.tour-geste{margin:8px 0 0;padding-left:9px;border-left:3px solid var(--accent);color:var(--muted);font-size:12.5px}
+.tour-actions{display:flex;align-items:center;gap:6px;margin-top:12px}
+.tour-actions .esp{flex:1}
+.tbtn{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:7px;background:var(--panel);cursor:pointer;font:600 12.5px var(--f-body);white-space:nowrap}
+.tbtn:hover{border-color:var(--muted)}
+.tbtn.primaire{background:var(--accent);border-color:var(--accent);color:#fff}
+.tbtn.lien{border:none;background:none;padding:0 2px;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+.tbtn.lien:hover{color:var(--fg)}
+.tbtn[hidden]{display:none}
+.tour-x{position:absolute;top:8px;right:8px;width:28px;height:28px;border:none;background:none;cursor:pointer;color:var(--muted);font-size:18px;border-radius:6px}
+.tour-x:hover{background:var(--absent)}
+.tour-pied{margin:10px 0 0;font-size:11.5px;color:var(--muted)}
+kbd{display:inline-block;min-width:1.5em;padding:0 4px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;background:var(--bg);font:600 11px/1.5 var(--f-mono);text-align:center;color:var(--fg)}
+/* "Tour closed · resume": a five-second safety net instead of a confirmation box. */
+.tour-bandeau{left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + var(--HH) + 64px);z-index:80;display:flex;align-items:center;gap:12px;padding:6px 6px 6px 14px;font-size:13px}
+.tour-bandeau[hidden]{display:none}
+#tourBtn b{font:700 15px var(--f-display);min-width:8px;text-align:center}
+@media (max-width:700px){
+  .tour{max-height:min(58vh,calc(100vh - 24px));padding:12px 14px 10px}
+  .tour h2{font-size:19px}
+}
+
 .load-error{left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,calc(100vw - 32px));padding:14px 18px;line-height:1.5;z-index:70}
 .load-error p{margin:0}.load-error p+p{margin-top:6px}
 .load-error .hint{color:var(--muted);font-size:12.5px}
@@ -492,4 +543,6 @@ table.fl td.na{color:var(--muted);background:transparent}
   #sel.avec-iso{padding-right:124px}
   #legend{max-width:calc(100vw - var(--YW) - 80px)}
 }
-@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+/* Animations too: the Isolate button's ring and the tour card's fade are decoration, nothing is
+   lost without them. */
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
