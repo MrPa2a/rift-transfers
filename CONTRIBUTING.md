@@ -1,22 +1,22 @@
-# Contribuer
+# Contributing
 
-Merci de votre intérêt ! Les contributions les plus utiles sont les **corrections de données** (un joueur au mauvais poste, une rotation manquante, un résultat erroné), toujours accompagnées d'une source.
+Thanks for your interest! The most useful contributions are **data corrections** (a player at the wrong role, a missing rotation, a wrong result), always with a source. You can write in French or in English.
 
-## Signaler une erreur
+## Reporting a mistake
 
-Ouvrez une issue avec le modèle « Data correction » : équipe, année, ce qui est faux, ce qui est juste, et un lien vers une source (page Leaguepedia ou Liquipedia du tournoi, VOD, article). Depuis la carte, le panneau « À propos » l'ouvre pré-rempli avec l'équipe, l'édition et les filtres en cours.
+Open an issue with the "Data correction" template: team, year, what is wrong, what is right, and a link to a source (the tournament's Leaguepedia or Liquipedia page, a VOD, an article). From the map, the About panel opens it pre-filled with the team, the edition and the active filters.
 
-## Proposer une correction
+## Proposing a fix
 
-1. Forkez le dépôt et créez une branche (`fix/fnc-2020-bot` par exemple).
-2. Modifiez le fichier concerné dans `data/`.
-3. Lancez `npm run validate` : la commande doit afficher « Données valides. »
-4. Vérifiez visuellement avec `npm run dev`.
-5. Ajoutez la source dans `data/sources.json` et ouvrez une pull request.
+1. Fork the repository and create a branch (`fix/fnc-2020-bot`, for instance).
+2. Edit the relevant file in `data/`.
+3. Run `npm run validate`: the command must print "Data valid."
+4. Check it visually with `npm run dev`.
+5. Add the source to `data/sources.json` and open a pull request.
 
-Aucune dépendance n'est nécessaire : Node.js 18 ou plus suffit.
+No dependency is needed: Node.js 18 or later is enough.
 
-## Format des données
+## Data format
 
 ### `data/teams.json`
 
@@ -35,56 +35,49 @@ Aucune dépendance n'est nécessaire : Node.js 18 ou plus suffit.
 }
 ```
 
-| Champ | Rôle |
+| Field | Role |
 |---|---|
-| `code` | Identifiant unique de la colonne (2 à 5 caractères, majuscules) |
-| `name` | Nom actuel de l'organisation |
-| `label` / `tag` | Optionnels : texte de l'en-tête et étiquette courte dans « Autres équipes » |
-| `region` | L'une des 14 familles : `LCK`, `LPL`, `LEC`, `LCS`, `LMS`, `LCP`, `LJL`, `VCS`, `GPL`, `LCO`, `TCL`, `LCL`, `CBLOL`, `LLA`. Elle vient de la **ligue réellement jouée l'année de l'édition**, pas de la région de l'organisation aujourd'hui : voir [docs/SOURCES.md](docs/SOURCES.md), section « Périmètre » |
-| `active` | `[début]` ou `[début, fin]` : la fenêtre d'existence de l'organisation, de sa première à sa dernière partie sur Leaguepedia, la borne de fin n'étant posée que si elle est dissoute. Hors de cette fenêtre, la colonne est repliée. `fetch-worlds.mjs` la calcule — § 11 du rapport |
-| `worlds.<année>.name` | Optionnel : nom de l'équipe cette année-là (`SKT T1`, `DAMWON`…) |
-| `worlds.<année>.lineup` | Les 5 titulaires, un par poste : voir les règles de sélection dans [docs/SOURCES.md](docs/SOURCES.md) |
-| `worlds.<année>.shared` | Optionnel : joueur qui a partagé le poste |
-| `worlds.<année>.split` | Optionnel : postes dont le joueur de `shared` a joué au moins 20 % des parties, et s'affiche donc en demi-case plutôt qu'en `*` |
-| `worlds.<année>.aliases` | Optionnel : pseudo réellement porté cette année-là, par joueur (`{ "Zven": "Niels" }`) |
-| `worlds.<année>.unverified` | Optionnel : postes encore à vérifier (affichés avec `?`) |
+| `code` | Unique identifier of the column (2 to 5 characters, upper case) |
+| `name` | Current name of the organisation |
+| `label` / `tag` | Optional: header text, and short label in "Other teams" |
+| `region` | One of the 14 families: `LCK`, `LPL`, `LEC`, `LCS`, `LMS`, `LCP`, `LJL`, `VCS`, `GPL`, `LCO`, `TCL`, `LCL`, `CBLOL`, `LLA`. It comes from the **league actually played in the edition's year**, not from the organisation's region today: see [docs/SOURCES.md](docs/SOURCES.md), section « Périmètre » |
+| `active` | `[start]` or `[start, end]`: the organisation's lifetime, from its first to its last game on Leaguepedia, the end only being set if it has disbanded. Outside this window, the column is collapsed. `fetch-worlds.mjs` computes it — § 11 of its report |
+| `worlds.<year>.name` | Optional: the team's name that year (`SKT T1`, `DAMWON`…) |
+| `worlds.<year>.lineup` | The 5 starters, one per role: see the selection rules in [docs/SOURCES.md](docs/SOURCES.md) |
+| `worlds.<year>.shared` | Optional: a player who shared the role |
+| `worlds.<year>.split` | Optional: roles whose `shared` player played at least 20% of the games, and is therefore shown as a half-slot rather than a `*` |
+| `worlds.<year>.aliases` | Optional: the handle actually worn that year, per player (`{ "Zven": "Niels" }`) |
+| `worlds.<year>.unverified` | Optional: roles still to be checked (shown with `?`) |
 
-Règles :
+Rules:
 
-- **Un joueur s'écrit toujours de la même façon** (même casse) : c'est ce qui relie ses apparitions entre les équipes. Cela vaut pour les titulaires **et** pour les rotations de `shared`, que le validateur contrôle de la même façon.
-- Un joueur qui a changé de pseudo garde **une seule** graphie dans `lineup` et `shared` — son identité, donc son fil de carrière. Le pseudo de l'époque se déclare à part, dans `aliases` : la carte l'affiche sans rompre le fil. Une simple différence de casse ne justifie jamais un `aliases`.
-- `shared` recense le second joueur d'un poste, qu'il ait beaucoup joué ou non ; `split` dit lesquels ont assez joué pour mériter une demi-case. Un rôle listé dans `split` doit avoir une entrée dans `shared`.
-- Un même joueur ne peut pas occuper deux postes d'une même rangée, ni jouer pour deux équipes la même année. Quand les règles de sélection y mènent malgré tout — un roster entièrement tournant, comme Epik Gamer en 2011 — le poste se tranche dans `POSTES_ARBITRES`, en tête du script.
-- **Deux personnes au même pseudo reçoivent un discriminant repris de Leaguepedia**, et seulement dans ce cas : les deux `Violet` du jeu de données s'écrivent `Violet (Ngô Mạnh Quyền)` et `Violet (Vincent Wong)` dans `lineup`. Le discriminant est une identité, pas une étiquette — leurs cases affichent `Violet`, par `aliases`.
-- On ne renseigne une année que si l'équipe a joué les Worlds cette année-là, et dans la fenêtre `active` si elle est déclarée.
-- Le titulaire est retenu sur les parties réellement jouées, pas sur le roster inscrit : au moins 20 % des parties de l'équipe, et le poste où le joueur a le plus joué. [`scripts/fetch-worlds.mjs`](scripts/fetch-worlds.mjs) applique ces règles et signale les écarts avec `data/`.
+- **A player is always spelled the same way** (same case): that is what links their appearances across teams. This holds for starters **and** for the rotations in `shared`, which the validator checks the same way.
+- A player who changed handles keeps **a single** spelling in `lineup` and `shared` — their identity, hence their career thread. The handle of the time is declared separately, in `aliases`: the map shows it without breaking the thread. A mere difference in case never justifies an `aliases`.
+- `shared` lists a role's second player, whether they played a lot or not; `split` says which ones played enough to earn a half-slot. A role listed in `split` must have an entry in `shared`.
+- The same player cannot hold two roles in one row, nor play for two teams in the same year. When the selection rules lead there anyway — an entirely rotating roster, like Epik Gamer in 2011 — the role is settled in `POSTES_ARBITRES`, at the top of the script.
+- **Two people with the same handle get a disambiguator taken from Leaguepedia**, and only then: the dataset's two `Violet` are written `Violet (Ngô Mạnh Quyền)` and `Violet (Vincent Wong)` in `lineup`. The disambiguator is an identity, not a label — their slots show `Violet`, through `aliases`.
+- A year is only filled in if the team played Worlds that year, and within the `active` window if one is declared.
+- The starter is chosen on games actually played, not on the registered roster: at least 20% of the team's games, at the role where the player played most. [`scripts/fetch-worlds.mjs`](scripts/fetch-worlds.mjs) applies these rules and reports any divergence from `data/`.
 
-Hors du tableau des 120 colonnes, `data/teams.json` porte trois tables de tête : `years`, la
-liste des éditions ; `regions`, les 14 familles ; et `leagueNames`, le nom de la ligue derrière
-chaque sigle — `LCK` → « LoL Champions Korea ». Ce nom est lu au survol de la pilule de région,
-avec sa zone géographique ; il vient de `Leagues.League`, que `fetch-worlds.mjs` recollecte et
-confronte à `/data` (§ 15 du rapport). **Une région sans nom est une erreur de
-`npm run validate`** : on ne le comble pas de mémoire. La zone, elle, se dérive de
-`homeCountries` et ne se saisit pas — voir [docs/SOURCES.md](docs/SOURCES.md), section « Nom de
-ligue et zone géographique d'une région ».
+Besides the 120 columns, `data/teams.json` carries three header tables: `years`, the list of editions; `regions`, the 14 families; and `leagueNames`, the name of the league behind each acronym — `LCK` → "LoL Champions Korea". This name is read when hovering the region pill, with its geographic area; it comes from `Leagues.League`, which `fetch-worlds.mjs` collects again and compares with `/data` (§ 15 of its report). **A region without a name is an `npm run validate` error**: it is never filled in from memory. The area, for its part, is derived from `homeCountries` and is not typed in — see [docs/SOURCES.md](docs/SOURCES.md), section « Nom de ligue et zone géographique d'une région ».
 
-`npm run validate` signale aussi, en avertissement, tout pseudo dont les apparitions sont séparées par plus de quatre éditions : c'est le garde-fou contre deux personnes fondues en une seule carrière. Après vérification nominative, le pseudo s'inscrit dans `HOMONYMES_VERIFIES`, en tête de [`scripts/validate-data.mjs`](scripts/validate-data.mjs).
+`npm run validate` also warns about any handle whose appearances are more than four editions apart: it is the safeguard against two people merged into a single career. Once checked by name, the handle goes into `HOMONYMES_VERIFIES`, at the top of [`scripts/validate-data.mjs`](scripts/validate-data.mjs).
 
 ### `data/results.json`
 
-Parcours de chaque équipe par année : `W` vainqueur, `F` finale, `SF` demi-finale, `QF` quart, `G` groupes, `S` phase suisse, `P` play-in, `F*` finale pas encore jouée. Les libellés de `labels` sont lus sur la carte comme dans sa légende : ils portent donc **les deux langues de l'interface**, et `npm run validate` les y exige. `fetch-worlds.mjs` les calcule depuis le classement de Leaguepedia — § 12 du rapport — sauf `F*`, qu'il ne peut pas déduire. `ongoingYear` affiche « EN COURS » à côté de l'année ; passez-le à `null` une fois la finale jouée.
+Each team's result per year: `W` winner, `F` final, `SF` semi-final, `QF` quarter-final, `G` groups, `S` Swiss stage, `P` play-in, `F*` final not yet played. The `labels` are read on the map and in its legend: they therefore carry **both interface languages**, and `npm run validate` requires them. `fetch-worlds.mjs` computes them from Leaguepedia's standings — § 12 of its report — except `F*`, which it cannot deduce. `ongoingYear` shows "ONGOING" next to the year; set it to `null` once the final has been played.
 
 ### `data/players.json`
 
-Nationalité (code ISO à 2 lettres) par joueur, et pays « domestiques » de chaque région pour repérer les joueurs importés. N'ajoutez une nationalité que si elle est vérifiée : c'est `Players.NationalityPrimary` de Leaguepedia qui fait foi, et non `Players.Country`, qui donne le pays de naissance.
+Nationality (2-letter ISO code) per player, and the "domestic" countries of each region, used to spot imported players. Only add a nationality once verified: Leaguepedia's `Players.NationalityPrimary` is authoritative, not `Players.Country`, which gives the country of birth.
 
-`homeCountries` est une **décision**, pas un relevé : un code oublié fait passer tout joueur de ce pays pour un importé, en silence, et `npm run validate` ne peut vérifier que la forme. Les 14 listes sont justifiées une à une dans [docs/SOURCES.md](docs/SOURCES.md), section « Pays domestiques de chaque région » ; une région nouvelle en exige une.
+`homeCountries` is a **decision**, not a reading: a forgotten code silently turns every player from that country into an import, and `npm run validate` can only check the shape. The 14 lists are justified one by one in [docs/SOURCES.md](docs/SOURCES.md), section « Pays domestiques de chaque région »; a new region needs one.
 
-`countryNames` donne le nom de chaque code **dans les deux langues de l'interface** — `"KR": { "fr": "Corée du Sud", "en": "South Korea" }` : le panneau de détail écrit le pays en toute lettre là où le badge des chips garde `KR`, faute de place. Les noms anglais sont les noms courts ISO 3166, la forme usuelle étant gardée là où ISO donne une forme administrative longue, comme le fait déjà la colonne française. Un code employé par `nationality` sans entrée, ou une entrée à qui manque une des deux langues, est une erreur de `npm run validate`.
+`countryNames` gives each code's name **in both interface languages** — `"KR": { "fr": "Corée du Sud", "en": "South Korea" }`: the detail panel spells the country out where the slots' badge keeps `KR`, for lack of room. The English names are the ISO 3166 short names, the usual form being kept where ISO gives a long administrative one, as the French column already does. A code used by `nationality` without an entry, or an entry missing one of the two languages, is an `npm run validate` error.
 
 ### `data/careers.json`
 
-Où était chaque joueur les années **sans rangée**, entre deux de ses apparitions aux Worlds — ce qui permet au fil de ne plus sauter le trou.
+Where each player was in the years **without a row**, between two of their Worlds appearances — which lets the thread stop skipping the gap.
 
 ```json
 "clubs": {"Victory Five": "V5", "Nongshim RedForce": "NS"},
@@ -96,24 +89,26 @@ Où était chaque joueur les années **sans rangée**, entre deux de ses apparit
 }
 ```
 
-- `team` est un **code de colonne**, `club` un club qui n'en a pas et qui s'affiche dans « Autres équipes ». Une étape porte l'un ou l'autre, jamais les deux. Écrire en `club` le nom d'une colonne est une erreur de `npm run validate` : le fil contournerait une colonne affichée.
-- `clubs` donne le **sigle** de chaque club sans colonne : le badge de sa case, replié depuis `Teams.Short` exactement comme un code de colonne, puisque les deux se lisent côte à côte. Une entrée que plus aucune étape ne cite est une erreur de `npm run validate`. Un club **absent** de la table est accepté : sa case reste sans badge, et c'est ce que le script écrit quand la source ne donne pas d'abréviation — on n'en invente pas, et le nom entier écraserait le pseudo du joueur.
-- `steps` vide : **aucune partie professionnelle recensée** cette année-là. Avec `offLevel`, le joueur a joué, mais rien qui soit de niveau `Primary` — académie, ligue secondaire, showmatch : on n'en dit alors rien du tout.
-- `seen` donne la première et la dernière année où une partie lui est recensée. Ce sont les deux bouts de son fil, et les libellés qui vont avec disent « apparition connue », jamais « début » ni « fin de carrière ».
-- Une année qui n'est pas un trou entre deux Worlds du joueur est une erreur, comme une lineup hors de la fenêtre `active` d'une équipe.
+- `team` is a **column code**, `club` a club that has no column and is shown in "Other teams". A step carries one or the other, never both. Writing a column's name as a `club` is an `npm run validate` error: the thread would go around a displayed column.
+- `clubs` gives the **acronym** of each club without a column: the badge of its slot, derived from `Teams.Short` exactly like a column code, since the two are read side by side. An entry no step cites any more is an `npm run validate` error. A club **missing** from the table is accepted: its slot stays without a badge, and that is what the script writes when the source gives no abbreviation — none is invented, and the full name would crowd out the player's handle.
+- Empty `steps`: **no professional game recorded** that year. With `offLevel`, the player did play, but nothing at the `Primary` level — academy, secondary league, showmatch: nothing at all is said then.
+- `seen` gives the first and last years a game is recorded for them. They are the two ends of the thread, and the labels that go with them say "known appearance", never "debut" or "end of career".
+- A year that is not a gap between two of the player's Worlds is an error, like a lineup outside a team's `active` window.
 
-La **règle 5** qui retient ces étapes — club majoritaire de l'année, plus tout autre club à 20 % des parties ou plus — est distincte des quatre règles des Worlds, avec son propre filtre de bruit. Elle est décrite dans [docs/SOURCES.md](docs/SOURCES.md), section « Hors Worlds : la règle 5 et les étapes de carrière ». `fetch-worlds.mjs` la calcule en § 14 du rapport ; le fichier se recopie à la main, comme le reste de `/data`.
+**Rule 5**, which selects these steps — the year's majority club, plus any other club at 20% of the games or more — is distinct from the four Worlds rules, with its own noise filter. It is described in [docs/SOURCES.md](docs/SOURCES.md), section « Hors Worlds : la règle 5 et les étapes de carrière ». `fetch-worlds.mjs` computes it in § 14 of its report; the file is copied over by hand, like the rest of `/data`.
 
 ### `data/sources.json`
 
-Sources par année, avec ce que chacune a permis de vérifier. Voir aussi [docs/SOURCES.md](docs/SOURCES.md).
+Sources per year, with what each one made it possible to check. See also [docs/SOURCES.md](docs/SOURCES.md).
 
 ## Code
 
-Le site est en HTML, CSS et JavaScript sans framework ni étape de build : `map/index.html`, `assets/css/styles.css`, `assets/js/app.js`, `assets/js/i18n.js`. Gardez cette simplicité tant que possible.
+The site is HTML, CSS and JavaScript with no framework and no build step: `map/index.html`, `assets/css/styles.css`, and the modules of `assets/js/` — `app.js`, `i18n.js`, `tour.js`, `report.js`. Keep it that simple for as long as possible. There is no runtime dependency, and the fonts live in the repository; the one third-party call is the Cloudflare Web Analytics script, which only counts visits — nothing on the site may depend on it.
 
-L'interface est **bilingue**, et aucun texte affiché ne s'écrit dans `app.js` ni dans `index.html` : tout passe par `assets/js/i18n.js`, où chaque clé porte ses deux graphies côte à côte — c'est la seule forme où une chaîne oubliée dans une langue se voie à l'œil. Dans la page, `data-i18n` remplit un texte, `data-i18n-html` un texte riche, `data-i18n-attr="title:cle;aria-label:cle"` des attributs. Un libellé que le JavaScript écrit une fois pour toutes s'enregistre par `libelle()`, pour que la bascule de langue le réécrive sans recharger la page.
+The interface is **bilingual**, and no displayed text is written in `app.js` or in `index.html`: everything goes through `assets/js/i18n.js`, where each key carries its two spellings side by side — the only form in which a string missing in one language shows at a glance. In the page, `data-i18n` fills a text, `data-i18n-html` a rich text, `data-i18n-attr="title:key;aria-label:key"` attributes. A label that JavaScript writes once and for all is registered through `libelle()`, so that switching languages rewrites it without reloading the page.
 
-## Messages de commit
+Code identifiers are in French (`GRAPHIES_ARBITREES`, `libelle()`…), and they stay so: [docs/SOURCES.md](docs/SOURCES.md) refers to them by name. Comments are in English.
 
-Format court et explicite, par exemple `data: Rekkles ADC de Fnatic en 2020` ou `feat: filtre par nationalité`.
+## Commit messages
+
+Short and explicit, for instance `data: Rekkles ADC for Fnatic in 2020` or `feat: nationality filter`.

@@ -1,7 +1,7 @@
 {
   "name": "rift-transfers",
   "version": "1.2.0",
-  "description": "Carte interactive des rosters de toutes les équipes venues aux Worlds 2011–2026 de League of Legends.",
+  "description": "Interactive map of the rosters of every team that played the League of Legends World Championship, 2011–2026.",
   "private": true,
   "type": "module",
   "scripts": {

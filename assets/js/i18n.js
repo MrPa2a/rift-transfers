@@ -45,6 +45,10 @@ const T = {
     fr: "Les rosters des Worlds de League of Legends depuis 2011, et les transferts de chaque joueur.",
     en: "League of Legends Worlds rosters since 2011, and every player's transfers.",
   },
+  "page.og.image.alt": {
+    fr: "La carte de Rift Transfers, Fnatic sélectionnée : les fils colorés suivent ses joueurs vers les autres équipes, de saison en saison.",
+    en: "The Rift Transfers map with Fnatic selected: coloured threads follow its players to other teams, season after season.",
+  },
 
   // ---------- bar, axis, floating tools ----------
   "coin.annee": { fr: "ANNÉE", en: "YEAR" },
@@ -269,6 +273,10 @@ const T = {
   "about.riot": {
     fr: "Projet de fan, non affilié à Riot Games. League of Legends est une marque de Riot Games, Inc.",
     en: "Fan project, not affiliated with Riot Games. League of Legends is a trademark of Riot Games, Inc.",
+  },
+  "about.audience": {
+    fr: "Fréquentation mesurée par Cloudflare Web Analytics : aucun cookie, aucune donnée personnelle.",
+    en: "Visits counted with Cloudflare Web Analytics: no cookies, no personal data.",
   },
 
   // ---------- statistics drawer ----------
@@ -650,6 +658,8 @@ function appliquerEntete() {
   poser('meta[name="description"]', t("page.description"));
   poser('meta[property="og:description"]', t("page.og.description"));
   poser('meta[property="og:locale"]', LOCALES[langue]);
+  poser('meta[property="og:locale:alternate"]', LOCALES[LANGS.find((l) => l !== langue)]);
+  poser('meta[property="og:image:alt"]', t("page.og.image.alt"));
 }
 
 const abonnes = new Set();
