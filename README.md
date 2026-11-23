@@ -50,6 +50,8 @@ map/index.html          # la carte
 assets/css/styles.css   # styles (thème clair et sombre)
 assets/js/app.js        # chargement des données et rendu de la carte
 assets/js/i18n.js       # dictionnaire français / anglais de l'interface
+assets/js/tour.js       # visite guidée
+assets/js/report.js     # issues GitHub pré-remplies depuis la carte
 data/                   # données JSON et sources
 docs/SOURCES.md         # méthode et sources
 scripts/serve.mjs       # serveur de développement sans dépendance

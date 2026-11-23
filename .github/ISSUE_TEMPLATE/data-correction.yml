@@ -1,0 +1,40 @@
+name: Data correction
+description: A player, a rotation or a result is wrong.
+title: "[Data] "
+labels: ["data"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        You can write in French. — *Tu peux écrire en français.*
+
+        **A source is required.** Nothing on the map is typed in from memory: every lineup comes from the games actually played, as recorded by Leaguepedia. A correction without a source cannot be checked, so it cannot be made.
+  # The `team` and `context` ids are read by assets/js/report.js, which fills them from the map's
+  # "Report a data error" button: keep the two in step.
+  - type: input
+    id: team
+    attributes:
+      label: Team and year
+      placeholder: "Fnatic 2020"
+    validations:
+      required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: What is shown, and what is right
+      placeholder: "Bot shown: Upset. Actual bot: Rekkles (11 games out of 11)."
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: Leaguepedia or Liquipedia tournament page, VOD, article…
+      placeholder: "https://lol.fandom.com/wiki/…/Team_Rosters"
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Map state
+      description: Filled in for you when the report starts from the map's "About" panel. You can leave it empty otherwise.

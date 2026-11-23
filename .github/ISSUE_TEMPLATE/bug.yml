@@ -1,17 +1,25 @@
-name: Bug d'affichage
-description: Quelque chose ne s'affiche pas ou ne réagit pas correctement.
+name: Display bug
+description: Something does not display or respond as it should.
 title: "[Bug] "
 labels: ["bug"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        You can write in French. — *Tu peux écrire en français.*
   - type: textarea
     id: description
     attributes:
-      label: Ce qui se passe
-      placeholder: "Le panneau Filtres ne s'ouvre pas sur mobile."
+      label: What happens
+      description: What you did, what you saw, and what you expected instead.
+      placeholder: "The Filters drawer does not open on mobile."
     validations:
       required: true
-  - type: input
-    id: environnement
+  # The field id is read by assets/js/report.js, which fills it from the map's "Report a display
+  # bug" button: keep the two in step.
+  - type: textarea
+    id: context
     attributes:
-      label: Navigateur et appareil
+      label: Browser, screen and map state
+      description: Filled in for you when the report starts from the map's "About" panel. Otherwise, your browser and device are enough.
       placeholder: "Chrome 142, Windows 11"

@@ -47,6 +47,8 @@
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 4h12M4.5 8h7M7 12h2"/></svg><span data-i18n="btn.filtres"></span></button>
   <button class="ibtn" id="openStats" type="button" aria-expanded="false" aria-controls="statsDrawer" data-i18n-attr="title:btn.stats.titre">
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 13V8M8 13V3M13 13V6"/></svg><span data-i18n="btn.stats"></span></button>
+  <button class="ibtn" id="openAbout" type="button" aria-expanded="false" aria-controls="aboutDrawer" data-i18n-attr="title:btn.about.titre">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="6.2"/><path d="M8 7.2v4"/><circle cx="8" cy="4.9" r=".4" fill="currentColor"/></svg><span data-i18n="btn.about"></span></button>
   <!-- Two languages, hence a toggle and not a list: the button carries the code of the language
        being **switched to**, which is what it does. Its label stays visible below 700 px, unlike
        those of the two neighbouring buttons — two letters always fit, and a globe on its own
@@ -141,6 +143,46 @@
   <div class="dbody">
     <p class="notes" id="statsNote" style="margin:0"></p>
     <div class="stats" id="stats"></div>
+  </div>
+</aside>
+
+<!-- "About": the method in three sentences, the two reports, the gestures the guided tour ends
+     on, and the credits. Two clicks from the map to a pre-filled issue: this button, then one of
+     the two reports — whose `href` is computed by app.js at the moment of the click, from the
+     map's live state (assets/js/report.js). The repository URLs are written here rather than in
+     the dictionary: a link target is not text to translate. -->
+<aside id="aboutDrawer" class="drawer" data-i18n-attr="aria-label:about.titre">
+  <div class="dhead"><h2 data-i18n="about.titre"></h2><button class="dclose" type="button" data-close="aboutDrawer" data-i18n-attr="aria-label:drawer.fermer">×</button></div>
+  <div class="dbody about">
+    <p class="about-lead" data-i18n="page.description"></p>
+    <section>
+      <h3 data-i18n="about.methode.titre"></h3>
+      <p data-i18n-html="about.methode"></p>
+      <p class="notes"><a href="https://github.com/MrPa2a/rift-transfers/blob/main/docs/SOURCES.md" target="_blank" rel="noopener" data-i18n="about.sources.lien"></a> <span data-i18n="about.sources.langue"></span></p>
+    </section>
+    <section>
+      <h3 data-i18n="about.signaler.titre"></h3>
+      <div class="report">
+        <a class="tbtn" id="reportBug" href="https://github.com/MrPa2a/rift-transfers/issues/new/choose" target="_blank" rel="noopener" data-i18n="about.bug"></a>
+        <p class="notes" data-i18n="about.bug.note"></p>
+        <a class="tbtn" id="reportData" href="https://github.com/MrPa2a/rift-transfers/issues/new/choose" target="_blank" rel="noopener" data-i18n="about.donnees"></a>
+        <p class="notes" data-i18n-html="about.donnees.note"></p>
+      </div>
+      <p class="notes" data-i18n="about.signaler.compte"></p>
+    </section>
+    <section>
+      <h3 data-i18n="recap.titre"></h3>
+      <div id="aboutRecap"></div>
+    </section>
+    <section>
+      <h3 data-i18n="about.credits.titre"></h3>
+      <ul class="notes">
+        <li><span data-i18n="about.licence.code"></span> <a href="https://github.com/MrPa2a/rift-transfers/blob/main/LICENSE" target="_blank" rel="noopener">MIT</a></li>
+        <li data-i18n="about.licence.donnees"></li>
+        <li><a href="https://github.com/MrPa2a/rift-transfers" target="_blank" rel="noopener" data-i18n="about.depot"></a></li>
+        <li data-i18n="about.riot"></li>
+      </ul>
+    </section>
   </div>
 </aside>
 

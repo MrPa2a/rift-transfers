@@ -11,7 +11,8 @@
 import { t as tr, tn as trn, ord, lang, setLang, LANGS, surChangement } from "./i18n.js";
 // The guided tour gets the map through the `pilote` object built at the bottom of this file, and
 // through nothing else: the import only goes one way.
-import { installerVisite } from "./tour.js";
+import { installerVisite, recapitulatif } from "./tour.js";
+import { urlRapport } from "./report.js";
 
 // ---------- data loading ----------
 const ROLES = ["top", "jgl", "mid", "bot", "sup"];           // internal keys (CSS classes)
@@ -1315,16 +1316,27 @@ qlist.addEventListener("click",e=>{
 document.addEventListener("click",e=>{ if(!(e.target.closest&&e.target.closest(".combo"))) fermerListe(); });
 
 // ---------- drawers ----------
+// Three drawers, each with its button in the bar. Filters slide in from the left; Stats and About
+// share the right edge, so opening one always closes the other — below 900 px, any drawer closes
+// the two others, there being no room for two.
+const TIROIRS={filters:"openFilters",statsDrawer:"openStats",aboutDrawer:"openAbout"};
+const DROITE=["statsDrawer","aboutDrawer"];
 function setDrawer(id,open){
   const d=$(id); d.classList.toggle("open",open);
   // The search bar and the legend slide to the right of the filter drawer (CSS `.fopen`) so as
   // to stay readable instead of going under it.
   if(id==="filters") document.body.classList.toggle("fopen",open);
-  $(id==="filters"?"openFilters":"openStats").setAttribute("aria-expanded",open);
+  $(TIROIRS[id]).setAttribute("aria-expanded",open);
   if(!open) closeTip();
 }
-$("openFilters").onclick=()=>{const o=!$("filters").classList.contains("open"); if(o&&innerWidth<900) setDrawer("statsDrawer",false); setDrawer("filters",o);};
-$("openStats").onclick=()=>{const o=!$("statsDrawer").classList.contains("open"); if(o&&innerWidth<900) setDrawer("filters",false); setDrawer("statsDrawer",o);};
+const ouvert=id=>$(id).classList.contains("open");
+const fermerTiroirs=()=>Object.keys(TIROIRS).forEach(id=>setDrawer(id,false));
+for(const [id,btn] of Object.entries(TIROIRS)) $(btn).onclick=()=>{
+  const o=!ouvert(id);
+  if(o) for(const autre of Object.keys(TIROIRS))
+    if(autre!==id&&(innerWidth<900||DROITE.includes(id)&&DROITE.includes(autre))) setDrawer(autre,false);
+  setDrawer(id,o);
+};
 document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>setDrawer(b.dataset.close,false));
 // Escape, at the head of the existing cascade: isolation first, then the tooltip, then the
 // drawers. A single press gives back the whole map — two levels for two isolations would have to
@@ -1335,7 +1347,7 @@ document.addEventListener("keydown",e=>{
   if(e.key!=="Escape") return;
   if(toutMontrer()) return;
   if(!$("modeTip").hidden) return void closeTip();
-  setDrawer("filters",false); setDrawer("statsDrawer",false);
+  fermerTiroirs();
 });
 
 function pill(container,label,color,on,onToggle,cls="pill"){
@@ -1577,6 +1589,42 @@ $("stats").addEventListener("click",e=>{
   const b=e.target.closest(".pl"); if(!b) return; if(innerWidth<900) setDrawer("statsDrawer",false); selectPlayer(b.dataset.id);
 });
 
+// ---------- "About" drawer ----------
+// The gesture summary is the tour's closing block, reused as is so the two cannot drift apart.
+libelle(()=>{ $("aboutRecap").innerHTML=recapitulatif(); });
+
+// The two reports carry the map as the visitor sees it. Their `href` is computed when the link
+// is about to be followed — hovered, focused or clicked —, not once at load time: the filters,
+// the selection and the window size have all moved since. The link half of it is the `?q=` deep
+// link, the only part of the state the URL knows how to carry; the rest is written out in the
+// report.
+function lienProfond(){
+  const url=new URL(location.href);
+  url.search=""; url.hash="";
+  url.searchParams.set("lang",lang());
+  const p=state.pinned&&players.get(state.pinned), e=state.pinnedTeam&&byCode.get(state.pinnedTeam);
+  if(p) url.searchParams.set("q",p.name); else if(e) url.searchParams.set("q",e.name);
+  return url.href;
+}
+function etatRapport(){
+  const p=state.pinned&&players.get(state.pinned), e=state.pinnedTeam&&byCode.get(state.pinnedTeam);
+  return {
+    lien:lienProfond(), langue:lang(),
+    periode:[state.yearFrom,state.yearTo],
+    postes:ROLES.filter(r=>state.roles.has(r)).map(r=>ROLE_NAME[r]), tousPostes:ROLES,
+    regions:REGIONS.filter(r=>state.regions.has(r)), toutesRegions:REGIONS,
+    minApps:state.minApps, masquees:[...state.hiddenTeams],
+    nationalite:state.showNat, anciennete:state.showSen, modeEquipe:state.teamMode,
+    selection:p?`player ${p.name}`:e?`team ${e.name} (${e.code})`:null,
+    equipe:e?e.name:null, annee:state.annee, isole:state.isole,
+    zoom:Math.round(view.k*100),
+  };
+}
+for(const [id,type] of [["reportBug","bug"],["reportData","donnees"]]){
+  const a=$(id), maj=()=>{ a.href=urlRapport(type,etatRapport()); };
+  ["pointerenter","focus","click"].forEach(ev=>a.addEventListener(ev,maj));
+}
+
 // ---------- language switching ----------
 // The selector is only a toggle between two languages: it carries the code of the one being
 // switched to.
@@ -1626,14 +1674,14 @@ const pilote={
     return {
       state:{...state,roles:new Set(state.roles),regions:new Set(state.regions),hiddenTeams:new Set(state.hiddenTeams),hover:null},
       view:{...(cibleVue||view)},
-      filtres:$("filters").classList.contains("open"),stats:$("statsDrawer").classList.contains("open"),
+      filtres:ouvert("filters"),stats:ouvert("statsDrawer"),apropos:ouvert("aboutDrawer"),
       legende:$("legend").open,q:q.value,
     };
   },
   restaurer(s){
     Object.assign(state,s.state,{roles:new Set(s.state.roles),regions:new Set(s.state.regions),hiddenTeams:new Set(s.state.hiddenTeams)});
     q.value=s.q; fermerListe(); closeTip();
-    setDrawer("filters",s.filtres); setDrawer("statsDrawer",s.stats); $("legend").open=s.legende;
+    setDrawer("filters",s.filtres); setDrawer("statsDrawer",s.stats); setDrawer("aboutDrawer",s.apropos); $("legend").open=s.legende;
     synchroniserControles(); render();
     // A framing may still be under way: it would overwrite the restored view on its next frame.
     cancelAnimationFrame(anim); cibleVue=null;
@@ -1644,7 +1692,7 @@ const pilote={
   reinitialiser(){
     Object.assign(state,etatDefaut());
     q.value=""; fermerListe(); closeTip();
-    setDrawer("filters",false); setDrawer("statsDrawer",false); $("legend").open=false;
+    fermerTiroirs(); $("legend").open=false;
     synchroniserControles(); render();
   },
 

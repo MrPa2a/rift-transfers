@@ -58,6 +58,11 @@ const T = {
   "btn.filtres.titre": { fr: "Filtres et options", en: "Filters and options" },
   "btn.stats": { fr: "Stats", en: "Stats" },
   "btn.stats.titre": { fr: "Statistiques", en: "Statistics" },
+  "btn.about": { fr: "À propos", en: "About" },
+  "btn.about.titre": {
+    fr: "À propos de la carte, et signaler une erreur",
+    en: "About the map, and reporting an error",
+  },
   // The language button announces the language being **switched to**, not the current one: that
   // is what it does, not where one is — the whole page already says that.
   "btn.lang.code": { fr: "EN", en: "FR" },
@@ -223,6 +228,47 @@ const T = {
   "modeTip.html": {
     fr: "<p><b>Carrières complètes</b> · surligne tous les joueurs passés par l'équipe, avec toute leur carrière aux Worlds. Pour suivre des joueurs.</p><p><b>Arrivées et départs</b> · ne garde que le club juste avant l'arrivée et le club juste après le départ. Pour voir avec quelles équipes l'équipe échange ses joueurs.</p><p>Ce choix décide aussi des colonnes que garde le bouton <b>Isoler</b> du panneau de détail : toutes celles qu'ont traversées les joueurs de l'équipe, ou seulement les clubs d'avant et d'après.</p>",
     en: "<p><b>Full careers</b> · highlights every player who has been through the team, with their whole Worlds career. For following players.</p><p><b>Arrivals and departures</b> · keeps only the club just before arriving and the club just after leaving. For seeing which teams the team trades its players with.</p><p>This choice also decides which columns the <b>Isolate</b> button in the detail panel keeps: all those the team's players have passed through, or only the clubs before and after.</p>",
+  },
+
+  // ---------- "About" drawer ----------
+  // Link targets live in map/index.html, not here: only the words are translated. The gesture
+  // summary is not restated either — it is the tour's own block, `recap.html`, reused as is.
+  "about.titre": { fr: "À propos", en: "About" },
+  "about.methode.titre": { fr: "Méthode", en: "Method" },
+  "about.methode": {
+    fr: "Chaque rangée montre les joueurs qui ont <b>réellement joué</b> ces Worlds pour l'équipe, et non le roster de la saison, tirés d'une source unique : les feuilles de match de Leaguepedia. Quatre règles écrites en font une lineup — qui tient un poste, quand un poste se partage, comment s'écrit un joueur —, et les années hors Worlds viennent de la même source par une cinquième. <b>Rien n'est saisi de mémoire</b> : un script recalcule tout le jeu de données à chaque collecte et signale le moindre écart, ce qui le rend reproductible.",
+    en: "Each row shows the players who <b>actually played</b> that Worlds for the team, not the season's roster, drawn from a single source: Leaguepedia's game records. Four written rules turn those games into a lineup — who holds a role, when a role is shared, how a player is spelled — and the years outside Worlds come from the same source under a fifth. <b>Nothing is typed in from memory</b>: a script recomputes the whole dataset on every collection run and reports the slightest divergence, which makes it reproducible.",
+  },
+  "about.sources.lien": { fr: "Méthode et sources, année par année", en: "Method and sources, year by year" },
+  "about.sources.langue": {
+    fr: "",
+    en: "(in French, with an English summary at the top)",
+  },
+  "about.signaler.titre": { fr: "Signaler un problème", en: "Report a problem" },
+  "about.bug": { fr: "Signaler un bug d'affichage", en: "Report a display bug" },
+  "about.bug.note": {
+    fr: "Le navigateur, la taille d'écran, la langue et les filtres actifs sont joints au rapport, avec un lien vers ta sélection : tu les relis avant d'envoyer.",
+    en: "Your browser, screen size, language and active filters are attached to the report, with a link to your selection: you review them before sending.",
+  },
+  "about.donnees": { fr: "Signaler une erreur de données", en: "Report a data error" },
+  "about.donnees.note": {
+    fr: "<b>Une source est exigée</b> — page Leaguepedia ou Liquipedia du tournoi, VOD, article : rien n'est corrigé de mémoire. L'équipe et l'édition épinglées sont reprises.",
+    en: "<b>A source is required</b> — a Leaguepedia or Liquipedia tournament page, a VOD, an article: nothing is corrected from memory. The pinned team and edition are carried over.",
+  },
+  "about.signaler.compte": {
+    fr: "Les deux ouvrent une issue GitHub, ce qui demande un compte GitHub. Tu peux écrire en français.",
+    en: "Both open a GitHub issue, which takes a GitHub account. You can write in French.",
+  },
+  "about.credits.titre": { fr: "Licence et mentions", en: "Licence and credits" },
+  "about.licence.code": { fr: "Code sous licence", en: "Code under the licence" },
+  "about.licence.donnees": {
+    fr: "Données compilées depuis Leaguepedia et Liquipedia, qui gardent leur licence : CC BY-SA 3.0.",
+    en: "Data compiled from Leaguepedia and Liquipedia, which keep their licence: CC BY-SA 3.0.",
+  },
+  "about.depot": { fr: "Le code source et les données, sur GitHub", en: "Source code and data, on GitHub" },
+  "about.riot": {
+    fr: "Projet de fan, non affilié à Riot Games. League of Legends est une marque de Riot Games, Inc.",
+    en: "Fan project, not affiliated with Riot Games. League of Legends is a trademark of Riot Games, Inc.",
   },
 
   // ---------- statistics drawer ----------

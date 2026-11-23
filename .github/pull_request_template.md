@@ -1,6 +1,6 @@
-## Ce qui change
+## What changes
 
-## Sources (pour une correction de données)
+## Sources (for a data correction)
 
-- [ ] `npm run validate` affiche « Données valides. »
-- [ ] Source ajoutée dans `data/sources.json`
+- [ ] `npm run validate` prints "Data valid."
+- [ ] Source added to `data/sources.json`

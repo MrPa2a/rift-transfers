@@ -392,8 +392,8 @@ path.cap{stroke-width:2;opacity:0}
 /* ---------- drawers ---------- */
 .drawer{position:fixed;top:0;bottom:0;z-index:40;width:var(--dw);background:var(--panel);box-shadow:var(--shadow);display:flex;flex-direction:column;transition:transform .22s ease;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 #filters{left:0;transform:translateX(-105%);border-right:1px solid var(--line);padding-left:env(safe-area-inset-left,0px)}
-#statsDrawer{right:0;transform:translateX(105%);border-left:1px solid var(--line);width:min(480px,calc(100vw - 36px));padding-right:env(safe-area-inset-right,0px)}
-#filters.open,#statsDrawer.open{transform:none}
+#statsDrawer,#aboutDrawer{right:0;transform:translateX(105%);border-left:1px solid var(--line);width:min(480px,calc(100vw - 36px));padding-right:env(safe-area-inset-right,0px)}
+#filters.open,#statsDrawer.open,#aboutDrawer.open{transform:none}
 .dhead{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 10px 16px;border-bottom:1px solid var(--line)}
 .dhead h2{font:700 22px var(--f-display);margin:0}
 .dclose{width:32px;height:32px;border:none;background:none;cursor:pointer;font-size:20px;color:var(--muted);border-radius:6px}
@@ -440,6 +440,24 @@ path.cap{stroke-width:2;opacity:0}
 .notes{color:var(--muted);line-height:1.5;font-size:13px}
 .notes summary{cursor:pointer;color:var(--fg);font-weight:600}
 .notes ul{padding-left:18px;margin:6px 0 0}
+
+/* "About": prose rather than controls, hence a reading size and section titles in the display face.
+   The two reports are links styled as buttons — they open GitHub in a new tab. */
+.about{font-size:14px;line-height:1.5}
+.about p{margin:0}
+.about section{display:flex;flex-direction:column;gap:8px}
+.about h3{font:700 17px var(--f-display);margin:0}
+.about-lead{color:var(--muted)}
+.about a{color:var(--accent)}
+.about ul.notes{margin:0;padding-left:18px}
+.about ul.notes li+li{margin-top:3px}
+.report{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center}
+.report a.tbtn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:var(--fg)}
+.report .notes{font-size:12.5px;line-height:1.4}
+@media (max-width:520px){.report{grid-template-columns:1fr}.report .notes{margin-bottom:4px}}
+#aboutRecap .recap{margin:0;padding-left:18px;color:var(--muted);font-size:13px}
+#aboutRecap .recap li+li{margin-top:4px}
+#aboutRecap b{color:var(--fg)}
 
 .stats{display:flex;flex-direction:column;gap:12px}
 .st{border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0}

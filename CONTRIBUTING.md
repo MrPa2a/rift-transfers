@@ -4,7 +4,7 @@ Merci de votre intérêt ! Les contributions les plus utiles sont les **correcti
 
 ## Signaler une erreur
 
-Ouvrez une issue avec le modèle « Correction de données » : équipe, année, ce qui est faux, ce qui est juste, et un lien vers une source (page Leaguepedia ou Liquipedia du tournoi, VOD, article).
+Ouvrez une issue avec le modèle « Data correction » : équipe, année, ce qui est faux, ce qui est juste, et un lien vers une source (page Leaguepedia ou Liquipedia du tournoi, VOD, article). Depuis la carte, le panneau « À propos » l'ouvre pré-rempli avec l'équipe, l'édition et les filtres en cours.
 
 ## Proposer une correction
 
